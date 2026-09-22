@@ -48,7 +48,7 @@ function recurring_bill_subtitle(array $bill, string $monthLabel): string
         return 'Parcela ' . (int) $bill['installment_number'] . '/' . (int) $bill['installment_total'];
     }
 
-    if ($bill['billing_type'] === 'variable' && $bill['needs_amount']) {
+    if ($bill['needs_amount']) {
         return 'Informe o valor de ' . $monthLabel;
     }
 
