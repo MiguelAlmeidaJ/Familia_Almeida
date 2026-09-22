@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/finance.php';
+require_once __DIR__ . '/includes/layout.php';
 
 $user = require_auth();
 $month = valid_month($_GET['month'] ?? null);
@@ -46,28 +47,10 @@ function progress_percent(float $current, float $total): float
 </head>
 <body>
 <div class="shell">
-    <aside class="sidebar">
-        <div class="brand">
-            <div class="brandmark">FA</div>
-            <div class="brandcopy"><b>FAMÍLIA</b><strong>ALMEIDA</strong><small>FINANÇAS</small></div>
-        </div>
-
-        <div class="side-note">
-            <small>PROPÓSITO</small>
-            <p>Dar nome a cada real para construir liberdade com intenção.</p>
-        </div>
-
-        <form method="post" action="/sair">
-            <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-            <button class="logout" type="submit">Sair da conta</button>
-        </form>
-    </aside>
+    <?php render_sidebar('dashboard', $csrf); ?>
 
     <main>
-        <header class="topbar">
-            <div class="who"><small>LOGADO COMO</small><strong><?= e($user['name']) ?></strong></div>
-            <div class="privacy"><i></i>MySQL conectado</div>
-        </header>
+        <?php render_topbar($user); ?>
 
         <div class="content">
             <div class="hero">

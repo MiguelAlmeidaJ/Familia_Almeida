@@ -22,6 +22,12 @@ DirectoryIndex index.php
     RewriteRule ^instalar/?$ install.php [L,QSA]
     RewriteRule ^acao/?$ action.php [L,QSA]
     RewriteRule ^sair/?$ logout.php [L,QSA]
+    RewriteRule ^movimentacoes/?$ pages/movimentacoes.php [L,QSA]
+    RewriteRule ^contas/?$ pages/contas.php [L,QSA]
+    RewriteRule ^metas/?$ pages/metas.php [L,QSA]
+    RewriteRule ^dividas/?$ pages/dividas.php [L,QSA]
+    RewriteRule ^configuracoes/?$ pages/configuracoes.php [L,QSA]
+    RewriteRule ^configuracoes/manutencao/?$ pages/manutencao.php [L,QSA]
 </IfModule>
 
 <FilesMatch "^(config\.php|schema\.sql|config\.example\.php)$">

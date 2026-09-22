@@ -113,3 +113,20 @@ Os dois usuários usam a mesma base financeira. Cada lançamento registra quem o
 - dívidas e pagamentos;
 - histórico mensal;
 - identificação do usuário que criou cada lançamento.
+
+
+## Rotas do sistema
+
+- `/` — visão geral
+- `/movimentacoes` — lançamentos e histórico
+- `/contas` — contas fixas
+- `/metas` — metas de gastos e investimento
+- `/dividas` — dívidas e pagamentos
+- `/configuracoes` — configurações
+- `/configuracoes/manutencao` — diagnóstico, migrations e otimização
+
+## Migrations pelo navegador
+
+A página `/configuracoes/manutencao` cria e utiliza a tabela `schema_migrations`.
+Novas migrations devem ser adicionadas em `database/migrations/` como arquivos PHP que retornem `description` e uma função `up(PDO $pdo)`.
+A página mostra quais migrations estão pendentes e permite executá-las em ordem, sem repetir as que já foram registradas.
