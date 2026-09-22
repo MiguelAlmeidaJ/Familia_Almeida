@@ -16,7 +16,12 @@ verify_csrf();
 $pdo = db();
 $action = (string) ($_POST['action'] ?? '');
 $month = valid_month($_POST['month'] ?? null);
-$redirect = '/?month=' . rawurlencode($month);
+$returnTo = (string) ($_POST['return_to'] ?? '/');
+$allowedReturns = ['/', '/movimentacoes', '/contas', '/metas', '/dividas'];
+if (!in_array($returnTo, $allowedReturns, true)) {
+    $returnTo = '/';
+}
+$redirect = $returnTo . '?month=' . rawurlencode($month);
 
 try {
     switch ($action) {
