@@ -42,8 +42,11 @@ CREATE TABLE IF NOT EXISTS transactions (
 CREATE TABLE IF NOT EXISTS fixed_bills (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(120) NOT NULL,
+    billing_type ENUM('fixed','variable','installment') NOT NULL DEFAULT 'fixed',
     amount DECIMAL(12,2) NOT NULL DEFAULT 0,
     due_day TINYINT UNSIGNED NOT NULL,
+    start_month CHAR(7) NULL,
+    installment_total SMALLINT UNSIGNED NULL,
     active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
@@ -53,6 +56,8 @@ CREATE TABLE IF NOT EXISTS bill_payments (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     bill_id BIGINT UNSIGNED NOT NULL,
     month CHAR(7) NOT NULL,
+    amount_due DECIMAL(12,2) NULL,
+    installment_number SMALLINT UNSIGNED NULL,
     paid TINYINT(1) NOT NULL DEFAULT 0,
     paid_at TIMESTAMP NULL DEFAULT NULL,
     paid_on DATE NULL DEFAULT NULL,
