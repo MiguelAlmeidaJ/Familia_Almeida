@@ -16,7 +16,7 @@ verify_csrf();
 $pdo = db();
 $action = (string) ($_POST['action'] ?? '');
 $month = valid_month($_POST['month'] ?? null);
-$redirect = 'index.php?month=' . rawurlencode($month);
+$redirect = '/?month=' . rawurlencode($month);
 
 try {
     switch ($action) {
