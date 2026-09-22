@@ -69,7 +69,7 @@ function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false
 
         $amountDue = $row['amount_due'] !== null ? (float) $row['amount_due'] : null;
         $baseAmount = (float) $row['base_amount'];
-        $needsAmount = $billingType === 'variable' && $amountDue === null;
+        $needsAmount = ($billingType === 'variable' || ($billingType === 'fixed' && $baseAmount <= 0)) && $amountDue === null;
         $effectiveAmount = $amountDue ?? ($billingType === 'variable' ? 0.0 : $baseAmount);
 
         $bills[] = [
