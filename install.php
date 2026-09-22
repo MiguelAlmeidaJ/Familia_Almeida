@@ -131,8 +131,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$alreadyInstalled) {
     <?php if ($success || $alreadyInstalled): ?>
         <p class="eyebrow">INSTALAÇÃO CONCLUÍDA</p>
         <h1>Banco pronto para uso.</h1>
-        <p>As tabelas e os usuários foram configurados. Por segurança, remova ou renomeie <code>install.php</code> na hospedagem.</p>
-        <a class="primary-link" href="login.php">Ir para o login</a>
+        <p>As tabelas e os usuários foram configurados. Por segurança, remova ou renomeie <code>install.php</code> na hospedagem após concluir.</p>
+        <a class="primary-link" href="/login">Ir para o login</a>
     <?php else: ?>
         <p class="eyebrow">PRIMEIRA CONFIGURAÇÃO</p>
         <h1>Criar banco e acessos</h1>
