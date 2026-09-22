@@ -57,7 +57,7 @@ function progress_percent(float $current, float $total): float
             <p>Dar nome a cada real para construir liberdade com intenção.</p>
         </div>
 
-        <form method="post" action="logout.php">
+        <form method="post" action="/sair">
             <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
             <button class="logout" type="submit">Sair da conta</button>
         </form>
@@ -115,7 +115,7 @@ function progress_percent(float $current, float $total): float
                     <div class="bill-list">
                         <?php foreach ($data['bills'] as $bill): ?>
                             <div class="bill">
-                                <form method="post" action="action.php">
+                                <form method="post" action="/acao">
                                     <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                                     <input type="hidden" name="action" value="toggle_bill">
                                     <input type="hidden" name="month" value="<?= e($month) ?>">
@@ -140,7 +140,7 @@ function progress_percent(float $current, float $total): float
                     <div class="goal-number"><strong><?= money($totals['investment']) ?></strong><span>de <?= money($data['investmentGoal']) ?></span></div>
                     <div class="progress"><span style="width:<?= progress_percent($totals['investment'], $data['investmentGoal']) ?>%"></span></div>
 
-                    <form method="post" action="action.php" class="inline-edit">
+                    <form method="post" action="/acao" class="inline-edit">
                         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                         <input type="hidden" name="action" value="set_investment_goal">
                         <input type="hidden" name="month" value="<?= e($month) ?>">
@@ -183,7 +183,7 @@ function progress_percent(float $current, float $total): float
                                         <?php if ($remaining > 0): ?>
                                             <button class="iconbtn" type="button" onclick='openDebtPayment(<?= (int) $debt["id"] ?>, <?= json_encode($debt["name"], JSON_HEX_APOS | JSON_HEX_QUOT) ?>, <?= json_encode($remaining) ?>)'>Pagar</button>
                                         <?php endif; ?>
-                                        <form method="post" action="action.php" onsubmit="return confirm('Remover esta dívida?')">
+                                        <form method="post" action="/acao" onsubmit="return confirm('Remover esta dívida?')">
                                             <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                                             <input type="hidden" name="action" value="delete_debt">
                                             <input type="hidden" name="month" value="<?= e($month) ?>">
@@ -214,7 +214,7 @@ function progress_percent(float $current, float $total): float
                                 <div class="txval <?= $transaction['type'] === 'income' ? 'pos' : 'neg' ?>">
                                     <?= $transaction['type'] === 'income' ? '+' : '−' ?> <?= money($transaction['amount']) ?>
                                 </div>
-                                <form method="post" action="action.php" onsubmit="return confirm('Remover este lançamento?')">
+                                <form method="post" action="/acao" onsubmit="return confirm('Remover este lançamento?')">
                                     <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                                     <input type="hidden" name="action" value="delete_transaction">
                                     <input type="hidden" name="month" value="<?= e($month) ?>">
@@ -233,7 +233,7 @@ function progress_percent(float $current, float $total): float
 </div>
 
 <dialog id="transaction-dialog">
-    <form method="post" action="action.php" class="dialog-form">
+    <form method="post" action="/acao" class="dialog-form">
         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
         <input type="hidden" name="action" value="add_transaction">
         <input type="hidden" name="month" value="<?= e($month) ?>">
@@ -248,7 +248,7 @@ function progress_percent(float $current, float $total): float
 </dialog>
 
 <dialog id="bill-dialog">
-    <form method="post" action="action.php" class="dialog-form">
+    <form method="post" action="/acao" class="dialog-form">
         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
         <input type="hidden" name="action" value="add_bill">
         <input type="hidden" name="month" value="<?= e($month) ?>">
@@ -261,7 +261,7 @@ function progress_percent(float $current, float $total): float
 </dialog>
 
 <dialog id="goal-dialog">
-    <form method="post" action="action.php" class="dialog-form">
+    <form method="post" action="/acao" class="dialog-form">
         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
         <input type="hidden" name="action" id="goal-action" value="add_goal">
         <input type="hidden" name="goal_id" id="goal-id" value="">
@@ -274,7 +274,7 @@ function progress_percent(float $current, float $total): float
 </dialog>
 
 <dialog id="debt-dialog">
-    <form method="post" action="action.php" class="dialog-form">
+    <form method="post" action="/acao" class="dialog-form">
         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
         <input type="hidden" name="action" value="add_debt">
         <input type="hidden" name="month" value="<?= e($month) ?>">
@@ -287,7 +287,7 @@ function progress_percent(float $current, float $total): float
 </dialog>
 
 <dialog id="debt-payment-dialog">
-    <form method="post" action="action.php" class="dialog-form">
+    <form method="post" action="/acao" class="dialog-form">
         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
         <input type="hidden" name="action" value="pay_debt">
         <input type="hidden" name="month" value="<?= e($month) ?>">
