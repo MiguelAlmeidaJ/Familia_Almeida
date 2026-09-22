@@ -33,7 +33,7 @@ function render_sidebar(string $active, string $csrf): void
     ];
 
     $user = function_exists('current_user') ? current_user() : null;
-    $initial = $user && !empty($user['name']) ? mb_strtoupper(mb_substr((string) $user['name'], 0, 1)) : 'F';
+    $initial = $user && !empty($user['name']) ? strtoupper(substr((string) $user['name'], 0, 1)) : 'F';
     ?>
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-top">
