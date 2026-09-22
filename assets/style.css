@@ -333,3 +333,10 @@ html.sidebar-collapsed .modern-logout{justify-content:center;padding:0;width:48p
   .dashboard-bill-row form{grid-column:3}
   .dashboard-row-value{grid-column:2;grid-row:2}
 }
+
+/* Correções de compatibilidade da sidebar com os breakpoints antigos */
+.sidebar .sidebar-logout{display:block!important}
+@media(max-width:1000px) and (min-width:761px){
+  .modern-brand .brandcopy{display:grid!important}
+  html.sidebar-collapsed .modern-brand .brandcopy{display:none!important}
+}
