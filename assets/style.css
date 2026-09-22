@@ -349,3 +349,26 @@ html.sidebar-collapsed .modern-logout{justify-content:center;padding:0;width:48p
   font-size:7px;font-weight:800;letter-spacing:.04em;
   white-space:nowrap
 }
+
+/* Tipos de recorrência */
+.recurring-explainer{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.recurring-explainer>div{background:#fff;border:1px solid var(--border-soft);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:10px auto;column-gap:8px;align-items:center}
+.recurring-explainer strong{font-size:10px}.recurring-explainer small{grid-column:2;font-size:8px;color:#8797a4;margin-top:2px;line-height:1.45}
+.bill-type-dot{width:8px;height:8px;border-radius:50%}.bill-type-dot.fixed{background:#59758b}.bill-type-dot.variable{background:#c4a35f}.bill-type-dot.installment{background:#6c8e7e}
+.recurring-form select{width:100%;border:1px solid #dbe3e8;border-radius:8px;padding:10px 11px;background:#fff;color:#173248}
+.installment-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.installment-fields[hidden]{display:none!important}
+.billing-form-hint{font-size:8px;line-height:1.55;color:#768a99;background:#f5f8fa;border:1px solid #e4ebef;border-radius:8px;padding:9px 10px}
+.recurring-bill{grid-template-columns:34px 48px minmax(0,1fr) auto auto}
+.recurring-bill.needs-value{background:#fffdf8}
+.bill-type-badge{font-size:6px;font-weight:850;letter-spacing:.04em;padding:4px 6px;border-radius:999px}
+.bill-type-badge.fixed{background:#edf2f5;color:#557083}.bill-type-badge.variable{background:#fff4dc;color:#966c1f}.bill-type-badge.installment{background:#eaf3ef;color:#547768}
+.status-pill.value-needed{background:#fff0d0;color:#986b18}
+.recurring-amount{display:grid;text-align:right;gap:2px}.recurring-amount small{font-size:7px;color:#8b9aa6}.amount-missing{color:#b58735;font-size:18px}
+.recurring-actions{flex-wrap:wrap;justify-content:flex-end}.action-button.emphasis{background:#0e2a43;color:#fff;border-color:#0e2a43}
+.check:disabled{opacity:.35;cursor:not-allowed;background:#eef2f4}
+.recurring-secondary-section{margin-top:16px}.scheduled-list{margin-top:12px}.scheduled-row{display:grid;grid-template-columns:34px 1fr auto;gap:11px;align-items:center;padding:11px 0;border-bottom:1px solid #edf1f3}
+.scheduled-icon{width:30px;height:30px;border-radius:9px;background:#f1f5f7;color:#728899;display:grid;place-items:center}
+.scheduled-row>div:nth-child(2){display:grid;gap:3px}.scheduled-row strong{font-size:10px}.scheduled-row span{font-size:8px;color:#8b9ba7}
+@media(max-width:900px){.recurring-explainer{grid-template-columns:1fr}.recurring-bill{grid-template-columns:34px 44px 1fr auto}.recurring-actions{grid-column:3/5}}
+@media(max-width:650px){.installment-fields{grid-template-columns:1fr}.recurring-bill{grid-template-columns:30px 40px 1fr}.recurring-amount{grid-column:3;text-align:left}.recurring-actions{grid-column:3/4;justify-content:flex-start}.scheduled-row{grid-template-columns:30px 1fr}.scheduled-row .action-button{grid-column:2;justify-self:start}}
