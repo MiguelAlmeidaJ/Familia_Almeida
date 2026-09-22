@@ -73,7 +73,7 @@ Nunca envie `config.php` para o GitHub.
 
 Acesse:
 
-`https://seu-dominio.com/financas/install.php?key=SUA_INSTALL_KEY`
+`https://seu-dominio.com/instalar?key=SUA_INSTALL_KEY`
 
 Informe os dados de acesso de Miguel e Gabi. O instalador:
 
@@ -90,7 +90,7 @@ Depois de instalar, remova ou renomeie `install.php` no servidor. Mesmo que ele 
 
 Acesse:
 
-`https://seu-dominio.com/financas/login.php`
+`https://seu-dominio.com/login`
 
 Os dois usuários usam a mesma base financeira. Cada lançamento registra quem o criou.
 
