@@ -27,7 +27,7 @@ function goal_percent(float $spent, float $limit): float { return $limit > 0 ? m
 <section class="card">
 <p class="eyebrow">NOVA META</p><h2>Categoria de gasto</h2>
 <form method="post" action="/acao" class="stack-form">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="add_goal"><input type="hidden" name="month" value="<?= e($month) ?>">
+<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="return_to" value="/metas"><input type="hidden" name="action" value="add_goal"><input type="hidden" name="month" value="<?= e($month) ?>">
 <label>Categoria<input name="category" maxlength="100" required></label>
 <label>Limite mensal<input type="number" name="limit" min="0" step="0.01" required></label>
 <button class="primary" type="submit">Salvar meta</button>
@@ -38,7 +38,7 @@ function goal_percent(float $spent, float $limit): float { return $limit > 0 ? m
 <div class="goal-number"><strong><?= money($data['totals']['investment']) ?></strong><span>de <?= money($data['investmentGoal']) ?></span></div>
 <div class="progress"><span style="width:<?= goal_percent($data['totals']['investment'], $data['investmentGoal']) ?>%"></span></div>
 <form method="post" action="/acao" class="inline-edit">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="set_investment_goal"><input type="hidden" name="month" value="<?= e($month) ?>">
+<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="return_to" value="/metas"><input type="hidden" name="action" value="set_investment_goal"><input type="hidden" name="month" value="<?= e($month) ?>">
 <input type="number" name="value" min="0" step="0.01" value="<?= e($data['investmentGoal']) ?>"><button class="lightbtn" type="submit">Salvar meta</button>
 </form>
 </section>
@@ -49,7 +49,7 @@ function goal_percent(float $spent, float $limit): float { return $limit > 0 ? m
 <div class="goal-list">
 <?php foreach ($data['goals'] as $goal): ?>
 <form method="post" action="/acao" class="goal goal-edit">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="update_goal"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="goal_id" value="<?= (int) $goal['id'] ?>">
+<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="return_to" value="/metas"><input type="hidden" name="action" value="update_goal"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="goal_id" value="<?= (int) $goal['id'] ?>">
 <div>
 <div class="form-grid-2 compact-fields"><label>Categoria<input name="category" value="<?= e($goal['category']) ?>" required></label><label>Limite<input type="number" name="limit" min="0" step="0.01" value="<?= e($goal['monthly_limit']) ?>" required></label></div>
 <span><?= money($goal['spent']) ?> gastos neste mês</span>
