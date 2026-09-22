@@ -26,7 +26,7 @@ $defaultDate = $month === date('Y-m') ? date('Y-m-d') : $month . '-01';
 <section class="card narrow-card">
 <p class="eyebrow">NOVA DÍVIDA</p><h2>Adicionar pendência</h2>
 <form method="post" action="/acao" class="stack-form">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="add_debt"><input type="hidden" name="month" value="<?= e($month) ?>">
+<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="return_to" value="/dividas"><input type="hidden" name="action" value="add_debt"><input type="hidden" name="month" value="<?= e($month) ?>">
 <label>Nome<input name="name" maxlength="160" required></label>
 <div class="form-grid-2"><label>Valor total<input type="number" name="total" min="0.01" step="0.01" required></label><label>Já pago<input type="number" name="paid" min="0" step="0.01" value="0" required></label></div>
 <button class="primary" type="submit">Adicionar dívida</button>
@@ -41,13 +41,13 @@ $defaultDate = $month === date('Y-m') ? date('Y-m-d') : $month . '-01';
 <div class="progress"><span style="width:<?= $debt['total_amount'] > 0 ? min(100, ($debt['paid_amount'] / $debt['total_amount']) * 100) : 0 ?>%"></span></div>
 <?php if ($remaining > 0): ?>
 <form method="post" action="/acao" class="stack-form compact-form">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="pay_debt"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="debt_id" value="<?= (int) $debt['id'] ?>">
+<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="return_to" value="/dividas"><input type="hidden" name="action" value="pay_debt"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="debt_id" value="<?= (int) $debt['id'] ?>">
 <div class="form-grid-2"><label>Pagamento<input type="number" name="amount" min="0.01" max="<?= e($remaining) ?>" step="0.01" required></label><label>Data<input type="date" name="date" value="<?= e($defaultDate) ?>" required></label></div>
 <button class="secondary" type="submit">Registrar pagamento</button>
 </form>
 <?php endif; ?>
 <form method="post" action="/acao" onsubmit="return confirm('Remover esta dívida?')">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="delete_debt"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="debt_id" value="<?= (int) $debt['id'] ?>">
+<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="return_to" value="/dividas"><input type="hidden" name="action" value="delete_debt"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="debt_id" value="<?= (int) $debt['id'] ?>">
 <button class="text-danger" type="submit">Excluir dívida</button>
 </form>
 </section>
