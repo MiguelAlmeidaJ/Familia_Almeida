@@ -1,5 +1,29 @@
 DirectoryIndex index.php
 
+<IfModule mod_negotiation.c>
+    Options -MultiViews
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # URLs canônicas sem .php
+    RewriteCond %{THE_REQUEST} \s/+index\.php(?:[?\s]) [NC]
+    RewriteRule ^index\.php$ / [R=302,L,NE]
+
+    RewriteCond %{THE_REQUEST} \s/+login\.php(?:[?\s]) [NC]
+    RewriteRule ^login\.php$ /login [R=302,L,NE]
+
+    RewriteCond %{THE_REQUEST} \s/+install\.php(?:[?\s]) [NC]
+    RewriteRule ^install\.php$ /instalar [R=302,L,NE]
+
+    # Rotas amigáveis
+    RewriteRule ^login/?$ login.php [L,QSA]
+    RewriteRule ^instalar/?$ install.php [L,QSA]
+    RewriteRule ^acao/?$ action.php [L,QSA]
+    RewriteRule ^sair/?$ logout.php [L,QSA]
+</IfModule>
+
 <FilesMatch "^(config\.php|schema\.sql|config\.example\.php)$">
     Require all denied
 </FilesMatch>
