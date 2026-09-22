@@ -32,7 +32,7 @@ function require_auth(): array
 {
     $user = current_user();
     if (!$user) {
-        redirect_to('login.php');
+        redirect_to('/login');
     }
     return $user;
 }
