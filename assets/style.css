@@ -354,6 +354,7 @@ html.sidebar-collapsed .modern-logout{justify-content:center;padding:0;width:48p
 .recurring-explainer{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
 .recurring-explainer>div{background:#fff;border:1px solid var(--border-soft);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:10px auto;column-gap:8px;align-items:center}
 .recurring-explainer strong{font-size:10px}.recurring-explainer small{grid-column:2;font-size:8px;color:#8797a4;margin-top:2px;line-height:1.45}
+.recurring-accounting-note{margin:-3px 0 14px;padding:10px 13px;border-radius:10px;background:#fffaf0;border:1px solid #eedfbf;color:#81662e;font-size:8px;line-height:1.55}.recurring-accounting-note strong{font-weight:850}
 .bill-type-dot{width:8px;height:8px;border-radius:50%}.bill-type-dot.fixed{background:#59758b}.bill-type-dot.variable{background:#c4a35f}.bill-type-dot.installment{background:#6c8e7e}
 .recurring-form select{width:100%;border:1px solid #dbe3e8;border-radius:8px;padding:10px 11px;background:#fff;color:#173248}
 .installment-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -372,3 +373,4 @@ html.sidebar-collapsed .modern-logout{justify-content:center;padding:0;width:48p
 .scheduled-row>div:nth-child(2){display:grid;gap:3px}.scheduled-row strong{font-size:10px}.scheduled-row span{font-size:8px;color:#8b9ba7}
 @media(max-width:900px){.recurring-explainer{grid-template-columns:1fr}.recurring-bill{grid-template-columns:34px 44px 1fr auto}.recurring-actions{grid-column:3/5}}
 @media(max-width:650px){.installment-fields{grid-template-columns:1fr}.recurring-bill{grid-template-columns:30px 40px 1fr}.recurring-amount{grid-column:3;text-align:left}.recurring-actions{grid-column:3/4;justify-content:flex-start}.scheduled-row{grid-template-columns:30px 1fr}.scheduled-row .action-button{grid-column:2;justify-self:start}}
+.dashboard-value-link{display:grid;place-items:center;text-decoration:none;font-weight:800}
