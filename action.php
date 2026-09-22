@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/finance.php';
 
 $user = require_auth();
 
@@ -49,31 +50,99 @@ try {
 
         case 'add_bill':
             $name = trim((string) ($_POST['name'] ?? ''));
+            $billingType = (string) ($_POST['billing_type'] ?? 'fixed');
             $amount = (float) str_replace(',', '.', (string) ($_POST['amount'] ?? '0'));
             $dueDay = (int) ($_POST['due_day'] ?? 0);
+            $startMonth = trim((string) ($_POST['start_month'] ?? ''));
+            $installmentTotal = (int) ($_POST['installment_total'] ?? 0);
 
-            if ($name === '' || $amount < 0 || $dueDay < 1 || $dueDay > 31) {
-                throw new RuntimeException('Dados da conta fixa inválidos.');
+            if (!in_array($billingType, ['fixed', 'variable', 'installment'], true)) {
+                throw new RuntimeException('Tipo de conta recorrente inválido.');
             }
 
-            $stmt = $pdo->prepare('INSERT INTO fixed_bills (name, amount, due_day) VALUES (?, ?, ?)');
-            $stmt->execute([$name, $amount, $dueDay]);
-            flash('success', 'Conta fixa adicionada.');
+            if ($name === '' || $dueDay < 1 || $dueDay > 31 || $amount < 0) {
+                throw new RuntimeException('Dados da conta recorrente inválidos.');
+            }
+
+            if ($billingType !== 'variable' && $amount <= 0) {
+                throw new RuntimeException('Informe o valor da conta.');
+            }
+
+            if ($billingType === 'installment') {
+                if (!preg_match('/^\d{4}-\d{2}$/', $startMonth)) {
+                    $startMonth = $month;
+                }
+                if ($installmentTotal < 1 || $installmentTotal > 360) {
+                    throw new RuntimeException('Informe a quantidade total de parcelas.');
+                }
+            } else {
+                $startMonth = '';
+                $installmentTotal = 0;
+            }
+
+            $stmt = $pdo->prepare(
+                'INSERT INTO fixed_bills
+                    (name, billing_type, amount, due_day, start_month, installment_total)
+                 VALUES (?, ?, ?, ?, ?, ?)'
+            );
+            $stmt->execute([
+                $name,
+                $billingType,
+                $amount,
+                $dueDay,
+                $startMonth !== '' ? $startMonth : null,
+                $installmentTotal > 0 ? $installmentTotal : null,
+            ]);
+
+            flash('success', 'Conta recorrente adicionada.');
             break;
 
         case 'update_bill':
             $billId = (int) ($_POST['bill_id'] ?? 0);
             $name = trim((string) ($_POST['name'] ?? ''));
+            $billingType = (string) ($_POST['billing_type'] ?? 'fixed');
             $amount = (float) str_replace(',', '.', (string) ($_POST['amount'] ?? '0'));
             $dueDay = (int) ($_POST['due_day'] ?? 0);
+            $startMonth = trim((string) ($_POST['start_month'] ?? ''));
+            $installmentTotal = (int) ($_POST['installment_total'] ?? 0);
 
-            if ($billId <= 0 || $name === '' || $amount < 0 || $dueDay < 1 || $dueDay > 31) {
-                throw new RuntimeException('Dados da conta fixa inválidos.');
+            if ($billId <= 0 || !in_array($billingType, ['fixed', 'variable', 'installment'], true)) {
+                throw new RuntimeException('Conta recorrente inválida.');
             }
 
-            $stmt = $pdo->prepare('UPDATE fixed_bills SET name = ?, amount = ?, due_day = ? WHERE id = ?');
-            $stmt->execute([$name, $amount, $dueDay, $billId]);
-            flash('success', 'Conta fixa atualizada.');
+            if ($name === '' || $dueDay < 1 || $dueDay > 31 || $amount < 0) {
+                throw new RuntimeException('Dados da conta recorrente inválidos.');
+            }
+
+            if ($billingType !== 'variable' && $amount <= 0) {
+                throw new RuntimeException('Informe o valor da conta.');
+            }
+
+            if ($billingType === 'installment') {
+                if (!preg_match('/^\d{4}-\d{2}$/', $startMonth) || $installmentTotal < 1 || $installmentTotal > 360) {
+                    throw new RuntimeException('Revise o mês inicial e a quantidade de parcelas.');
+                }
+            } else {
+                $startMonth = '';
+                $installmentTotal = 0;
+            }
+
+            $stmt = $pdo->prepare(
+                'UPDATE fixed_bills
+                 SET name = ?, billing_type = ?, amount = ?, due_day = ?, start_month = ?, installment_total = ?
+                 WHERE id = ?'
+            );
+            $stmt->execute([
+                $name,
+                $billingType,
+                $amount,
+                $dueDay,
+                $startMonth !== '' ? $startMonth : null,
+                $installmentTotal > 0 ? $installmentTotal : null,
+                $billId,
+            ]);
+
+            flash('success', 'Conta recorrente atualizada.');
             break;
 
         case 'archive_bill':
@@ -98,27 +167,125 @@ try {
             flash('success', 'Conta restaurada.');
             break;
 
+        case 'set_bill_month_amount':
+            $billId = (int) ($_POST['bill_id'] ?? 0);
+            $amount = (float) str_replace(',', '.', (string) ($_POST['amount'] ?? '0'));
+
+            if ($billId <= 0 || $amount <= 0) {
+                throw new RuntimeException('Informe um valor válido para o mês.');
+            }
+
+            $billStmt = $pdo->prepare(
+                'SELECT id, name, billing_type, amount, due_day, start_month, installment_total
+                 FROM fixed_bills WHERE id = ? LIMIT 1'
+            );
+            $billStmt->execute([$billId]);
+            $bill = $billStmt->fetch();
+
+            if (!$bill) {
+                throw new RuntimeException('Conta recorrente não encontrada.');
+            }
+
+            $installmentNumber = null;
+            if ($bill['billing_type'] === 'installment') {
+                $distance = bill_month_distance((string) $bill['start_month'], $month);
+                $total = (int) $bill['installment_total'];
+                if ($distance < 0 || $distance >= $total) {
+                    throw new RuntimeException('Esta parcela não pertence ao mês selecionado.');
+                }
+                $installmentNumber = $distance + 1;
+            }
+
+            $pdo->beginTransaction();
+
+            $paymentStmt = $pdo->prepare(
+                'INSERT INTO bill_payments (bill_id, month, amount_due, installment_number, paid)
+                 VALUES (?, ?, ?, ?, 0)
+                 ON DUPLICATE KEY UPDATE
+                    amount_due = VALUES(amount_due),
+                    installment_number = VALUES(installment_number)'
+            );
+            $paymentStmt->execute([$billId, $month, $amount, $installmentNumber]);
+
+            $paymentIdStmt = $pdo->prepare('SELECT id, paid FROM bill_payments WHERE bill_id = ? AND month = ? LIMIT 1');
+            $paymentIdStmt->execute([$billId, $month]);
+            $payment = $paymentIdStmt->fetch();
+
+            if ($payment && (bool) $payment['paid']) {
+                $description = $bill['billing_type'] === 'installment'
+                    ? $bill['name'] . ' — Parcela ' . $installmentNumber . '/' . (int) $bill['installment_total']
+                    : $bill['name'];
+
+                $updateTransaction = $pdo->prepare(
+                    'UPDATE transactions
+                     SET amount = ?, description = ?, category = "Contas recorrentes"
+                     WHERE bill_payment_id = ?'
+                );
+                $updateTransaction->execute([$amount, $description, (int) $payment['id']]);
+            }
+
+            $pdo->commit();
+            flash('success', 'Valor de ' . $month . ' atualizado.');
+            break;
+
         case 'toggle_bill':
             $billId = (int) ($_POST['bill_id'] ?? 0);
             $paid = isset($_POST['paid']) && $_POST['paid'] === '1' ? 1 : 0;
 
             if ($billId <= 0) {
-                throw new RuntimeException('Conta inválida.');
+                throw new RuntimeException('Conta recorrente inválida.');
             }
 
             $columnStmt = $pdo->query("SHOW COLUMNS FROM transactions LIKE 'bill_payment_id'");
-            if (!$columnStmt || !$columnStmt->fetch()) {
-                throw new RuntimeException('Existe uma migration pendente para contas fixas. Execute em Configurações > Manutenção antes de alterar o pagamento.');
+            $amountColumnStmt = $pdo->query("SHOW COLUMNS FROM bill_payments LIKE 'amount_due'");
+            if (!$columnStmt || !$columnStmt->fetch() || !$amountColumnStmt || !$amountColumnStmt->fetch()) {
+                throw new RuntimeException('Existem migrations pendentes para contas recorrentes. Execute em Configurações > Manutenção.');
             }
 
             $pdo->beginTransaction();
 
-            $billStmt = $pdo->prepare('SELECT id, name, amount, due_day FROM fixed_bills WHERE id = ? FOR UPDATE');
+            $billStmt = $pdo->prepare(
+                'SELECT id, name, billing_type, amount, due_day, start_month, installment_total
+                 FROM fixed_bills WHERE id = ? FOR UPDATE'
+            );
             $billStmt->execute([$billId]);
             $bill = $billStmt->fetch();
 
             if (!$bill) {
-                throw new RuntimeException('Conta fixa não encontrada.');
+                throw new RuntimeException('Conta recorrente não encontrada.');
+            }
+
+            $installmentNumber = null;
+            if ($bill['billing_type'] === 'installment') {
+                $distance = bill_month_distance((string) $bill['start_month'], $month);
+                $total = (int) $bill['installment_total'];
+
+                if ($distance < 0 || $distance >= $total) {
+                    throw new RuntimeException('Esta parcela não pertence ao mês selecionado.');
+                }
+
+                $installmentNumber = $distance + 1;
+            }
+
+            $existingStmt = $pdo->prepare(
+                'SELECT id, amount_due
+                 FROM bill_payments
+                 WHERE bill_id = ? AND month = ?
+                 LIMIT 1'
+            );
+            $existingStmt->execute([$billId, $month]);
+            $existingPayment = $existingStmt->fetch();
+
+            $monthlyAmount = $existingPayment && $existingPayment['amount_due'] !== null
+                ? (float) $existingPayment['amount_due']
+                : (float) $bill['amount'];
+
+            if ($bill['billing_type'] === 'variable' && (!$existingPayment || $existingPayment['amount_due'] === null)) {
+                throw new RuntimeException('Informe o valor desta conta no mês antes de marcá-la como paga.');
+            }
+
+            if ($monthlyAmount <= 0) {
+                throw new RuntimeException('O valor da conta no mês precisa ser maior que zero.');
             }
 
             $monthStart = new DateTimeImmutable($month . '-01');
@@ -129,24 +296,40 @@ try {
                 : sprintf('%s-%02d', $month, $dueDay);
 
             $paymentStmt = $pdo->prepare(
-                'INSERT INTO bill_payments (bill_id, month, paid, paid_at, paid_on)
-                 VALUES (?, ?, ?, IF(? = 1, NOW(), NULL), IF(? = 1, ?, NULL))
+                'INSERT INTO bill_payments
+                    (bill_id, month, amount_due, installment_number, paid, paid_at, paid_on)
+                 VALUES (?, ?, ?, ?, ?, IF(? = 1, NOW(), NULL), IF(? = 1, ?, NULL))
                  ON DUPLICATE KEY UPDATE
+                    amount_due = VALUES(amount_due),
+                    installment_number = VALUES(installment_number),
                     paid = VALUES(paid),
                     paid_at = VALUES(paid_at),
                     paid_on = VALUES(paid_on)'
             );
-            $paymentStmt->execute([$billId, $month, $paid, $paid, $paid, $paymentDate]);
+            $paymentStmt->execute([
+                $billId,
+                $month,
+                $monthlyAmount,
+                $installmentNumber,
+                $paid,
+                $paid,
+                $paid,
+                $paymentDate,
+            ]);
 
             $paymentIdStmt = $pdo->prepare('SELECT id FROM bill_payments WHERE bill_id = ? AND month = ? LIMIT 1');
             $paymentIdStmt->execute([$billId, $month]);
             $paymentId = (int) $paymentIdStmt->fetchColumn();
 
             if ($paid === 1) {
+                $description = $bill['billing_type'] === 'installment'
+                    ? $bill['name'] . ' — Parcela ' . $installmentNumber . '/' . (int) $bill['installment_total']
+                    : $bill['name'];
+
                 $transactionStmt = $pdo->prepare(
                     'INSERT INTO transactions
                         (created_by, bill_payment_id, type, description, category, amount, occurred_on)
-                     VALUES (?, ?, "expense", ?, "Contas fixas", ?, ?)
+                     VALUES (?, ?, "expense", ?, "Contas recorrentes", ?, ?)
                      ON DUPLICATE KEY UPDATE
                         description = VALUES(description),
                         category = VALUES(category),
@@ -156,11 +339,12 @@ try {
                 $transactionStmt->execute([
                     (int) $user['id'],
                     $paymentId,
-                    $bill['name'],
-                    (float) $bill['amount'],
+                    $description,
+                    $monthlyAmount,
                     $paymentDate,
                 ]);
-                flash('success', 'Conta marcada como paga e lançada nas movimentações.');
+
+                flash('success', 'Conta paga e lançada automaticamente nas movimentações.');
             } else {
                 $deleteStmt = $pdo->prepare('DELETE FROM transactions WHERE bill_payment_id = ?');
                 $deleteStmt->execute([$paymentId]);
@@ -283,7 +467,7 @@ try {
             }
 
             if (!empty($transaction['bill_payment_id'])) {
-                throw new RuntimeException('Esta movimentação foi gerada por uma conta fixa. Desmarque o pagamento em Contas fixas para removê-la.');
+                throw new RuntimeException('Esta movimentação foi gerada por uma conta recorrente. Desmarque o pagamento em Contas recorrentes para removê-la.');
             }
 
             if ($transaction['type'] === 'debt' && !empty($transaction['debt_id'])) {
