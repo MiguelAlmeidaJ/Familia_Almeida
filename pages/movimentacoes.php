@@ -59,10 +59,14 @@ $nextMonth = $current->modify('+1 month')->format('Y-m');
 <div class="txicon <?= e($transaction['type']) ?>"><?= $transaction['type'] === 'income' ? '↗' : '↘' ?></div>
 <div class="txinfo"><strong><?= e($transaction['description']) ?></strong><span><?= e($transaction['category']) ?> • <?= e($transaction['date']) ?> • <?= e($transaction['created_by_name'] ?: 'Família') ?></span></div>
 <div class="txval <?= $transaction['type'] === 'income' ? 'pos' : 'neg' ?>"><?= $transaction['type'] === 'income' ? '+' : '−' ?> <?= money($transaction['amount']) ?></div>
+<?php if (!empty($transaction['bill_payment_id'])): ?>
+<span class="auto-transaction-badge" title="Gerada ao marcar uma conta fixa como paga">Automática</span>
+<?php else: ?>
 <form method="post" action="/acao" onsubmit="return confirm('Remover este lançamento?')">
 <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="return_to" value="/movimentacoes"><input type="hidden" name="action" value="delete_transaction"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="transaction_id" value="<?= (int) $transaction['id'] ?>">
 <button class="iconbtn danger" type="submit">Excluir</button>
 </form>
+<?php endif; ?>
 </div>
 <?php endforeach; else: ?><div class="empty"><div class="bubble">◇</div><strong>Nenhum lançamento neste mês.</strong></div><?php endif; ?>
 </div>
