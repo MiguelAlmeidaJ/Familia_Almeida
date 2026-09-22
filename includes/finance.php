@@ -37,7 +37,7 @@ function dashboard_data(PDO $pdo, string $month): array
     $stmt = $pdo->prepare(
         'SELECT t.id, t.type, t.description, t.category, t.amount,
                 DATE_FORMAT(t.occurred_on, "%Y-%m-%d") AS date,
-                t.debt_id, u.name AS created_by_name
+                t.debt_id, t.bill_payment_id, u.name AS created_by_name
          FROM transactions t
          LEFT JOIN users u ON u.id = t.created_by
          WHERE t.occurred_on >= ? AND t.occurred_on < ?
