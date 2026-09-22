@@ -61,6 +61,43 @@ try {
             flash('success', 'Conta fixa adicionada.');
             break;
 
+        case 'update_bill':
+            $billId = (int) ($_POST['bill_id'] ?? 0);
+            $name = trim((string) ($_POST['name'] ?? ''));
+            $amount = (float) str_replace(',', '.', (string) ($_POST['amount'] ?? '0'));
+            $dueDay = (int) ($_POST['due_day'] ?? 0);
+
+            if ($billId <= 0 || $name === '' || $amount < 0 || $dueDay < 1 || $dueDay > 31) {
+                throw new RuntimeException('Dados da conta fixa inválidos.');
+            }
+
+            $stmt = $pdo->prepare('UPDATE fixed_bills SET name = ?, amount = ?, due_day = ? WHERE id = ?');
+            $stmt->execute([$name, $amount, $dueDay, $billId]);
+            flash('success', 'Conta fixa atualizada.');
+            break;
+
+        case 'archive_bill':
+            $billId = (int) ($_POST['bill_id'] ?? 0);
+            if ($billId <= 0) {
+                throw new RuntimeException('Conta inválida.');
+            }
+
+            $stmt = $pdo->prepare('UPDATE fixed_bills SET active = 0 WHERE id = ?');
+            $stmt->execute([$billId]);
+            flash('success', 'Conta arquivada. O histórico foi preservado.');
+            break;
+
+        case 'restore_bill':
+            $billId = (int) ($_POST['bill_id'] ?? 0);
+            if ($billId <= 0) {
+                throw new RuntimeException('Conta inválida.');
+            }
+
+            $stmt = $pdo->prepare('UPDATE fixed_bills SET active = 1 WHERE id = ?');
+            $stmt->execute([$billId]);
+            flash('success', 'Conta restaurada.');
+            break;
+
         case 'toggle_bill':
             $billId = (int) ($_POST['bill_id'] ?? 0);
             $paid = isset($_POST['paid']) && $_POST['paid'] === '1' ? 1 : 0;

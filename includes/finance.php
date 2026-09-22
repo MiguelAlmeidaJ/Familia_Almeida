@@ -2,6 +2,33 @@
 
 declare(strict_types=1);
 
+function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false): array
+{
+    $sql =
+        'SELECT b.id, b.name, b.amount, b.due_day, b.active, COALESCE(p.paid, 0) AS paid
+         FROM fixed_bills b
+         LEFT JOIN bill_payments p ON p.bill_id = b.id AND p.month = ?';
+
+    if (!$includeInactive) {
+        $sql .= ' WHERE b.active = 1';
+    }
+
+    $sql .= ' ORDER BY b.active DESC, b.due_day, b.name';
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$month]);
+    $bills = $stmt->fetchAll();
+
+    foreach ($bills as &$bill) {
+        $bill['amount'] = (float) $bill['amount'];
+        $bill['paid'] = (bool) $bill['paid'];
+        $bill['active'] = (bool) $bill['active'];
+    }
+    unset($bill);
+
+    return $bills;
+}
+
 function dashboard_data(PDO $pdo, string $month): array
 {
     $start = $month . '-01';
@@ -28,20 +55,7 @@ function dashboard_data(PDO $pdo, string $month): array
     }
     unset($transaction);
 
-    $stmt = $pdo->prepare(
-        'SELECT b.id, b.name, b.amount, b.due_day, COALESCE(p.paid, 0) AS paid
-         FROM fixed_bills b
-         LEFT JOIN bill_payments p ON p.bill_id = b.id AND p.month = ?
-         WHERE b.active = 1
-         ORDER BY b.due_day, b.name'
-    );
-    $stmt->execute([$month]);
-    $bills = $stmt->fetchAll();
-    foreach ($bills as &$bill) {
-        $bill['amount'] = (float) $bill['amount'];
-        $bill['paid'] = (bool) $bill['paid'];
-    }
-    unset($bill);
+    $bills = fixed_bills_data($pdo, $month);
 
     $stmt = $pdo->prepare(
         'SELECT g.id, g.category, g.monthly_limit,
