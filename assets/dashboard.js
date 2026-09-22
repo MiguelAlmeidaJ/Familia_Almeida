@@ -45,7 +45,11 @@
   const dailyCanvas = document.getElementById('cashflowChart');
   if (dailyCanvas) {
     const daily = payload.daily || {};
-    new Chart(dailyCanvas, {
+    const dailyValues = [...(daily.income || []), ...(daily.outflow || []), ...(daily.investment || [])];
+    const hasDailyValues = dailyValues.some((value) => Number(value) > 0);
+    if (!hasDailyValues) {
+      dailyCanvas.closest('.chart-shell')?.classList.add('chart-empty');
+    } else new Chart(dailyCanvas, {
       type: 'line',
       data: {
         labels: daily.labels || [],
