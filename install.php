@@ -69,18 +69,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$alreadyInstalled) {
             $userStmt->execute([$gabiName, $gabiEmail, password_hash($gabiPassword, PASSWORD_DEFAULT)]);
 
             $billExists = $pdo->prepare('SELECT id FROM fixed_bills WHERE LOWER(name) = LOWER(?) LIMIT 1');
-            $billInsert = $pdo->prepare('INSERT INTO fixed_bills (name, amount, due_day) VALUES (?, 0, ?)');
+            $billInsert = $pdo->prepare(
+                'INSERT INTO fixed_bills (name, billing_type, amount, due_day)
+                 VALUES (?, ?, ?, ?)'
+            );
             foreach ([
-                ['Dízimo', 10],
-                ['Luz', 15],
-                ['Água', 15],
-                ['Gás', 20],
-                ['Internet', 10],
-                ['Aluguel', 10],
-            ] as [$name, $day]) {
+                ['Dízimo', 'variable', 0, 10],
+                ['Luz', 'variable', 0, 15],
+                ['Água', 'variable', 0, 15],
+                ['Gás', 'variable', 0, 20],
+                ['Internet', 'fixed', 0, 10],
+                ['Aluguel', 'fixed', 0, 10],
+            ] as [$name, $type, $amount, $day]) {
                 $billExists->execute([$name]);
                 if (!$billExists->fetchColumn()) {
-                    $billInsert->execute([$name, $day]);
+                    $billInsert->execute([$name, $type, $amount, $day]);
                 }
             }
 
