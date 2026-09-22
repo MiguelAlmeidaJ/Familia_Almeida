@@ -340,3 +340,12 @@ html.sidebar-collapsed .modern-logout{justify-content:center;padding:0;width:48p
   .modern-brand .brandcopy{display:grid!important}
   html.sidebar-collapsed .modern-brand .brandcopy{display:none!important}
 }
+
+.auto-transaction-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:5px 8px;border-radius:999px;
+  background:#eef4f7;color:#60798c;
+  border:1px solid #dce6eb;
+  font-size:7px;font-weight:800;letter-spacing:.04em;
+  white-space:nowrap
+}
