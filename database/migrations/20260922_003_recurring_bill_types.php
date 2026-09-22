@@ -72,6 +72,7 @@ return [
                  OR LOWER(name) LIKE "%cartão%"
                  OR LOWER(name) LIKE "%cartao%"
                  OR LOWER(name) LIKE "%fatura%"
+                 OR amount = 0
                )'
         );
     },
