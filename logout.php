@@ -18,4 +18,4 @@ if (ini_get('session.use_cookies')) {
 }
 session_destroy();
 
-redirect_to('login.php');
+redirect_to('/login');
