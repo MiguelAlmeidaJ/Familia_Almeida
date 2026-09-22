@@ -26,7 +26,7 @@ $flash = pull_flash();
 <section class="card">
 <p class="eyebrow">NOVA CONTA</p><h2>Adicionar conta fixa</h2>
 <form method="post" action="/acao" class="stack-form">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="add_bill"><input type="hidden" name="month" value="<?= e($month) ?>">
+<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="return_to" value="/contas"><input type="hidden" name="action" value="add_bill"><input type="hidden" name="month" value="<?= e($month) ?>">
 <label>Nome<input name="name" maxlength="120" required></label>
 <div class="form-grid-2"><label>Valor<input type="number" name="amount" min="0" step="0.01" value="0" required></label><label>Dia do vencimento<input type="number" name="due_day" min="1" max="31" value="10" required></label></div>
 <button class="primary" type="submit">Adicionar conta</button>
@@ -44,7 +44,7 @@ $flash = pull_flash();
 <?php foreach ($data['bills'] as $bill): ?>
 <div class="bill bill-page">
 <form method="post" action="/acao">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="toggle_bill"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="bill_id" value="<?= (int) $bill['id'] ?>"><input type="hidden" name="paid" value="<?= $bill['paid'] ? '0' : '1' ?>">
+<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="return_to" value="/contas"><input type="hidden" name="action" value="toggle_bill"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="bill_id" value="<?= (int) $bill['id'] ?>"><input type="hidden" name="paid" value="<?= $bill['paid'] ? '0' : '1' ?>">
 <button class="check <?= $bill['paid'] ? 'done' : '' ?>" type="submit"><?= $bill['paid'] ? '✓' : '' ?></button>
 </form>
 <div class="due"><small>DIA</small><strong><?= str_pad((string) $bill['due_day'], 2, '0', STR_PAD_LEFT) ?></strong></div>
