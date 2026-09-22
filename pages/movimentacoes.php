@@ -33,7 +33,7 @@ $nextMonth = $current->modify('+1 month')->format('Y-m');
 <section class="card">
 <p class="eyebrow">NOVO LANÇAMENTO</p><h2>Registrar movimento</h2>
 <form method="post" action="/acao" class="stack-form">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="add_transaction"><input type="hidden" name="month" value="<?= e($month) ?>">
+<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="return_to" value="/movimentacoes"><input type="hidden" name="action" value="add_transaction"><input type="hidden" name="month" value="<?= e($month) ?>">
 <label>Tipo<select name="type" required><option value="income">Entrada</option><option value="expense">Gasto</option><option value="investment">Investimento</option></select></label>
 <label>Descrição<input name="description" maxlength="160" required></label>
 <label>Categoria<input name="category" maxlength="100" required></label>
@@ -60,7 +60,7 @@ $nextMonth = $current->modify('+1 month')->format('Y-m');
 <div class="txinfo"><strong><?= e($transaction['description']) ?></strong><span><?= e($transaction['category']) ?> • <?= e($transaction['date']) ?> • <?= e($transaction['created_by_name'] ?: 'Família') ?></span></div>
 <div class="txval <?= $transaction['type'] === 'income' ? 'pos' : 'neg' ?>"><?= $transaction['type'] === 'income' ? '+' : '−' ?> <?= money($transaction['amount']) ?></div>
 <form method="post" action="/acao" onsubmit="return confirm('Remover este lançamento?')">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="delete_transaction"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="transaction_id" value="<?= (int) $transaction['id'] ?>">
+<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="return_to" value="/movimentacoes"><input type="hidden" name="action" value="delete_transaction"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="transaction_id" value="<?= (int) $transaction['id'] ?>">
 <button class="iconbtn danger" type="submit">Excluir</button>
 </form>
 </div>
