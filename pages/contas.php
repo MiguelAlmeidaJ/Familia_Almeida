@@ -94,6 +94,11 @@ function recurring_bill_subtitle(array $bill, string $monthLabel): string
 <div><span class="bill-type-dot installment"></span><strong>Parcelada</strong><small>Aparece somente durante a quantidade de parcelas definida.</small></div>
 </div>
 
+<div class="recurring-accounting-note">
+<strong>Atenção às parcelas no cartão:</strong>
+se uma compra parcelada já estiver incluída em uma fatura de cartão que você controla como conta variável, não registre o pagamento da parcela separadamente, pois isso duplicaria a saída. Use “Parcelada” aqui para cobranças próprias; o vínculo com fatura será tratado separadamente.
+</div>
+
 <div class="bills-summary">
 <div class="summary-card">
 <span>Recorrências do mês</span>
