@@ -2,33 +2,99 @@
 
 declare(strict_types=1);
 
+function bill_month_distance(string $fromMonth, string $toMonth): int
+{
+    [$fromYear, $fromNumber] = array_map('intval', explode('-', $fromMonth));
+    [$toYear, $toNumber] = array_map('intval', explode('-', $toMonth));
+    return (($toYear - $fromYear) * 12) + ($toNumber - $fromNumber);
+}
+
 function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false): array
 {
     $sql =
-        'SELECT b.id, b.name, b.amount, b.due_day, b.active, COALESCE(p.paid, 0) AS paid
+        'SELECT
+            b.id,
+            b.name,
+            b.billing_type,
+            b.amount AS base_amount,
+            b.due_day,
+            b.start_month,
+            b.installment_total,
+            b.active,
+            p.id AS payment_id,
+            p.amount_due,
+            p.installment_number AS stored_installment_number,
+            COALESCE(p.paid, 0) AS paid,
+            p.paid_on
          FROM fixed_bills b
-         LEFT JOIN bill_payments p ON p.bill_id = b.id AND p.month = ?';
-
-    if (!$includeInactive) {
-        $sql .= ' WHERE b.active = 1';
-    }
-
-    $sql .= ' ORDER BY b.active DESC, b.due_day, b.name';
+         LEFT JOIN bill_payments p ON p.bill_id = b.id AND p.month = ?
+         ORDER BY b.active DESC, b.due_day, b.name';
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$month]);
-    $bills = $stmt->fetchAll();
+    $rows = $stmt->fetchAll();
 
-    foreach ($bills as &$bill) {
-        $bill['amount'] = (float) $bill['amount'];
-        $bill['paid'] = (bool) $bill['paid'];
-        $bill['active'] = (bool) $bill['active'];
+    $bills = [];
+
+    foreach ($rows as $row) {
+        $active = (bool) $row['active'];
+        $billingType = (string) ($row['billing_type'] ?: 'fixed');
+        $scheduleStatus = 'current';
+        $installmentNumber = null;
+
+        if ($billingType === 'installment') {
+            $startMonth = (string) ($row['start_month'] ?? '');
+            $installmentTotal = (int) ($row['installment_total'] ?? 0);
+
+            if (!preg_match('/^\d{4}-\d{2}$/', $startMonth) || $installmentTotal < 1) {
+                $scheduleStatus = 'invalid';
+            } else {
+                $distance = bill_month_distance($startMonth, $month);
+
+                if ($distance < 0) {
+                    $scheduleStatus = 'future';
+                } elseif ($distance >= $installmentTotal) {
+                    $scheduleStatus = 'completed';
+                } else {
+                    $installmentNumber = $distance + 1;
+                }
+            }
+        }
+
+        $applicable = $active && $scheduleStatus === 'current';
+
+        if (!$includeInactive && !$applicable) {
+            continue;
+        }
+
+        $amountDue = $row['amount_due'] !== null ? (float) $row['amount_due'] : null;
+        $baseAmount = (float) $row['base_amount'];
+        $needsAmount = $billingType === 'variable' && $amountDue === null;
+        $effectiveAmount = $amountDue ?? ($billingType === 'variable' ? 0.0 : $baseAmount);
+
+        $bills[] = [
+            'id' => (int) $row['id'],
+            'name' => $row['name'],
+            'billing_type' => $billingType,
+            'base_amount' => $baseAmount,
+            'amount' => $effectiveAmount,
+            'amount_due' => $amountDue,
+            'due_day' => (int) $row['due_day'],
+            'start_month' => $row['start_month'],
+            'installment_total' => $row['installment_total'] !== null ? (int) $row['installment_total'] : null,
+            'installment_number' => $installmentNumber,
+            'schedule_status' => $scheduleStatus,
+            'applicable' => $applicable,
+            'needs_amount' => $needsAmount,
+            'active' => $active,
+            'paid' => (bool) $row['paid'],
+            'paid_on' => $row['paid_on'],
+            'payment_id' => $row['payment_id'] !== null ? (int) $row['payment_id'] : null,
+        ];
     }
-    unset($bill);
 
     return $bills;
 }
-
 function dashboard_data(PDO $pdo, string $month): array
 {
     $start = $month . '-01';
