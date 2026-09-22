@@ -93,3 +93,136 @@ function dashboard_data(PDO $pdo, string $month): array
 
     return compact('transactions', 'totals', 'bills', 'goals', 'debts', 'investmentGoal');
 }
+
+
+function monthly_transaction_totals(PDO $pdo, string $month): array
+{
+    $start = $month . '-01';
+    $next = (new DateTimeImmutable($start))->modify('+1 month')->format('Y-m-d');
+
+    $stmt = $pdo->prepare(
+        'SELECT
+            COALESCE(SUM(CASE WHEN type = "income" THEN amount ELSE 0 END), 0) AS income,
+            COALESCE(SUM(CASE WHEN type = "expense" THEN amount ELSE 0 END), 0) AS expense,
+            COALESCE(SUM(CASE WHEN type = "investment" THEN amount ELSE 0 END), 0) AS investment,
+            COALESCE(SUM(CASE WHEN type = "debt" THEN amount ELSE 0 END), 0) AS debt
+         FROM transactions
+         WHERE occurred_on >= ? AND occurred_on < ?'
+    );
+    $stmt->execute([$start, $next]);
+    $row = $stmt->fetch() ?: [];
+
+    return [
+        'income' => (float) ($row['income'] ?? 0),
+        'expense' => (float) ($row['expense'] ?? 0),
+        'investment' => (float) ($row['investment'] ?? 0),
+        'debt' => (float) ($row['debt'] ?? 0),
+    ];
+}
+
+function dashboard_analytics(PDO $pdo, string $month): array
+{
+    $currentStart = new DateTimeImmutable($month . '-01');
+    $nextStart = $currentStart->modify('+1 month');
+    $previousStart = $currentStart->modify('-1 month');
+    $previousMonth = $previousStart->format('Y-m');
+
+    $currentTotals = monthly_transaction_totals($pdo, $month);
+    $previousTotals = monthly_transaction_totals($pdo, $previousMonth);
+
+    $dailyStmt = $pdo->prepare(
+        'SELECT
+            DATE_FORMAT(occurred_on, "%Y-%m-%d") AS day,
+            COALESCE(SUM(CASE WHEN type = "income" THEN amount ELSE 0 END), 0) AS income,
+            COALESCE(SUM(CASE WHEN type IN ("expense", "debt") THEN amount ELSE 0 END), 0) AS outflow,
+            COALESCE(SUM(CASE WHEN type = "investment" THEN amount ELSE 0 END), 0) AS investment
+         FROM transactions
+         WHERE occurred_on >= ? AND occurred_on < ?
+         GROUP BY occurred_on
+         ORDER BY occurred_on'
+    );
+    $dailyStmt->execute([$currentStart->format('Y-m-d'), $nextStart->format('Y-m-d')]);
+    $daily = [];
+    foreach ($dailyStmt->fetchAll() as $row) {
+        $daily[] = [
+            'day' => $row['day'],
+            'income' => (float) $row['income'],
+            'outflow' => (float) $row['outflow'],
+            'investment' => (float) $row['investment'],
+        ];
+    }
+
+    $categoryStmt = $pdo->prepare(
+        'SELECT category, SUM(amount) AS total
+         FROM transactions
+         WHERE type = "expense"
+           AND occurred_on >= ? AND occurred_on < ?
+         GROUP BY category
+         HAVING SUM(amount) > 0
+         ORDER BY total DESC'
+    );
+    $categoryStmt->execute([$currentStart->format('Y-m-d'), $nextStart->format('Y-m-d')]);
+    $categories = [];
+    foreach ($categoryStmt->fetchAll() as $row) {
+        $categories[] = ['category' => $row['category'], 'total' => (float) $row['total']];
+    }
+
+    $sixStart = $currentStart->modify('-5 months');
+    $sixStmt = $pdo->prepare(
+        'SELECT
+            DATE_FORMAT(occurred_on, "%Y-%m") AS month,
+            COALESCE(SUM(CASE WHEN type = "income" THEN amount ELSE 0 END), 0) AS income,
+            COALESCE(SUM(CASE WHEN type IN ("expense", "debt") THEN amount ELSE 0 END), 0) AS outflow,
+            COALESCE(SUM(CASE WHEN type = "investment" THEN amount ELSE 0 END), 0) AS investment
+         FROM transactions
+         WHERE occurred_on >= ? AND occurred_on < ?
+         GROUP BY DATE_FORMAT(occurred_on, "%Y-%m")
+         ORDER BY month'
+    );
+    $sixStmt->execute([$sixStart->format('Y-m-d'), $nextStart->format('Y-m-d')]);
+    $indexed = [];
+    foreach ($sixStmt->fetchAll() as $row) {
+        $indexed[$row['month']] = [
+            'income' => (float) $row['income'],
+            'outflow' => (float) $row['outflow'],
+            'investment' => (float) $row['investment'],
+        ];
+    }
+
+    $sixMonths = [];
+    for ($i = 0; $i < 6; $i++) {
+        $date = $sixStart->modify('+' . $i . ' months');
+        $key = $date->format('Y-m');
+        $values = $indexed[$key] ?? ['income' => 0.0, 'outflow' => 0.0, 'investment' => 0.0];
+        $sixMonths[] = [
+            'month' => $key,
+            'income' => $values['income'],
+            'outflow' => $values['outflow'],
+            'investment' => $values['investment'],
+            'balance' => $values['income'] - $values['outflow'] - $values['investment'],
+        ];
+    }
+
+    $largestStmt = $pdo->prepare(
+        'SELECT description, category, amount, DATE_FORMAT(occurred_on, "%Y-%m-%d") AS occurred_on
+         FROM transactions
+         WHERE type = "expense" AND occurred_on >= ? AND occurred_on < ?
+         ORDER BY amount DESC
+         LIMIT 1'
+    );
+    $largestStmt->execute([$currentStart->format('Y-m-d'), $nextStart->format('Y-m-d')]);
+    $largestExpense = $largestStmt->fetch() ?: null;
+    if ($largestExpense) {
+        $largestExpense['amount'] = (float) $largestExpense['amount'];
+    }
+
+    return [
+        'current' => $currentTotals,
+        'previous' => $previousTotals,
+        'previous_month' => $previousMonth,
+        'daily' => $daily,
+        'categories' => $categories,
+        'six_months' => $sixMonths,
+        'largest_expense' => $largestExpense,
+    ];
+}
