@@ -344,7 +344,7 @@ onclick='openBillEditor(
 <input type="hidden" name="bill_id" id="monthly-bill-id">
 
 <div class="dialog-head">
-<div><p class="eyebrow">VALOR DE <?= e(mb_strtoupper($monthNames[$monthNumber])) ?></p><h3 id="monthly-bill-title">Conta</h3></div>
+<div><p class="eyebrow">VALOR DE <?= e(strtoupper($monthNames[$monthNumber])) ?></p><h3 id="monthly-bill-title">Conta</h3></div>
 <button type="button" onclick="document.getElementById('monthly-amount-dialog').close()">×</button>
 </div>
 
