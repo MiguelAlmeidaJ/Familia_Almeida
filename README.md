@@ -1,51 +1,115 @@
 # Família Almeida — Finanças
 
-Sistema privado de gestão financeira familiar com autenticação, PostgreSQL e Docker.
+Sistema de gestão financeira familiar feito para hospedagem PHP compartilhada.
 
 ## Stack
 
-- Next.js (interface + API)
-- PostgreSQL 16
-- Docker Compose para o banco local
-- Sessão por cookie HTTP-only assinado
-- Senhas armazenadas com scrypt + salt
+- PHP 8.1+
+- MySQL 5.7+ ou MariaDB 10.4+
+- PDO MySQL
+- HTML/CSS/JavaScript sem framework
+- Sessão PHP com cookie HTTP-only
+- Senhas com `password_hash()` / `password_verify()`
 
-## Rodando localmente
+Não usa Node.js, Next.js, Docker ou Vercel.
 
-1. Copie `.env.example` para `.env`.
-2. Preencha `SESSION_SECRET` e as variáveis `SEED_*` com os dois usuários da família.
-3. Inicie o PostgreSQL:
+## Estrutura
 
-```bash
-docker compose up -d
+- `index.php` — dashboard financeiro
+- `login.php` / `logout.php` — autenticação
+- `action.php` — gravações e atualizações no MySQL
+- `install.php` — instalação inicial via navegador
+- `schema.sql` — estrutura do banco
+- `includes/` — conexão, autenticação e consultas
+- `assets/style.css` — identidade visual
+- `config.example.php` — modelo de configuração
+- `config.php` — configuração real da hospedagem, ignorada pelo Git
+
+## Instalação em hospedagem compartilhada
+
+### 1. Criar o banco no painel da hospedagem
+
+No cPanel/Plesk ou painel equivalente:
+
+1. Crie um banco MySQL.
+2. Crie um usuário MySQL.
+3. Vincule o usuário ao banco com todos os privilégios.
+4. Anote host, nome do banco, usuário e senha.
+
+Em muitas hospedagens o host é `localhost`, mas confirme no painel.
+
+### 2. Enviar os arquivos
+
+Envie o conteúdo deste repositório para a pasta desejada, por exemplo:
+
+`public_html/financas/`
+
+### 3. Criar config.php
+
+Copie `config.example.php` para `config.php` e preencha:
+
+```php
+<?php
+
+return [
+    'db' => [
+        'host' => 'localhost',
+        'port' => 3306,
+        'name' => 'NOME_DO_BANCO',
+        'user' => 'USUARIO_DO_BANCO',
+        'pass' => 'SENHA_DO_BANCO',
+        'charset' => 'utf8mb4',
+    ],
+    'app' => [
+        'name' => 'Família Almeida Finanças',
+        'install_key' => 'UMA-CHAVE-GRANDE-E-ALEATORIA',
+    ],
+];
 ```
 
-4. Instale as dependências e prepare o banco:
+Nunca envie `config.php` para o GitHub.
 
-```bash
-npm install
-npm run db:setup
-npm run dev
-```
+### 4. Rodar o instalador pelo navegador
 
-Abra `http://localhost:3000`.
+Acesse:
 
-O comando `npm run db:setup` executa a migração e cria/atualiza os dois usuários definidos no `.env`, além das contas fixas iniciais (Dízimo, Luz, Água, Gás, Internet e Aluguel) e das metas Mercado, Farmácia, Pet e Lazer.
+`https://seu-dominio.com/financas/install.php?key=SUA_INSTALL_KEY`
 
-## Banco
+Informe os dados de acesso de Miguel e Gabi. O instalador:
 
-O Docker expõe PostgreSQL em `localhost:5432` e persiste os dados no volume `familia_almeida_pgdata`.
+- cria todas as tabelas;
+- cria/atualiza os dois usuários;
+- aplica `password_hash()` às senhas;
+- cadastra Dízimo, Luz, Água, Gás, Internet e Aluguel;
+- cadastra Mercado, Farmácia, Pet e Lazer;
+- marca a instalação como concluída.
 
-Para apagar completamente os dados locais:
+Depois de instalar, remova ou renomeie `install.php` no servidor. Mesmo que ele permaneça, o sistema detecta que a instalação já foi concluída e não executa novamente.
 
-```bash
-docker compose down -v
-```
+### 5. Entrar
+
+Acesse:
+
+`https://seu-dominio.com/financas/login.php`
+
+Os dois usuários usam a mesma base financeira. Cada lançamento registra quem o criou.
 
 ## Segurança
 
-Credenciais reais não são commitadas. O `.env` está no `.gitignore`. O seed recebe nome, e-mail e senha por variável de ambiente e grava apenas o hash da senha no PostgreSQL.
+- credenciais reais não ficam no repositório;
+- `config.php` está no `.gitignore`;
+- queries usam PDO Prepared Statements;
+- alterações usam token CSRF;
+- login regenera o ID da sessão;
+- senhas não são armazenadas em texto puro;
+- `.htaccess` bloqueia acesso web aos arquivos de configuração e ao schema.
 
-## Produção / Vercel
+## Recursos
 
-A Vercel hospeda a aplicação Next.js, mas não executa o PostgreSQL do `docker-compose.yml`. Para produção, configure `DATABASE_URL` apontando para um PostgreSQL acessível pela aplicação (por exemplo Neon, Supabase, Railway ou servidor próprio) e configure `SESSION_SECRET` nas Environment Variables do projeto.
+- entradas, gastos e investimentos;
+- contas fixas mensais e status de pagamento;
+- metas de gasto por categoria;
+- meta mensal de investimento;
+- dívidas e pagamentos;
+- histórico mensal;
+- identificação do usuário que criou cada lançamento.

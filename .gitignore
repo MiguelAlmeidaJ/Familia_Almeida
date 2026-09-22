@@ -1,8 +1,4 @@
-node_modules
-.next
-.env
-.env.local
-.env.*.local
-npm-debug.log*
+config.php
 .DS_Store
-.vercel
+Thumbs.db
+*.log

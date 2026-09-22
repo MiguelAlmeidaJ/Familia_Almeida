@@ -1,0 +1,76 @@
+CREATE TABLE IF NOT EXISTS users (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name VARCHAR(80) NOT NULL,
+    email VARCHAR(160) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY users_email_unique (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS debts (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name VARCHAR(160) NOT NULL,
+    total_amount DECIMAL(12,2) NOT NULL,
+    paid_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS transactions (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    created_by BIGINT UNSIGNED NULL,
+    debt_id BIGINT UNSIGNED NULL,
+    type ENUM('income','expense','investment','debt') NOT NULL,
+    description VARCHAR(160) NOT NULL,
+    category VARCHAR(100) NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    occurred_on DATE NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY transactions_occurred_on_idx (occurred_on),
+    KEY transactions_created_by_idx (created_by),
+    KEY transactions_debt_id_idx (debt_id),
+    CONSTRAINT transactions_created_by_fk
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    CONSTRAINT transactions_debt_id_fk
+        FOREIGN KEY (debt_id) REFERENCES debts(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS fixed_bills (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name VARCHAR(120) NOT NULL,
+    amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    due_day TINYINT UNSIGNED NOT NULL,
+    active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bill_payments (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    bill_id BIGINT UNSIGNED NOT NULL,
+    month CHAR(7) NOT NULL,
+    paid TINYINT(1) NOT NULL DEFAULT 0,
+    paid_at TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY bill_payments_bill_month_unique (bill_id, month),
+    CONSTRAINT bill_payments_bill_fk
+        FOREIGN KEY (bill_id) REFERENCES fixed_bills(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS spending_goals (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    category VARCHAR(100) NOT NULL,
+    monthly_limit DECIMAL(12,2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY spending_goals_category_unique (category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS settings (
+    setting_key VARCHAR(100) NOT NULL,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (setting_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
