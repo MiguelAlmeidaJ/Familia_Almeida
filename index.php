@@ -32,6 +32,7 @@ $previousBalance = $analytics['previous']['income'] - $previousOutflow - $analyt
 $fixedMonthly = array_reduce($data['bills'], fn(float $sum, array $bill) => $sum + (float) $bill['amount'], 0.0);
 $paidBills = array_values(array_filter($data['bills'], fn(array $bill) => $bill['paid']));
 $pendingBills = array_values(array_filter($data['bills'], fn(array $bill) => !$bill['paid']));
+$needsBillValues = array_values(array_filter($data['bills'], fn(array $bill) => $bill['needs_amount']));
 $paidBillAmount = array_reduce($paidBills, fn(float $sum, array $bill) => $sum + (float) $bill['amount'], 0.0);
 $billProgress = count($data['bills']) > 0 ? (count($paidBills) / count($data['bills'])) * 100 : 0;
 
@@ -242,7 +243,7 @@ $nextBills = array_slice($pendingBills, 0, 5);
                 <a href="/contas" class="context-stat">
                     <span>Compromissos do mês</span>
                     <strong><?= money($fixedMonthly) ?></strong>
-                    <small><?= number_format($fixedCommitment, 0, ',', '.') ?>% das entradas conhecidas</small>
+                    <small><?= count($needsBillValues) ? count($needsBillValues) . ' valor(es) ainda pendente(s)' : number_format($fixedCommitment, 0, ',', '.') . '% das entradas' ?></small>
                 </a>
                 <a href="/contas?month=<?= e($month) ?>" class="context-stat">
                     <span>Contas pagas</span>
@@ -325,8 +326,11 @@ $nextBills = array_slice($pendingBills, 0, 5);
                             <?php foreach ($nextBills as $bill): ?>
                                 <div class="dashboard-bill-row">
                                     <div class="dashboard-due"><small>DIA</small><strong><?= str_pad((string) $bill['due_day'], 2, '0', STR_PAD_LEFT) ?></strong></div>
-                                    <div class="dashboard-bill-copy"><strong><?= e($bill['name']) ?></strong><span>Pendente</span></div>
-                                    <strong class="dashboard-row-value"><?= money($bill['amount']) ?></strong>
+                                    <div class="dashboard-bill-copy"><strong><?= e($bill['name']) ?></strong><span><?= $bill['needs_amount'] ? 'Aguardando valor do mês' : ($bill['billing_type'] === 'installment' ? 'Parcela ' . (int) $bill['installment_number'] . '/' . (int) $bill['installment_total'] : 'Pendente') ?></span></div>
+                                    <strong class="dashboard-row-value"><?= $bill['needs_amount'] ? '—' : money($bill['amount']) ?></strong>
+                                    <?php if ($bill['needs_amount']): ?>
+                                    <a class="dashboard-check dashboard-value-link" href="/contas?month=<?= e($month) ?>" title="Informar valor">+</a>
+                                    <?php else: ?>
                                     <form method="post" action="/acao">
                                         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                                         <input type="hidden" name="return_to" value="/">
@@ -336,6 +340,7 @@ $nextBills = array_slice($pendingBills, 0, 5);
                                         <input type="hidden" name="paid" value="1">
                                         <button class="dashboard-check" type="submit" title="Marcar como paga">✓</button>
                                     </form>
+                                    <?php endif; ?>
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>
