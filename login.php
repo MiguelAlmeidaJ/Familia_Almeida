@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/bootstrap.php';
 
 if (!empty($_SESSION['user_id'])) {
-    redirect_to('index.php');
+    redirect_to('/');
 }
 
 $error = null;
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($user && password_verify($password, $user['password_hash'])) {
                 session_regenerate_id(true);
                 $_SESSION['user_id'] = (int) $user['id'];
-                redirect_to('index.php');
+                redirect_to('/');
             }
 
             $error = 'E-mail ou senha inválidos.';
