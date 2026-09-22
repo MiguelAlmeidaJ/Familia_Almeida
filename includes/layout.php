@@ -26,7 +26,7 @@ function render_sidebar(string $active, string $csrf): void
     $items = [
         ['key' => 'dashboard', 'href' => '/', 'label' => 'Dashboard'],
         ['key' => 'movimentacoes', 'href' => '/movimentacoes', 'label' => 'Movimentações'],
-        ['key' => 'contas', 'href' => '/contas', 'label' => 'Contas fixas'],
+        ['key' => 'contas', 'href' => '/contas', 'label' => 'Recorrências'],
         ['key' => 'metas', 'href' => '/metas', 'label' => 'Metas'],
         ['key' => 'dividas', 'href' => '/dividas', 'label' => 'Dívidas'],
         ['key' => 'configuracoes', 'href' => '/configuracoes', 'label' => 'Configurações'],
