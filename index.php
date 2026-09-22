@@ -90,7 +90,7 @@ if ($totals['income'] <= 0) {
 if (count($data['bills']) > 0) {
     $insights[] = [
         'type' => count($pendingBills) === 0 ? 'success' : 'info',
-        'title' => count($pendingBills) === 0 ? 'Contas fixas em dia' : count($pendingBills) . ' conta(s) fixa(s) pendente(s)',
+        'title' => count($pendingBills) === 0 ? 'Contas fixas em dia' : count($pendingBills) . ' conta(s) recorrente(s) pendente(s)',
         'text' => number_format($billProgress, 0, ',', '.') . '% das contas recorrentes foram marcadas como pagas em ' . $monthLabel . '.'
     ];
 }
@@ -240,9 +240,9 @@ $nextBills = array_slice($pendingBills, 0, 5);
 
             <section class="dashboard-context-strip">
                 <a href="/contas" class="context-stat">
-                    <span>Fixo mensal</span>
+                    <span>Compromissos do mês</span>
                     <strong><?= money($fixedMonthly) ?></strong>
-                    <small><?= number_format($fixedCommitment, 0, ',', '.') ?>% das entradas</small>
+                    <small><?= number_format($fixedCommitment, 0, ',', '.') ?>% das entradas conhecidas</small>
                 </a>
                 <a href="/contas?month=<?= e($month) ?>" class="context-stat">
                     <span>Contas pagas</span>
@@ -339,7 +339,7 @@ $nextBills = array_slice($pendingBills, 0, 5);
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <div class="dashboard-empty-state"><span>✓</span><strong>Nenhuma conta pendente</strong><p>As contas fixas do mês estão em dia.</p></div>
+                            <div class="dashboard-empty-state"><span>✓</span><strong>Nenhuma conta pendente</strong><p>As contas recorrentes do mês estão em dia.</p></div>
                         <?php endif; ?>
                     </div>
 
