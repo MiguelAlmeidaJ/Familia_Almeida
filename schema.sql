@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     created_by BIGINT UNSIGNED NULL,
     debt_id BIGINT UNSIGNED NULL,
+    bill_payment_id BIGINT UNSIGNED NULL,
     type ENUM('income','expense','investment','debt') NOT NULL,
     description VARCHAR(160) NOT NULL,
     category VARCHAR(100) NOT NULL,
@@ -31,6 +32,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     KEY transactions_occurred_on_idx (occurred_on),
     KEY transactions_created_by_idx (created_by),
     KEY transactions_debt_id_idx (debt_id),
+    UNIQUE KEY transactions_bill_payment_unique (bill_payment_id),
     CONSTRAINT transactions_created_by_fk
         FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
     CONSTRAINT transactions_debt_id_fk
@@ -53,11 +55,16 @@ CREATE TABLE IF NOT EXISTS bill_payments (
     month CHAR(7) NOT NULL,
     paid TINYINT(1) NOT NULL DEFAULT 0,
     paid_at TIMESTAMP NULL DEFAULT NULL,
+    paid_on DATE NULL DEFAULT NULL,
     PRIMARY KEY (id),
     UNIQUE KEY bill_payments_bill_month_unique (bill_id, month),
     CONSTRAINT bill_payments_bill_fk
         FOREIGN KEY (bill_id) REFERENCES fixed_bills(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE transactions
+    ADD CONSTRAINT transactions_bill_payment_fk
+    FOREIGN KEY (bill_payment_id) REFERENCES bill_payments(id) ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS spending_goals (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
