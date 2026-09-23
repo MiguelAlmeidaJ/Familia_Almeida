@@ -195,7 +195,7 @@ function inventory_record_purchase_items(
 
     foreach ($shoppingRows as $row) {
         $shoppingItemId = (int) ($row['id'] ?? 0);
-        $quantity = (float) ($row['quantity'] ?? 0);
+        $quantity = (float) ($row['purchased_quantity'] ?? $row['quantity'] ?? 0);
         $name = trim((string) ($row['name'] ?? ''));
 
         if ($shoppingItemId <= 0 || $quantity <= 0 || $name === '') {
