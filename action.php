@@ -167,6 +167,39 @@ try {
             flash('success', 'Conta restaurada.');
             break;
 
+        case 'delete_bill':
+            $billId = (int) ($_POST['bill_id'] ?? 0);
+
+            if ($billId <= 0) {
+                throw new RuntimeException('Conta inválida.');
+            }
+
+            $pdo->beginTransaction();
+
+            if (db_column_exists($pdo, 'transactions', 'bill_payment_id')) {
+                $deleteTransactions = $pdo->prepare(
+                    'DELETE t
+                     FROM transactions t
+                     INNER JOIN bill_payments p ON p.id = t.bill_payment_id
+                     WHERE p.bill_id = ?'
+                );
+                $deleteTransactions->execute([$billId]);
+            }
+
+            $deletePayments = $pdo->prepare('DELETE FROM bill_payments WHERE bill_id = ?');
+            $deletePayments->execute([$billId]);
+
+            $deleteBill = $pdo->prepare('DELETE FROM fixed_bills WHERE id = ?');
+            $deleteBill->execute([$billId]);
+
+            if ($deleteBill->rowCount() === 0) {
+                throw new RuntimeException('Conta não encontrada.');
+            }
+
+            $pdo->commit();
+            flash('success', 'Conta excluída com seus pagamentos vinculados.');
+            break;
+
         case 'set_bill_month_amount':
             $billId = (int) ($_POST['bill_id'] ?? 0);
             $amount = (float) str_replace(',', '.', (string) ($_POST['amount'] ?? '0'));
