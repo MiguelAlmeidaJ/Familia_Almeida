@@ -2,6 +2,36 @@
 
 declare(strict_types=1);
 
+function db_column_exists(PDO $pdo, string $table, string $column): bool
+{
+    static $cache = [];
+    $key = $table . '.' . $column;
+
+    if (array_key_exists($key, $cache)) {
+        return $cache[$key];
+    }
+
+    $stmt = $pdo->prepare(
+        'SELECT COUNT(*)
+         FROM information_schema.columns
+         WHERE table_schema = DATABASE()
+           AND table_name = ?
+           AND column_name = ?'
+    );
+    $stmt->execute([$table, $column]);
+
+    return $cache[$key] = ((int) $stmt->fetchColumn() > 0);
+}
+
+function recurring_bills_schema_ready(PDO $pdo): bool
+{
+    return db_column_exists($pdo, 'fixed_bills', 'billing_type')
+        && db_column_exists($pdo, 'fixed_bills', 'start_month')
+        && db_column_exists($pdo, 'fixed_bills', 'installment_total')
+        && db_column_exists($pdo, 'bill_payments', 'amount_due')
+        && db_column_exists($pdo, 'bill_payments', 'installment_number');
+}
+
 function bill_month_distance(string $fromMonth, string $toMonth): int
 {
     [$fromYear, $fromNumber] = array_map('intval', explode('-', $fromMonth));
@@ -11,26 +41,51 @@ function bill_month_distance(string $fromMonth, string $toMonth): int
 
 function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false): array
 {
-    $sql =
-        'SELECT
-            b.id,
-            b.name,
-            b.billing_type,
-            b.amount AS base_amount,
-            b.due_day,
-            b.start_month,
-            b.installment_total,
-            b.active,
-            p.id AS payment_id,
-            p.amount_due,
-            p.installment_number AS stored_installment_number,
-            COALESCE(p.paid, 0) AS paid,
-            p.paid_on
-         FROM fixed_bills b
-         LEFT JOIN bill_payments p ON p.bill_id = b.id AND p.month = ?
-         ORDER BY b.active DESC, b.due_day, b.name';
+    $recurringReady = recurring_bills_schema_ready($pdo);
+    $paidOnReady = db_column_exists($pdo, 'bill_payments', 'paid_on');
 
-    $stmt = $pdo->prepare($sql);
+    if ($recurringReady) {
+        $select =
+            'SELECT
+                b.id,
+                b.name,
+                b.billing_type,
+                b.amount AS base_amount,
+                b.due_day,
+                b.start_month,
+                b.installment_total,
+                b.active,
+                p.id AS payment_id,
+                p.amount_due,
+                p.installment_number AS stored_installment_number,
+                COALESCE(p.paid, 0) AS paid,' .
+                ($paidOnReady ? ' p.paid_on ' : ' NULL AS paid_on ') .
+            'FROM fixed_bills b
+             LEFT JOIN bill_payments p ON p.bill_id = b.id AND p.month = ?
+             ORDER BY b.active DESC, b.due_day, b.name';
+    } else {
+        // Compatibility mode: keeps the site online before migration 003 is applied.
+        $select =
+            'SELECT
+                b.id,
+                b.name,
+                "fixed" AS billing_type,
+                b.amount AS base_amount,
+                b.due_day,
+                NULL AS start_month,
+                NULL AS installment_total,
+                b.active,
+                p.id AS payment_id,
+                NULL AS amount_due,
+                NULL AS stored_installment_number,
+                COALESCE(p.paid, 0) AS paid,' .
+                ($paidOnReady ? ' p.paid_on ' : ' NULL AS paid_on ') .
+            'FROM fixed_bills b
+             LEFT JOIN bill_payments p ON p.bill_id = b.id AND p.month = ?
+             ORDER BY b.active DESC, b.due_day, b.name';
+    }
+
+    $stmt = $pdo->prepare($select);
     $stmt->execute([$month]);
     $rows = $stmt->fetchAll();
 
@@ -69,7 +124,9 @@ function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false
 
         $amountDue = $row['amount_due'] !== null ? (float) $row['amount_due'] : null;
         $baseAmount = (float) $row['base_amount'];
-        $needsAmount = ($billingType === 'variable' || ($billingType === 'fixed' && $baseAmount <= 0)) && $amountDue === null;
+        $needsAmount = $recurringReady
+            && ($billingType === 'variable' || ($billingType === 'fixed' && $baseAmount <= 0))
+            && $amountDue === null;
         $effectiveAmount = $amountDue ?? ($billingType === 'variable' ? 0.0 : $baseAmount);
 
         $bills[] = [
@@ -90,6 +147,7 @@ function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false
             'paid' => (bool) $row['paid'],
             'paid_on' => $row['paid_on'],
             'payment_id' => $row['payment_id'] !== null ? (int) $row['payment_id'] : null,
+            'schema_ready' => $recurringReady,
         ];
     }
 
@@ -100,10 +158,14 @@ function dashboard_data(PDO $pdo, string $month): array
     $start = $month . '-01';
     $next = (new DateTimeImmutable($start))->modify('+1 month')->format('Y-m-d');
 
+    $billPaymentSelect = db_column_exists($pdo, 'transactions', 'bill_payment_id')
+        ? 't.bill_payment_id'
+        : 'NULL AS bill_payment_id';
+
     $stmt = $pdo->prepare(
         'SELECT t.id, t.type, t.description, t.category, t.amount,
                 DATE_FORMAT(t.occurred_on, "%Y-%m-%d") AS date,
-                t.debt_id, t.bill_payment_id, u.name AS created_by_name
+                t.debt_id, ' . $billPaymentSelect . ', u.name AS created_by_name
          FROM transactions t
          LEFT JOIN users u ON u.id = t.created_by
          WHERE t.occurred_on >= ? AND t.occurred_on < ?
