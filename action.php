@@ -961,6 +961,17 @@ try {
                 throw new RuntimeException('Esta movimentação foi gerada por uma conta recorrente. Desmarque o pagamento em Contas recorrentes para removê-la.');
             }
 
+            if (shopping_schema_ready($pdo)) {
+                $purchaseCheck = $pdo->prepare(
+                    'SELECT id FROM shopping_purchases WHERE transaction_id = ? LIMIT 1'
+                );
+                $purchaseCheck->execute([$transactionId]);
+
+                if ($purchaseCheck->fetchColumn()) {
+                    throw new RuntimeException('Esta movimentação foi gerada pela Lista de compras. O histórico da compra e do estoque precisa ser preservado.');
+                }
+            }
+
             if ($transaction['type'] === 'debt' && !empty($transaction['debt_id'])) {
                 $stmt = $pdo->prepare(
                     'UPDATE debts SET paid_amount = GREATEST(0, paid_amount - ?) WHERE id = ?'
