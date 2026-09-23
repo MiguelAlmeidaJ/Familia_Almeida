@@ -217,6 +217,7 @@
     quantityInput.min = '0.01';
     quantityInput.step = '0.01';
     quantityInput.inputMode = 'decimal';
+    quantityInput.dataset.field = 'purchased_quantity';
     quantityInput.value = Number(item.purchased_quantity || item.quantity || 1);
 
     const plusButton = createEl('button', '', '＋');
@@ -233,6 +234,7 @@
     priceInput.min = '0.01';
     priceInput.step = '0.01';
     priceInput.inputMode = 'decimal';
+    priceInput.dataset.field = 'purchased_price';
     priceInput.placeholder = '0,00';
     priceInput.value = item.purchased_price || '';
     priceLabel.append(priceInput);
@@ -242,6 +244,7 @@
     const storeInput = document.createElement('input');
     storeInput.type = 'text';
     storeInput.maxLength = 160;
+    storeInput.dataset.field = 'store_name';
     storeInput.placeholder = 'Ex.: Bahamas';
     storeInput.value = item.store_name || '';
     storeLabel.append(storeInput);
@@ -256,6 +259,7 @@
     quickOption.value = '0';
     quickOption.textContent = 'Consumo rápido';
     destinationSelect.append(stockOption, quickOption);
+    destinationSelect.dataset.field = 'track_inventory';
     destinationSelect.value = item.track_inventory === false ? '0' : '1';
     destinationLabel.append(destinationSelect);
 
@@ -454,7 +458,7 @@
     if (missing) {
       const row = listNode.querySelector('[data-item-id="' + String(missing.id) + '"]');
       row?.classList.add('needs-price');
-      row?.querySelector('input[type="number"]')?.focus();
+      row?.querySelector('[data-field="purchased_price"]')?.focus();
       throw new Error('Informe o preço comprado de todos os produtos selecionados.');
     }
 
