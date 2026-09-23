@@ -396,6 +396,7 @@
       month: config.month,
       purchase_date: localDate(),
       items,
+      csrf_token: config.csrfToken,
       created_at: Date.now()
     };
 
