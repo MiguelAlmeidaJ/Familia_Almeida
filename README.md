@@ -114,13 +114,13 @@ Os dois usuários usam a mesma base financeira. Cada lançamento registra quem o
 - histórico mensal;
 - identificação do usuário que criou cada lançamento;
 - notas e comprovantes vinculados aos gastos;
-- resumo de gastos por dia e quantidade de notas anexadas.
+- resumo de gastos por dia e quantidade de notas anexadas;\n- listas mensais de mercado com reaproveitamento do mês anterior;\n- lista permanente de móveis por prioridade;\n- modo compra com calculadora e armazenamento offline;\n- sincronização da compra com os gastos quando a conexão retorna.
 
 
 ## Rotas do sistema
 
 - `/` — visão geral
-- `/movimentacoes` — lançamentos e histórico
+- `/movimentacoes` — lançamentos e histórico\n- `/compras` — listas de mercado e móveis\n- `/compras/mercado` — modo compra com suporte offline
 - `/contas` — contas fixas
 - `/metas` — metas de gastos e investimento
 - `/dividas` — dívidas e pagamentos
@@ -145,3 +145,18 @@ Regras:
 - nomes físicos aleatórios, sem expor o nome original no caminho.
 
 Depois de atualizar uma instalação existente, execute a migration de comprovantes em `/configuracoes/manutencao`.
+
+
+## Lista de compras offline
+
+O modo `/compras/mercado` registra um Service Worker e salva o estado da compra no IndexedDB do navegador.
+
+Fluxo:
+1. abra o modo compra com internet ao menos uma vez;
+2. no mercado, os produtos podem ser marcados mesmo sem conexão;
+3. preço comprado e mercado são gravados localmente a cada alteração;
+4. ao finalizar offline, a compra entra em uma fila local;
+5. quando a conexão retorna, o sistema tenta sincronizar automaticamente;
+6. a sincronização cria um lançamento único na categoria `Mercado` e marca os itens como comprados.
+
+Quando o navegador não suporta Background Sync, a sincronização acontece ao manter a página aberta durante a reconexão ou na próxima vez que o modo compra for aberto.
