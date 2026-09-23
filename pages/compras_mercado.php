@@ -11,6 +11,7 @@ $pdo = db();
 $csrf = csrf_token();
 $month = valid_month($_GET['month'] ?? null);
 $schemaReady = shopping_schema_ready($pdo);
+$quantityReady = $schemaReady && shopping_purchase_quantity_ready($pdo);
 
 [$year, $monthNumber] = array_map('intval', explode('-', $month));
 $monthNames = [1 => 'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -36,6 +37,7 @@ $offlinePayload = [
         'id' => (int) $item['id'],
         'name' => (string) $item['name'],
         'quantity' => (float) $item['quantity'],
+        'purchased_quantity' => $item['purchased_quantity'] !== null ? (float) $item['purchased_quantity'] : null,
         'estimated_price' => (float) ($item['estimated_price'] ?? 0),
         'purchased' => (bool) $item['purchased'],
         'purchased_price' => $item['purchased_price'] !== null ? (float) $item['purchased_price'] : null,
@@ -79,6 +81,13 @@ $offlinePayload = [
         </main>
     <?php else: ?>
         <main class="shopping-mode-main">
+            <?php if (!$quantityReady): ?>
+                <div class="shopping-pending-sync-banner">
+                    <strong>Atualização pendente.</strong>
+                    <span>Execute a migration 007 para registrar a quantidade realmente comprada antes de sincronizar novas compras.</span>
+                </div>
+            <?php endif; ?>
+
             <section class="shopping-live-summary">
                 <div>
                     <span>Selecionados</span>
@@ -148,6 +157,22 @@ $offlinePayload = [
                                 </div>
 
                                 <div class="shopping-purchase-fields" data-purchase-fields hidden>
+                                    <label class="shopping-quantity-field">
+                                        <span>Qtd. comprada</span>
+                                        <div class="shopping-quantity-control">
+                                            <button type="button" data-qty-action="minus" aria-label="Diminuir quantidade">−</button>
+                                            <input
+                                                type="number"
+                                                min="0.01"
+                                                step="0.01"
+                                                inputmode="decimal"
+                                                value="<?= e((string) $item['quantity']) ?>"
+                                                data-field="purchased_quantity"
+                                            >
+                                            <button type="button" data-qty-action="plus" aria-label="Aumentar quantidade">＋</button>
+                                        </div>
+                                    </label>
+
                                     <label>
                                         <span>Preço comprado / un.</span>
                                         <input
@@ -160,7 +185,7 @@ $offlinePayload = [
                                         >
                                     </label>
 
-                                    <label>
+                                    <label class="shopping-store-field">
                                         <span>Qual mercado?</span>
                                         <input
                                             type="text"
@@ -170,7 +195,7 @@ $offlinePayload = [
                                         >
                                     </label>
 
-                                    <div>
+                                    <div class="shopping-line-total-box">
                                         <span>Total deste produto</span>
                                         <strong data-line-total><?= money(0) ?></strong>
                                     </div>
@@ -204,10 +229,11 @@ $offlinePayload = [
                                     <strong><?= e($item['name']) ?></strong>
                                     <small>
                                         <?= e($item['store_name'] ?: 'Mercado não informado') ?>
+                                        • qtd. <?= e(rtrim(rtrim(number_format((float) ($item['purchased_quantity'] ?? $item['quantity']), 2, ',', '.'), '0'), ',')) ?>
                                         • <?= money((float) ($item['purchased_price'] ?? 0)) ?>/un.
                                     </small>
                                 </div>
-                                <strong><?= money((float) ($item['purchased_price'] ?? 0) * (float) $item['quantity']) ?></strong>
+                                <strong><?= money((float) ($item['purchased_price'] ?? 0) * (float) ($item['purchased_quantity'] ?? $item['quantity'])) ?></strong>
                             </article>
                         <?php endforeach; ?>
                     </div>
