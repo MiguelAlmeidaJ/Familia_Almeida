@@ -31,9 +31,8 @@ function render_sidebar(string $active, string $csrf): void
         ['key' => 'dashboard', 'href' => '/', 'label' => 'Visão geral'],
         ['key' => 'movimentacoes', 'href' => '/movimentacoes', 'label' => 'Lançamentos'],
         ['key' => 'contas', 'href' => '/contas', 'label' => 'Contas fixas'],
-        ['key' => 'metas', 'href' => '/metas', 'label' => 'Metas de gastos'],
+        ['key' => 'metas', 'href' => '/metas', 'label' => 'Metas financeiras'],
         ['key' => 'dividas', 'href' => '/dividas', 'label' => 'Dívidas'],
-        ['key' => 'investimentos', 'href' => '/metas?section=investment#investimento', 'label' => 'Investimentos'],
     ];
 
     $user = function_exists('current_user') ? current_user() : null;
