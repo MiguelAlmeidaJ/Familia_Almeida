@@ -9,6 +9,7 @@ $month = valid_month($_GET['month'] ?? null);
 $data = dashboard_data(db(), $month);
 $csrf = csrf_token();
 $flash = pull_flash();
+$sidebarSection = (($_GET['section'] ?? '') === 'investment') ? 'investimentos' : 'metas';
 function goal_percent(float $spent, float $limit): float { return $limit > 0 ? min(100, ($spent / $limit) * 100) : 0; }
 ?>
 <!doctype html>
@@ -16,7 +17,7 @@ function goal_percent(float $spent, float $limit): float { return $limit > 0 ? m
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Metas • Família Almeida</title><link rel="stylesheet" href="/assets/style.css"></head>
 <body>
 <div class="shell">
-<?php render_sidebar('metas', $csrf); ?>
+<?php render_sidebar($sidebarSection, $csrf); ?>
 <main>
 <?php render_topbar($user); ?>
 <div class="content">
@@ -33,7 +34,7 @@ function goal_percent(float $spent, float $limit): float { return $limit > 0 ? m
 <button class="primary" type="submit">Salvar meta</button>
 </form>
 </section>
-<section class="card investment">
+<section class="card investment" id="investimento">
 <p class="eyebrow">INVESTIMENTO</p><h2>Meta mensal</h2>
 <div class="goal-number"><strong><?= money($data['totals']['investment']) ?></strong><span>de <?= money($data['investmentGoal']) ?></span></div>
 <div class="progress"><span style="width:<?= goal_percent($data['totals']['investment'], $data['investmentGoal']) ?>%"></span></div>
