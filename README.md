@@ -112,7 +112,9 @@ Os dois usuários usam a mesma base financeira. Cada lançamento registra quem o
 - meta mensal de investimento;
 - dívidas e pagamentos;
 - histórico mensal;
-- identificação do usuário que criou cada lançamento.
+- identificação do usuário que criou cada lançamento;
+- notas e comprovantes vinculados aos gastos;
+- resumo de gastos por dia e quantidade de notas anexadas.
 
 
 ## Rotas do sistema
@@ -130,3 +132,16 @@ Os dois usuários usam a mesma base financeira. Cada lançamento registra quem o
 A página `/configuracoes/manutencao` cria e utiliza a tabela `schema_migrations`.
 Novas migrations devem ser adicionadas em `database/migrations/` como arquivos PHP que retornem `description` e uma função `up(PDO $pdo)`.
 A página mostra quais migrations estão pendentes e permite executá-las em ordem, sem repetir as que já foram registradas.
+
+
+## Notas e comprovantes
+
+Os anexos ficam em `storage/receipts/`, bloqueados para acesso web direto. Eles são abertos somente pela rota autenticada `/comprovante?id=...`.
+
+Regras:
+- até 5 arquivos por gasto;
+- até 8 MB por arquivo;
+- JPG, PNG, WEBP, HEIC/HEIF ou PDF;
+- nomes físicos aleatórios, sem expor o nome original no caminho.
+
+Depois de atualizar uma instalação existente, execute a migration de comprovantes em `/configuracoes/manutencao`.
