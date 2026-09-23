@@ -12,6 +12,7 @@ $csrf = csrf_token();
 $month = valid_month($_GET['month'] ?? null);
 $schemaReady = shopping_schema_ready($pdo);
 $quantityReady = $schemaReady && shopping_purchase_quantity_ready($pdo);
+$trackingReady = $schemaReady && shopping_inventory_tracking_ready($pdo);
 
 [$year, $monthNumber] = array_map('intval', explode('-', $month));
 $monthNames = [1 => 'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -38,6 +39,7 @@ $offlinePayload = [
         'name' => (string) $item['name'],
         'quantity' => (float) $item['quantity'],
         'purchased_quantity' => $item['purchased_quantity'] !== null ? (float) $item['purchased_quantity'] : null,
+        'track_inventory' => !empty($item['track_inventory']),
         'estimated_price' => (float) ($item['estimated_price'] ?? 0),
         'purchased' => (bool) $item['purchased'],
         'purchased_price' => $item['purchased_price'] !== null ? (float) $item['purchased_price'] : null,
@@ -81,10 +83,13 @@ $offlinePayload = [
         </main>
     <?php else: ?>
         <main class="shopping-mode-main">
-            <?php if (!$quantityReady): ?>
+            <?php if (!$quantityReady || !$trackingReady): ?>
                 <div class="shopping-pending-sync-banner">
                     <strong>Atualização pendente.</strong>
-                    <span>Execute a migration 007 para registrar a quantidade realmente comprada antes de sincronizar novas compras.</span>
+                    <span>
+                        Execute as migrations pendentes em Configurações → Manutenção
+                        para usar quantidade real e consumo rápido.
+                    </span>
                 </div>
             <?php endif; ?>
 
@@ -139,7 +144,12 @@ $offlinePayload = [
                                 </label>
 
                                 <div class="shopping-live-product">
-                                    <strong><?= e($item['name']) ?></strong>
+                                    <div class="shopping-live-product-title">
+                                        <strong><?= e($item['name']) ?></strong>
+                                        <span class="shopping-stock-tag <?= !empty($item['track_inventory']) ? 'stock' : 'quick' ?>">
+                                            <?= !empty($item['track_inventory']) ? 'Estoque' : 'Consumo rápido' ?>
+                                        </span>
+                                    </div>
                                     <span>
                                         Planejado: <?= e(rtrim(rtrim(number_format((float) $item['quantity'], 2, ',', '.'), '0'), ',')) ?>
                                         • estimado
@@ -195,6 +205,14 @@ $offlinePayload = [
                                         >
                                     </label>
 
+                                    <label class="shopping-destination-field">
+                                        <span>Destino</span>
+                                        <select data-field="track_inventory">
+                                            <option value="1" <?= !empty($item['track_inventory']) ? 'selected' : '' ?>>Vai para o estoque</option>
+                                            <option value="0" <?= empty($item['track_inventory']) ? 'selected' : '' ?>>Consumo rápido</option>
+                                        </select>
+                                    </label>
+
                                     <div class="shopping-line-total-box">
                                         <span>Total deste produto</span>
                                         <strong data-line-total><?= money(0) ?></strong>
@@ -229,6 +247,7 @@ $offlinePayload = [
                                     <strong><?= e($item['name']) ?></strong>
                                     <small>
                                         <?= e($item['store_name'] ?: 'Mercado não informado') ?>
+                                        • <?= !empty($item['track_inventory']) ? 'estoque' : 'consumo rápido' ?>
                                         • qtd. <?= e(rtrim(rtrim(number_format((float) ($item['purchased_quantity'] ?? $item['quantity']), 2, ',', '.'), '0'), ',')) ?>
                                         • <?= money((float) ($item['purchased_price'] ?? 0)) ?>/un.
                                     </small>
