@@ -378,6 +378,7 @@ try {
             $name = trim((string) ($_POST['name'] ?? ''));
             $quantity = (float) str_replace(',', '.', (string) ($_POST['quantity'] ?? '1'));
             $estimatedPrice = (float) str_replace(',', '.', (string) ($_POST['estimated_price'] ?? '0'));
+            $trackInventory = (string) ($_POST['track_inventory'] ?? '1') !== '0';
 
             if ($name === '' || $quantity <= 0 || $estimatedPrice < 0) {
                 throw new RuntimeException('Revise os dados do produto.');
@@ -388,12 +389,27 @@ try {
                 throw new RuntimeException('Não foi possível preparar a lista do mês.');
             }
 
-            $stmt = $pdo->prepare(
-                'INSERT INTO shopping_items
-                    (list_id, name, quantity, estimated_price)
-                 VALUES (?, ?, ?, ?)'
-            );
-            $stmt->execute([(int) $list['id'], $name, $quantity, $estimatedPrice > 0 ? $estimatedPrice : null]);
+            if (shopping_inventory_tracking_ready($pdo)) {
+                $stmt = $pdo->prepare(
+                    'INSERT INTO shopping_items
+                        (list_id, name, quantity, estimated_price, track_inventory)
+                     VALUES (?, ?, ?, ?, ?)'
+                );
+                $stmt->execute([
+                    (int) $list['id'],
+                    $name,
+                    $quantity,
+                    $estimatedPrice > 0 ? $estimatedPrice : null,
+                    $trackInventory ? 1 : 0,
+                ]);
+            } else {
+                $stmt = $pdo->prepare(
+                    'INSERT INTO shopping_items
+                        (list_id, name, quantity, estimated_price)
+                     VALUES (?, ?, ?, ?)'
+                );
+                $stmt->execute([(int) $list['id'], $name, $quantity, $estimatedPrice > 0 ? $estimatedPrice : null]);
+            }
 
             flash('success', 'Produto adicionado à lista de mercado.');
             break;
@@ -407,20 +423,33 @@ try {
             $name = trim((string) ($_POST['name'] ?? ''));
             $quantity = (float) str_replace(',', '.', (string) ($_POST['quantity'] ?? '1'));
             $estimatedPrice = (float) str_replace(',', '.', (string) ($_POST['estimated_price'] ?? '0'));
+            $trackInventory = (string) ($_POST['track_inventory'] ?? '1') !== '0';
 
             if ($itemId <= 0 || $name === '' || $quantity <= 0 || $estimatedPrice < 0) {
                 throw new RuntimeException('Revise os dados do produto.');
             }
 
-            $stmt = $pdo->prepare(
-                'UPDATE shopping_items i
-                 INNER JOIN shopping_lists l ON l.id = i.list_id
-                 SET i.name = ?, i.quantity = ?, i.estimated_price = ?
-                 WHERE i.id = ?
-                   AND l.list_type = "market"
-                   AND i.purchased = 0'
-            );
-            $stmt->execute([$name, $quantity, $estimatedPrice > 0 ? $estimatedPrice : null, $itemId]);
+            if (shopping_inventory_tracking_ready($pdo)) {
+                $stmt = $pdo->prepare(
+                    'UPDATE shopping_items i
+                     INNER JOIN shopping_lists l ON l.id = i.list_id
+                     SET i.name = ?, i.quantity = ?, i.estimated_price = ?, i.track_inventory = ?
+                     WHERE i.id = ?
+                       AND l.list_type = "market"
+                       AND i.purchased = 0'
+                );
+                $stmt->execute([$name, $quantity, $estimatedPrice > 0 ? $estimatedPrice : null, $trackInventory ? 1 : 0, $itemId]);
+            } else {
+                $stmt = $pdo->prepare(
+                    'UPDATE shopping_items i
+                     INNER JOIN shopping_lists l ON l.id = i.list_id
+                     SET i.name = ?, i.quantity = ?, i.estimated_price = ?
+                     WHERE i.id = ?
+                       AND l.list_type = "market"
+                       AND i.purchased = 0'
+                );
+                $stmt->execute([$name, $quantity, $estimatedPrice > 0 ? $estimatedPrice : null, $itemId]);
+            }
 
             if ($stmt->rowCount() === 0) {
                 $check = $pdo->prepare('SELECT purchased FROM shopping_items WHERE id = ? LIMIT 1');
@@ -474,19 +503,35 @@ try {
 
             $pdo->beginTransaction();
 
-            $copy = $pdo->prepare(
-                'INSERT INTO shopping_items
-                    (list_id, name, quantity, estimated_price)
-                 SELECT ?, old.name, old.quantity, old.estimated_price
-                 FROM shopping_items old
-                 WHERE old.list_id = ?
-                   AND NOT EXISTS (
-                       SELECT 1
-                       FROM shopping_items current_item
-                       WHERE current_item.list_id = ?
-                         AND LOWER(current_item.name) = LOWER(old.name)
-                   )'
-            );
+            if (shopping_inventory_tracking_ready($pdo)) {
+                $copy = $pdo->prepare(
+                    'INSERT INTO shopping_items
+                        (list_id, name, quantity, estimated_price, track_inventory)
+                     SELECT ?, old.name, old.quantity, old.estimated_price, old.track_inventory
+                     FROM shopping_items old
+                     WHERE old.list_id = ?
+                       AND NOT EXISTS (
+                           SELECT 1
+                           FROM shopping_items current_item
+                           WHERE current_item.list_id = ?
+                             AND LOWER(current_item.name) = LOWER(old.name)
+                       )'
+                );
+            } else {
+                $copy = $pdo->prepare(
+                    'INSERT INTO shopping_items
+                        (list_id, name, quantity, estimated_price)
+                     SELECT ?, old.name, old.quantity, old.estimated_price
+                     FROM shopping_items old
+                     WHERE old.list_id = ?
+                       AND NOT EXISTS (
+                           SELECT 1
+                           FROM shopping_items current_item
+                           WHERE current_item.list_id = ?
+                             AND LOWER(current_item.name) = LOWER(old.name)
+                       )'
+                );
+            }
             $copy->execute([(int) $currentList['id'], (int) $previousList['id'], (int) $currentList['id']]);
 
             $updateList = $pdo->prepare('UPDATE shopping_lists SET copied_from_id = ? WHERE id = ?');
