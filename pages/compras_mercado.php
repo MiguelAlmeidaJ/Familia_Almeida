@@ -118,7 +118,7 @@ $offlinePayload = [
                     <div>
                         <p class="eyebrow">DURANTE A COMPRA</p>
                         <h2>Produtos pendentes</h2>
-                        <p>Marque o que colocou no carrinho e informe o preço real.</p>
+                        <p>Marque o que colocou no carrinho e informe a quantidade e o preço reais.</p>
                     </div>
                     <strong><?= count($pendingItems) ?> item(ns)</strong>
                 </header>
@@ -141,7 +141,7 @@ $offlinePayload = [
                                 <div class="shopping-live-product">
                                     <strong><?= e($item['name']) ?></strong>
                                     <span>
-                                        Qtd. <?= e(rtrim(rtrim(number_format((float) $item['quantity'], 2, ',', '.'), '0'), ',')) ?>
+                                        Planejado: <?= e(rtrim(rtrim(number_format((float) $item['quantity'], 2, ',', '.'), '0'), ',')) ?>
                                         • estimado
                                         <?= $item['estimated_price'] !== null ? money($item['estimated_price']) . '/un.' : 'não informado' ?>
                                     </span>
