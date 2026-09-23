@@ -30,6 +30,33 @@ function shopping_schema_ready(PDO $pdo): bool
         && shopping_table_exists($pdo, 'shopping_purchases');
 }
 
+function shopping_column_exists(PDO $pdo, string $table, string $column): bool
+{
+    static $cache = [];
+    $key = $table . '.' . $column;
+
+    if (array_key_exists($key, $cache)) {
+        return $cache[$key];
+    }
+
+    $stmt = $pdo->prepare(
+        'SELECT COUNT(*)
+         FROM information_schema.columns
+         WHERE table_schema = DATABASE()
+           AND table_name = ?
+           AND column_name = ?'
+    );
+    $stmt->execute([$table, $column]);
+
+    return $cache[$key] = ((int) $stmt->fetchColumn() > 0);
+}
+
+function shopping_purchase_quantity_ready(PDO $pdo): bool
+{
+    return shopping_schema_ready($pdo)
+        && shopping_column_exists($pdo, 'shopping_items', 'purchased_quantity');
+}
+
 function shopping_get_list(PDO $pdo, string $type, ?string $month, int $userId, bool $create = true): ?array
 {
     if (!shopping_schema_ready($pdo)) {
@@ -76,8 +103,13 @@ function shopping_items(PDO $pdo, int $listId): array
         return [];
     }
 
+    $purchasedQuantitySelect = shopping_purchase_quantity_ready($pdo)
+        ? 'purchased_quantity'
+        : 'CASE WHEN purchased = 1 THEN quantity ELSE NULL END AS purchased_quantity';
+
     $stmt = $pdo->prepare(
         'SELECT id, list_id, purchase_id, name, category, priority, quantity,
+                ' . $purchasedQuantitySelect . ',
                 estimated_price, purchased_price, store_name, product_url,
                 purchased, purchased_at, created_at, updated_at
          FROM shopping_items
@@ -94,6 +126,7 @@ function shopping_items(PDO $pdo, int $listId): array
         $row['list_id'] = (int) $row['list_id'];
         $row['purchase_id'] = $row['purchase_id'] !== null ? (int) $row['purchase_id'] : null;
         $row['quantity'] = (float) $row['quantity'];
+        $row['purchased_quantity'] = $row['purchased_quantity'] !== null ? (float) $row['purchased_quantity'] : null;
         $row['estimated_price'] = $row['estimated_price'] !== null ? (float) $row['estimated_price'] : null;
         $row['purchased_price'] = $row['purchased_price'] !== null ? (float) $row['purchased_price'] : null;
         $row['purchased'] = (bool) $row['purchased'];
@@ -131,7 +164,8 @@ function shopping_market_summary(array $items): array
 
         if (!empty($item['purchased'])) {
             $purchased++;
-            $actual += $quantity * (float) ($item['purchased_price'] ?? 0);
+            $actualQuantity = max(0, (float) ($item['purchased_quantity'] ?? $quantity));
+            $actual += $actualQuantity * (float) ($item['purchased_price'] ?? 0);
         }
     }
 
