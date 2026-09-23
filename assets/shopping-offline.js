@@ -711,7 +711,7 @@
       purchased_quantity: quantity,
       estimated_price: estimated > 0 ? estimated : 0,
       track_inventory: productTrack?.value !== '0',
-      selected: false,
+      selected: true,
       purchased_price: '',
       store_name: '',
       purchased: false,
