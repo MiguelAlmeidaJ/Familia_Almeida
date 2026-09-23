@@ -10,14 +10,12 @@ $user = require_auth();
 $pdo = db();
 $month = valid_month($_GET['month'] ?? null);
 $data = dashboard_data($pdo, $month);
-$analytics = dashboard_analytics($pdo, $month);
 $recurringSchemaReady = recurring_bills_schema_ready($pdo);
 $flash = pull_flash();
 $csrf = csrf_token();
 
 [$year, $monthNumber] = array_map('intval', explode('-', $month));
 $monthNames = [1 => 'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-$monthShort = [1 => 'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 $monthLabel = $monthNames[$monthNumber] . ' de ' . $year;
 
 $current = new DateTimeImmutable($month . '-01');
@@ -25,184 +23,107 @@ $prevMonth = $current->modify('-1 month')->format('Y-m');
 $nextMonth = $current->modify('+1 month')->format('Y-m');
 
 $totals = $data['totals'];
-$outflow = $totals['expense'] + $totals['debt'];
-$balance = $totals['income'] - $outflow - $totals['investment'];
-$previousOutflow = $analytics['previous']['expense'] + $analytics['previous']['debt'];
-$previousBalance = $analytics['previous']['income'] - $previousOutflow - $analytics['previous']['investment'];
-
-$fixedMonthly = array_reduce($data['bills'], fn(float $sum, array $bill) => $sum + (float) $bill['amount'], 0.0);
-$paidBills = array_values(array_filter($data['bills'], fn(array $bill) => $bill['paid']));
-$pendingBills = array_values(array_filter($data['bills'], fn(array $bill) => !$bill['paid']));
-$needsBillValues = array_values(array_filter($data['bills'], fn(array $bill) => $bill['needs_amount']));
-$paidBillAmount = array_reduce($paidBills, fn(float $sum, array $bill) => $sum + (float) $bill['amount'], 0.0);
-$billProgress = count($data['bills']) > 0 ? (count($paidBills) / count($data['bills'])) * 100 : 0;
+$paidOutflow = $totals['expense'] + $totals['debt'];
+$balance = $totals['income'] - $paidOutflow - $totals['investment'];
 
 $debtPending = 0.0;
 foreach ($data['debts'] as $debt) {
     $debtPending += max(0, $debt['total_amount'] - $debt['paid_amount']);
 }
 
-$investmentProgress = $data['investmentGoal'] > 0 ? min(100, ($totals['investment'] / $data['investmentGoal']) * 100) : 0;
-$savingsRate = $totals['income'] > 0 ? ($totals['investment'] / $totals['income']) * 100 : 0;
-$fixedCommitment = $totals['income'] > 0 ? ($fixedMonthly / $totals['income']) * 100 : 0;
+$paidBills = array_values(array_filter($data['bills'], fn(array $bill) => $bill['paid']));
+$pendingBills = array_values(array_filter($data['bills'], fn(array $bill) => !$bill['paid']));
+$knownPendingBillsAmount = array_reduce(
+    array_filter($pendingBills, fn(array $bill) => !$bill['needs_amount']),
+    fn(float $sum, array $bill) => $sum + (float) $bill['amount'],
+    0.0
+);
+$needsValueCount = count(array_filter($pendingBills, fn(array $bill) => $bill['needs_amount']));
 
-function dashboard_change(float $current, float $previous, bool $lowerIsBetter = false): array
-{
-    if (abs($previous) < 0.01) {
-        if (abs($current) < 0.01) {
-            return ['text' => 'Sem movimento', 'class' => 'neutral'];
-        }
-        return ['text' => 'Novo neste mês', 'class' => 'neutral'];
+$recurringPaid = 0.0;
+$variableExpenses = 0.0;
+foreach ($data['transactions'] as $transaction) {
+    if ($transaction['type'] !== 'expense') {
+        continue;
     }
 
-    $change = (($current - $previous) / abs($previous)) * 100;
-    if (abs($change) < 0.5) {
-        return ['text' => 'Estável vs. mês anterior', 'class' => 'neutral'];
-    }
-
-    $isGood = $lowerIsBetter ? $change < 0 : $change > 0;
-    return [
-        'text' => ($change > 0 ? '↑ ' : '↓ ') . number_format(abs($change), 1, ',', '.') . '% vs. mês anterior',
-        'class' => $isGood ? 'positive' : 'negative',
-    ];
-}
-
-$incomeChange = dashboard_change($totals['income'], $analytics['previous']['income']);
-$outflowChange = dashboard_change($outflow, $previousOutflow, true);
-$investmentChange = dashboard_change($totals['investment'], $analytics['previous']['investment']);
-$balanceChange = dashboard_change($balance, $previousBalance);
-
-$overGoals = [];
-foreach ($data['goals'] as $goal) {
-    if ($goal['monthly_limit'] > 0 && $goal['spent'] > $goal['monthly_limit']) {
-        $overGoals[] = $goal;
+    if (!empty($transaction['bill_payment_id'])
+        || in_array(mb_strtolower((string) $transaction['category']), ['contas recorrentes', 'contas fixas'], true)) {
+        $recurringPaid += (float) $transaction['amount'];
+    } else {
+        $variableExpenses += (float) $transaction['amount'];
     }
 }
-usort($overGoals, fn(array $a, array $b) => ($b['spent'] - $b['monthly_limit']) <=> ($a['spent'] - $a['monthly_limit']));
 
-$insights = [];
-if ($totals['income'] <= 0) {
-    $insights[] = ['type' => 'attention', 'title' => 'Entradas ainda não registradas', 'text' => 'O mês ainda não possui receitas lançadas. O saldo e os percentuais ficam mais úteis depois das entradas.'];
-} elseif ($balance >= 0) {
-    $insights[] = ['type' => 'success', 'title' => 'Saldo do mês está positivo', 'text' => 'Depois de gastos, dívidas e investimentos, restam ' . money($balance) . '.'];
-} else {
-    $insights[] = ['type' => 'attention', 'title' => 'Saídas superam as entradas', 'text' => 'O mês está com saldo projetado de ' . money($balance) . '. Vale revisar os maiores gastos.'];
-}
+$destinationTotal = $recurringPaid + $variableExpenses + $totals['debt'] + $totals['investment'];
+$investmentGoal = (float) $data['investmentGoal'];
+$investmentProgress = $investmentGoal > 0
+    ? min(100, ($totals['investment'] / $investmentGoal) * 100)
+    : 0;
 
-if (count($data['bills']) > 0) {
-    $insights[] = [
-        'type' => count($pendingBills) === 0 ? 'success' : 'info',
-        'title' => count($pendingBills) === 0 ? 'Contas fixas em dia' : count($pendingBills) . ' conta(s) recorrente(s) pendente(s)',
-        'text' => number_format($billProgress, 0, ',', '.') . '% das contas recorrentes foram marcadas como pagas em ' . $monthLabel . '.'
-    ];
-}
-
-if ($overGoals) {
-    $goal = $overGoals[0];
-    $excess = $goal['spent'] - $goal['monthly_limit'];
-    $insights[] = ['type' => 'attention', 'title' => 'Meta ultrapassada em ' . $goal['category'], 'text' => 'A categoria passou ' . money($excess) . ' do limite definido para o mês.'];
-} elseif ($data['investmentGoal'] > 0) {
-    $insights[] = [
-        'type' => $investmentProgress >= 100 ? 'success' : 'info',
-        'title' => $investmentProgress >= 100 ? 'Meta de investimento concluída' : 'Investimento em andamento',
-        'text' => number_format($investmentProgress, 0, ',', '.') . '% da meta mensal de ' . money($data['investmentGoal']) . ' foi alcançada.'
-    ];
-}
-
-if ($analytics['largest_expense']) {
-    $expense = $analytics['largest_expense'];
-    $insights[] = ['type' => 'info', 'title' => 'Maior gasto do mês', 'text' => $expense['description'] . ' representa ' . money($expense['amount']) . ' em ' . $expense['category'] . '.'];
-}
-
-$insights = array_slice($insights, 0, 4);
-
-$daysInMonth = (int) $current->format('t');
-$dailyIndex = [];
-foreach ($analytics['daily'] as $row) {
-    $dailyIndex[$row['day']] = $row;
-}
-$dailyLabels = [];
-$dailyIncome = [];
-$dailyOutflow = [];
-$dailyInvestment = [];
-for ($day = 1; $day <= $daysInMonth; $day++) {
-    $date = sprintf('%s-%02d', $month, $day);
-    $dailyLabels[] = str_pad((string) $day, 2, '0', STR_PAD_LEFT);
-    $row = $dailyIndex[$date] ?? ['income' => 0, 'outflow' => 0, 'investment' => 0];
-    $dailyIncome[] = (float) $row['income'];
-    $dailyOutflow[] = (float) $row['outflow'];
-    $dailyInvestment[] = (float) $row['investment'];
-}
-
-$categoryLabels = array_map(fn(array $row) => $row['category'], $analytics['categories']);
-$categoryValues = array_map(fn(array $row) => (float) $row['total'], $analytics['categories']);
-
-$historyLabels = [];
-$historyIncome = [];
-$historyOutflow = [];
-$historyBalance = [];
-foreach ($analytics['six_months'] as $row) {
-    [$rowYear, $rowMonth] = array_map('intval', explode('-', $row['month']));
-    $historyLabels[] = ucfirst($monthShort[$rowMonth]) . '/' . substr((string) $rowYear, -2);
-    $historyIncome[] = (float) $row['income'];
-    $historyOutflow[] = (float) $row['outflow'];
-    $historyBalance[] = (float) $row['balance'];
-}
+$accountPreview = array_slice($pendingBills ?: $data['bills'], 0, 5);
+$goalPreview = array_slice($data['goals'], 0, 4);
+$recentTransactions = array_slice($data['transactions'], 0, 6);
 
 $chartPayload = [
-    'daily' => [
-        'labels' => $dailyLabels,
-        'income' => $dailyIncome,
-        'outflow' => $dailyOutflow,
-        'investment' => $dailyInvestment,
-    ],
-    'categories' => [
-        'labels' => $categoryLabels,
-        'values' => $categoryValues,
-    ],
-    'months' => [
-        'labels' => $historyLabels,
-        'income' => $historyIncome,
-        'outflow' => $historyOutflow,
-        'balance' => $historyBalance,
-    ],
+    'labels' => ['Contas recorrentes', 'Gastos variáveis', 'Dívidas pagas', 'Investimentos'],
+    'values' => [$recurringPaid, $variableExpenses, (float) $totals['debt'], (float) $totals['investment']],
+    'total' => $destinationTotal,
+    'month' => ucfirst($monthNames[$monthNumber]) . ' de ' . $year,
 ];
 
-$recentTransactions = array_slice($data['transactions'], 0, 6);
-$nextBills = array_slice($pendingBills, 0, 5);
+function goal_progress(array $goal): float
+{
+    if ((float) $goal['monthly_limit'] <= 0) {
+        return 0;
+    }
+
+    return min(100, ((float) $goal['spent'] / (float) $goal['monthly_limit']) * 100);
+}
+
+function dashboard_bill_subtitle(array $bill): string
+{
+    if ($bill['needs_amount']) {
+        return 'Definir valor do mês';
+    }
+
+    if ($bill['billing_type'] === 'installment' && !empty($bill['installment_number'])) {
+        return 'Parcela ' . (int) $bill['installment_number'] . '/' . (int) $bill['installment_total'];
+    }
+
+    return $bill['paid'] ? 'Pago neste mês' : 'Vence dia ' . (int) $bill['due_day'];
+}
 ?>
 <!doctype html>
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Dashboard • Família Almeida Finanças</title>
+    <title>Visão geral • Família Almeida</title>
     <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
-<div class="shell dashboard-shell">
+<div class="shell ref-shell">
     <?php render_sidebar('dashboard', $csrf); ?>
 
     <main>
         <?php render_topbar($user); ?>
 
-        <div class="content dashboard-content">
-            <div class="dashboard-heading">
+        <div class="content ref-dashboard">
+            <section class="ref-dashboard-heading">
                 <div>
-                    <p class="eyebrow">VISÃO FINANCEIRA</p>
-                    <h1>Seu dinheiro, com contexto.</h1>
-                    <p>Acompanhe o que entrou, o que saiu e o que precisa de atenção em <?= e($monthLabel) ?>.</p>
+                    <p class="eyebrow">CADA ESCOLHA CONTA</p>
+                    <h1>Visão geral</h1>
+                    <p>Tudo o que entra, tudo o que sai. E o que fica para os seus planos.</p>
                 </div>
 
-                <div class="dashboard-heading-actions">
-                    <div class="month modern-month">
-                        <a href="?month=<?= e($prevMonth) ?>" aria-label="Mês anterior">‹</a>
-                        <div class="label"><small>MÊS DE REFERÊNCIA</small><strong><?= e($monthLabel) ?></strong></div>
-                        <a href="?month=<?= e($nextMonth) ?>" aria-label="Próximo mês">›</a>
-                    </div>
-                    <a class="primary quick-primary" href="/movimentacoes">+ Novo lançamento</a>
+                <div class="ref-month-picker">
+                    <a href="?month=<?= e($prevMonth) ?>" aria-label="Mês anterior">‹</a>
+                    <span><?= e($monthLabel) ?></span>
+                    <span class="ref-calendar">□</span>
+                    <a href="?month=<?= e($nextMonth) ?>" aria-label="Próximo mês">›</a>
                 </div>
-            </div>
+            </section>
 
             <?php if ($flash): ?>
                 <div class="alert <?= $flash['type'] === 'success' ? 'success' : '' ?>"><?= e($flash['message']) ?></div>
@@ -211,196 +132,215 @@ $nextBills = array_slice($pendingBills, 0, 5);
             <?php if (!$recurringSchemaReady): ?>
                 <div class="alert migration-alert">
                     Há uma atualização de banco pendente para Contas recorrentes.
-                    <a href="/configuracoes/manutencao">Abrir Manutenção e executar migrations →</a>
+                    <a href="/configuracoes/manutencao">Executar migrations →</a>
                 </div>
             <?php endif; ?>
 
-            <section class="dashboard-kpis">
-                <article class="kpi-card balance-kpi">
-                    <div class="kpi-top">
-                        <span>Saldo do mês</span>
-                        <span class="kpi-symbol">⌁</span>
-                    </div>
+            <section class="ref-kpi-grid">
+                <article class="ref-kpi ref-kpi-balance <?= $balance < 0 ? 'negative' : '' ?>">
+                    <div class="ref-kpi-head"><span>Saldo do mês</span><span>▣</span></div>
                     <strong><?= money($balance) ?></strong>
-                    <div class="kpi-bottom">
-                        <span class="trend <?= e($balanceChange['class']) ?>"><?= e($balanceChange['text']) ?></span>
-                        <small>após gastos e investimentos</small>
-                    </div>
+                    <small>Entradas − saídas − investimentos</small>
                 </article>
 
-                <article class="kpi-card">
-                    <div class="kpi-top"><span>Entradas</span><span class="metric-dot income"></span></div>
+                <article class="ref-kpi">
+                    <div class="ref-kpi-head"><span>Entradas</span><span class="ref-kpi-arrow income">↙</span></div>
                     <strong><?= money($totals['income']) ?></strong>
-                    <span class="trend <?= e($incomeChange['class']) ?>"><?= e($incomeChange['text']) ?></span>
+                    <a href="/movimentacoes">Registrar entrada +</a>
                 </article>
 
-                <article class="kpi-card">
-                    <div class="kpi-top"><span>Saídas</span><span class="metric-dot outflow"></span></div>
-                    <strong><?= money($outflow) ?></strong>
-                    <span class="trend <?= e($outflowChange['class']) ?>"><?= e($outflowChange['text']) ?></span>
+                <article class="ref-kpi">
+                    <div class="ref-kpi-head"><span>Saídas pagas</span><span class="ref-kpi-arrow expense">↗</span></div>
+                    <strong><?= money($paidOutflow) ?></strong>
+                    <small><?= money($knownPendingBillsAmount) ?> em contas a pagar<?= $needsValueCount ? ' + ' . $needsValueCount . ' sem valor' : '' ?></small>
                 </article>
 
-                <article class="kpi-card">
-                    <div class="kpi-top"><span>Investimentos</span><span class="metric-dot investment"></span></div>
-                    <strong><?= money($totals['investment']) ?></strong>
-                    <span class="trend <?= e($investmentChange['class']) ?>"><?= e($investmentChange['text']) ?></span>
-                </article>
-            </section>
-
-            <section class="dashboard-context-strip">
-                <a href="/contas" class="context-stat">
-                    <span>Compromissos do mês</span>
-                    <strong><?= money($fixedMonthly) ?></strong>
-                    <small><?= count($needsBillValues) ? count($needsBillValues) . ' valor(es) ainda pendente(s)' : number_format($fixedCommitment, 0, ',', '.') . '% das entradas' ?></small>
-                </a>
-                <a href="/contas?month=<?= e($month) ?>" class="context-stat">
-                    <span>Contas pagas</span>
-                    <strong><?= count($paidBills) ?>/<?= count($data['bills']) ?></strong>
-                    <small><?= money($paidBillAmount) ?> confirmado</small>
-                </a>
-                <a href="/metas?month=<?= e($month) ?>" class="context-stat">
-                    <span>Taxa de investimento</span>
-                    <strong><?= number_format($savingsRate, 1, ',', '.') ?>%</strong>
-                    <small>sobre as entradas do mês</small>
-                </a>
-                <a href="/dividas" class="context-stat">
-                    <span>Dívidas pendentes</span>
+                <article class="ref-kpi">
+                    <div class="ref-kpi-head"><span>Dívidas pendentes</span><span class="ref-debt-icon">▭</span></div>
                     <strong><?= money($debtPending) ?></strong>
-                    <small><?= count($data['debts']) ?> dívida(s) cadastrada(s)</small>
-                </a>
+                    <a href="/dividas">Saldo total atual →</a>
+                </article>
             </section>
 
-            <section class="dashboard-main-grid">
-                <article class="card chart-card cashflow-card">
-                    <div class="card-title-row">
+            <section class="ref-primary-grid">
+                <article class="card ref-money-card">
+                    <div class="ref-card-heading">
                         <div>
-                            <p class="eyebrow">FLUXO DO MÊS</p>
-                            <h2>Entradas x saídas</h2>
-                            <p>Movimentação diária registrada em <?= e($monthLabel) ?>.</p>
+                            <h2>Para onde vai o dinheiro</h2>
+                            <p>Distribuição das saídas do mês</p>
                         </div>
-                        <a href="/movimentacoes?month=<?= e($month) ?>" class="card-link">Ver movimentações →</a>
-                    </div>
-                    <div class="chart-shell large-chart">
-                        <canvas id="cashflowChart"></canvas>
-                        <div class="chart-empty-message">Ainda não há movimentações suficientes para desenhar o gráfico.</div>
-                    </div>
-                </article>
-
-                <aside class="card insights-card">
-                    <div class="card-title-row">
-                        <div><p class="eyebrow">LEITURA RÁPIDA</p><h2>Insights do mês</h2></div>
-                        <span class="insight-badge">AUTO</span>
+                        <a class="ref-green-button" href="/movimentacoes">+&nbsp; Novo gasto</a>
                     </div>
 
-                    <div class="insights-list">
-                        <?php foreach ($insights as $insight): ?>
-                            <div class="insight-item <?= e($insight['type']) ?>">
-                                <span class="insight-dot"></span>
-                                <div><strong><?= e($insight['title']) ?></strong><p><?= e($insight['text']) ?></p></div>
+                    <div class="ref-donut-area">
+                        <div class="ref-donut-wrap">
+                            <canvas id="destinationChart"></canvas>
+                            <div class="ref-donut-center">
+                                <small>Total destinado</small>
+                                <strong><?= money($destinationTotal) ?></strong>
+                                <span><?= e(ucfirst($monthLabel)) ?></span>
                             </div>
-                        <?php endforeach; ?>
-                    </div>
-                </aside>
-            </section>
+                        </div>
 
-            <section class="dashboard-chart-grid">
-                <article class="card chart-card">
-                    <div class="card-title-row">
-                        <div><p class="eyebrow">HISTÓRICO</p><h2>Últimos 6 meses</h2><p>Compare entradas, saídas e saldo ao longo do tempo.</p></div>
+                        <div class="ref-donut-legend">
+                            <div><span class="ref-legend-dot recurring"></span><span>Contas recorrentes</span><strong><?= money($recurringPaid) ?></strong></div>
+                            <div><span class="ref-legend-dot variable"></span><span>Gastos variáveis</span><strong><?= money($variableExpenses) ?></strong></div>
+                            <div><span class="ref-legend-dot debt"></span><span>Dívidas pagas</span><strong><?= money($totals['debt']) ?></strong></div>
+                            <div><span class="ref-legend-dot investment"></span><span>Investimentos</span><strong><?= money($totals['investment']) ?></strong></div>
+                        </div>
                     </div>
-                    <div class="chart-shell history-chart"><canvas id="historyChart"></canvas></div>
+
+                    <footer>Cada lançamento ajuda a enxergar melhor suas escolhas.</footer>
                 </article>
 
-                <article class="card chart-card category-card">
-                    <div class="card-title-row">
-                        <div><p class="eyebrow">DISTRIBUIÇÃO</p><h2>Gastos por categoria</h2><p>Onde os gastos variáveis estão concentrados.</p></div>
+                <article class="ref-investment-card" id="investimento">
+                    <div class="ref-investment-top">
+                        <p class="eyebrow">CONSTRUINDO O FUTURO</p>
+                        <span>↗</span>
                     </div>
-                    <div class="chart-shell category-chart">
-                        <canvas id="categoryChart"></canvas>
-                        <div class="chart-empty-message">Registre gastos para visualizar a distribuição por categoria.</div>
+
+                    <div class="ref-investment-copy">
+                        <h2>Um passo por mês.</h2>
+                        <p>Seu investimento também tem lugar no orçamento.</p>
+                    </div>
+
+                    <div class="ref-investment-value">
+                        <strong><?= money($totals['investment']) ?></strong>
+                        <span>de <?= money($investmentGoal) ?></span>
+                    </div>
+
+                    <div class="ref-investment-progress"><span style="width:<?= $investmentProgress ?>%"></span></div>
+
+                    <a class="ref-investment-meta" href="/metas#investimento">
+                        <?= $investmentGoal > 0 ? number_format($investmentProgress, 0, ',', '.') . '% da meta mensal' : 'Defina sua meta mensal' ?>
+                        <span>✎</span>
+                    </a>
+
+                    <a class="ref-investment-button" href="/movimentacoes">＋&nbsp; Registrar investimento</a>
+                </article>
+            </section>
+
+            <section class="ref-secondary-grid">
+                <article class="card ref-list-card">
+                    <header class="ref-section-header">
+                        <div>
+                            <h2>Contas do mês</h2>
+                            <p><?= count($paidBills) ?> de <?= count($data['bills']) ?> contas pagas</p>
+                        </div>
+                        <a href="/contas?month=<?= e($month) ?>">Ver todas →</a>
+                    </header>
+
+                    <div class="ref-account-list">
+                        <?php if ($accountPreview): ?>
+                            <?php foreach ($accountPreview as $bill): ?>
+                                <div class="ref-account-row">
+                                    <div class="ref-day-box"><small>DIA</small><strong><?= str_pad((string) $bill['due_day'], 2, '0', STR_PAD_LEFT) ?></strong></div>
+                                    <div class="ref-account-copy">
+                                        <strong><?= e($bill['name']) ?></strong>
+                                        <span><?= e(dashboard_bill_subtitle($bill)) ?></span>
+                                    </div>
+                                    <strong class="ref-account-value"><?= $bill['needs_amount'] ? '—' : money($bill['amount']) ?></strong>
+                                    <a class="ref-edit-link" href="/contas?month=<?= e($month) ?>" aria-label="Editar <?= e($bill['name']) ?>">✎</a>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="ref-empty">Nenhuma conta recorrente cadastrada.</div>
+                        <?php endif; ?>
+                    </div>
+                </article>
+
+                <article class="card ref-list-card">
+                    <header class="ref-section-header">
+                        <div>
+                            <h2>Gastar com intenção</h2>
+                            <p>Suas metas por categoria</p>
+                        </div>
+                        <a href="/metas?month=<?= e($month) ?>">Ver metas →</a>
+                    </header>
+
+                    <div class="ref-goals-list">
+                        <?php if ($goalPreview): ?>
+                            <?php foreach ($goalPreview as $index => $goal): ?>
+                                <?php $progress = goal_progress($goal); ?>
+                                <div class="ref-goal-row">
+                                    <div class="ref-goal-icon tone-<?= ($index % 4) + 1 ?>"><?= e(strtoupper(substr((string) $goal['category'], 0, 1))) ?></div>
+                                    <div class="ref-goal-main">
+                                        <div class="ref-goal-title">
+                                            <strong><?= e($goal['category']) ?></strong>
+                                            <a href="/metas?month=<?= e($month) ?>">✎</a>
+                                        </div>
+                                        <span>
+                                            <?= money($goal['spent']) ?>
+                                            <?= $goal['monthly_limit'] > 0 ? ' de ' . money($goal['monthly_limit']) : ' • sem meta definida' ?>
+                                        </span>
+                                        <div class="ref-goal-progress"><span style="width:<?= $progress ?>%"></span></div>
+                                        <small>
+                                            <?= $goal['monthly_limit'] > 0
+                                                ? number_format($progress, 0, ',', '.') . '% do limite utilizado'
+                                                : 'Defina um limite para acompanhar' ?>
+                                        </small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="ref-empty">Nenhuma meta de gasto cadastrada.</div>
+                        <?php endif; ?>
                     </div>
                 </article>
             </section>
 
-            <section class="dashboard-bottom-grid">
-                <article class="card dashboard-list-card">
-                    <div class="card-title-row">
-                        <div><p class="eyebrow">PRÓXIMOS COMPROMISSOS</p><h2>Contas do mês</h2></div>
-                        <a href="/contas?month=<?= e($month) ?>" class="card-link">Gerenciar →</a>
+            <section class="card ref-transactions-card">
+                <header class="ref-section-header">
+                    <div><h2>Últimas movimentações</h2></div>
+                    <a href="/movimentacoes?month=<?= e($month) ?>">Ver todas →</a>
+                </header>
+
+                <div class="ref-table-wrap">
+                    <div class="ref-table-head">
+                        <span>Descrição</span><span>Categoria</span><span>Data</span><span>Valor</span><span></span>
                     </div>
 
-                    <div class="dashboard-bills">
-                        <?php if ($nextBills): ?>
-                            <?php foreach ($nextBills as $bill): ?>
-                                <div class="dashboard-bill-row">
-                                    <div class="dashboard-due"><small>DIA</small><strong><?= str_pad((string) $bill['due_day'], 2, '0', STR_PAD_LEFT) ?></strong></div>
-                                    <div class="dashboard-bill-copy"><strong><?= e($bill['name']) ?></strong><span><?= $bill['needs_amount'] ? 'Aguardando valor do mês' : ($bill['billing_type'] === 'installment' ? 'Parcela ' . (int) $bill['installment_number'] . '/' . (int) $bill['installment_total'] : 'Pendente') ?></span></div>
-                                    <strong class="dashboard-row-value"><?= $bill['needs_amount'] ? '—' : money($bill['amount']) ?></strong>
-                                    <?php if ($bill['needs_amount']): ?>
-                                    <a class="dashboard-check dashboard-value-link" href="/contas?month=<?= e($month) ?>" title="Informar valor">+</a>
+                    <?php if ($recentTransactions): ?>
+                        <?php foreach ($recentTransactions as $transaction): ?>
+                            <div class="ref-transaction-row">
+                                <div class="ref-transaction-description">
+                                    <span class="ref-tx-icon <?= e($transaction['type']) ?>"><?= $transaction['type'] === 'income' ? '↙' : '↗' ?></span>
+                                    <div>
+                                        <strong><?= e($transaction['description']) ?></strong>
+                                        <small><?= $transaction['type'] === 'income' ? 'Entrada' : ($transaction['type'] === 'investment' ? 'Investimento' : 'Saída') ?></small>
+                                    </div>
+                                </div>
+                                <span><?= e($transaction['category']) ?></span>
+                                <span><?= e(date('d/m', strtotime($transaction['date']))) ?></span>
+                                <strong class="<?= $transaction['type'] === 'income' ? 'positive' : 'negative' ?>">
+                                    <?= $transaction['type'] === 'income' ? '+' : '−' ?> <?= money($transaction['amount']) ?>
+                                </strong>
+                                <div class="ref-table-actions">
+                                    <?php if (empty($transaction['bill_payment_id'])): ?>
+                                        <form method="post" action="/acao" onsubmit="return confirm('Remover este lançamento?')">
+                                            <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                                            <input type="hidden" name="return_to" value="/">
+                                            <input type="hidden" name="action" value="delete_transaction">
+                                            <input type="hidden" name="month" value="<?= e($month) ?>">
+                                            <input type="hidden" name="transaction_id" value="<?= (int) $transaction['id'] ?>">
+                                            <button type="submit" title="Excluir">⌫</button>
+                                        </form>
                                     <?php else: ?>
-                                    <form method="post" action="/acao">
-                                        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-                                        <input type="hidden" name="return_to" value="/">
-                                        <input type="hidden" name="action" value="toggle_bill">
-                                        <input type="hidden" name="month" value="<?= e($month) ?>">
-                                        <input type="hidden" name="bill_id" value="<?= (int) $bill['id'] ?>">
-                                        <input type="hidden" name="paid" value="1">
-                                        <button class="dashboard-check" type="submit" title="Marcar como paga">✓</button>
-                                    </form>
+                                        <a href="/contas?month=<?= e($month) ?>" title="Gerenciar conta">↗</a>
                                     <?php endif; ?>
                                 </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="dashboard-empty-state"><span>✓</span><strong>Nenhuma conta pendente</strong><p>As contas recorrentes do mês estão em dia.</p></div>
-                        <?php endif; ?>
-                    </div>
-
-                    <?php if (count($pendingBills) > count($nextBills)): ?>
-                        <a class="list-more" href="/contas?month=<?= e($month) ?>">+ <?= count($pendingBills) - count($nextBills) ?> conta(s) pendente(s)</a>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="ref-empty ref-table-empty">Nenhuma movimentação neste mês.</div>
                     <?php endif; ?>
-                </article>
-
-                <article class="card dashboard-list-card">
-                    <div class="card-title-row">
-                        <div><p class="eyebrow">ATIVIDADE RECENTE</p><h2>Últimos lançamentos</h2></div>
-                        <a href="/movimentacoes?month=<?= e($month) ?>" class="card-link">Ver todos →</a>
-                    </div>
-
-                    <div class="dashboard-transactions">
-                        <?php if ($recentTransactions): ?>
-                            <?php foreach ($recentTransactions as $transaction): ?>
-                                <div class="dashboard-tx-row">
-                                    <span class="dashboard-tx-icon <?= e($transaction['type']) ?>"><?= $transaction['type'] === 'income' ? '↗' : '↘' ?></span>
-                                    <div class="dashboard-tx-copy">
-                                        <strong><?= e($transaction['description']) ?></strong>
-                                        <span><?= e($transaction['category']) ?> • <?= e(date('d/m', strtotime($transaction['date']))) ?></span>
-                                    </div>
-                                    <strong class="dashboard-row-value <?= $transaction['type'] === 'income' ? 'positive-value' : '' ?>">
-                                        <?= $transaction['type'] === 'income' ? '+' : '−' ?> <?= money($transaction['amount']) ?>
-                                    </strong>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="dashboard-empty-state"><span>↕</span><strong>Nenhum lançamento ainda</strong><p>Adicione entradas e gastos para começar a leitura financeira.</p></div>
-                        <?php endif; ?>
-                    </div>
-                </article>
+                </div>
             </section>
 
-            <section class="card investment-progress-card">
-                <div class="investment-progress-copy">
-                    <p class="eyebrow">CONSTRUÇÃO DE PATRIMÔNIO</p>
-                    <h2>Meta de investimento</h2>
-                    <p><?= $data['investmentGoal'] > 0 ? 'Você já acumulou ' . number_format($investmentProgress, 0, ',', '.') . '% da meta deste mês.' : 'Defina uma meta mensal para acompanhar sua consistência de investimento.' ?></p>
-                </div>
-                <div class="investment-progress-values">
-                    <strong><?= money($totals['investment']) ?></strong>
-                    <span>de <?= money($data['investmentGoal']) ?></span>
-                </div>
-                <div class="investment-progress-bar"><span style="width:<?= $investmentProgress ?>%"></span></div>
-                <a href="/metas?month=<?= e($month) ?>" class="secondary">Gerenciar meta</a>
-            </section>
+            <footer class="ref-page-footer">
+                <span>Família Almeida&nbsp;&nbsp; / &nbsp;&nbsp;Um mês de cada vez.</span>
+                <span>Dados salvos na sua conta</span>
+            </footer>
         </div>
     </main>
 </div>
