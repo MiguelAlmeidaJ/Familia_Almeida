@@ -1,8 +1,10 @@
-const CACHE_NAME = 'familia-almeida-shopping-v1';
-const LATEST_SHOPPING_PAGE = '/__familia_shopping_latest__';
+const CACHE_NAME = 'familia-almeida-shopping-v2';
+const OFFLINE_SHOPPING_PAGE = '/compras-offline.html';
 const STATIC_ASSETS = [
+  OFFLINE_SHOPPING_PAGE,
   '/assets/style.css',
   '/assets/shopping.js',
+  '/assets/shopping-offline.js',
   '/manifest.webmanifest'
 ];
 
@@ -17,22 +19,12 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(
+        keys
+          .filter((key) => key.startsWith('familia-almeida-shopping-') && key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      ))
       .then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener('message', (event) => {
-  const data = event.data || {};
-  if (data.type !== 'CACHE_SHOPPING_PAGE' || !data.url) return;
-
-  event.waitUntil(
-    fetch(data.url, { credentials: 'include', cache: 'no-store' })
-      .then((response) => {
-        if (!response.ok) return;
-        return caches.open(CACHE_NAME).then((cache) => cache.put(LATEST_SHOPPING_PAGE, response.clone()));
-      })
-      .catch(() => {})
   );
 });
 
@@ -42,25 +34,27 @@ self.addEventListener('fetch', (event) => {
 
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
 
+  // A rota pública/offline nunca depende da sessão PHP.
+  if (request.mode === 'navigate' && (url.pathname === '/compras/offline' || url.pathname === '/compras-offline.html')) {
+    event.respondWith(
+      caches.match(OFFLINE_SHOPPING_PAGE).then((cached) => {
+        if (cached) return cached;
+        return fetch(OFFLINE_SHOPPING_PAGE).catch(() => new Response(
+          '<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font-family:system-ui;padding:32px"><h2>Lista offline indisponível</h2><p>Abra a lista com internet uma vez para preparar este aparelho.</p></body></html>',
+          { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+        ));
+      })
+    );
+    return;
+  }
+
+  // A tela autenticada continua sendo usada para atualizar o snapshot.
+  // Sem internet, ela cai diretamente na página pública offline.
   if (request.mode === 'navigate' && url.pathname === '/compras/mercado') {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(LATEST_SHOPPING_PAGE, clone));
-          }
-          return response;
-        })
-        .catch(async () => {
-          const cached = await caches.match(LATEST_SHOPPING_PAGE);
-          if (cached) return cached;
-
-          return new Response(
-            '<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lista offline</title><body style="font-family:system-ui;padding:32px;background:#f4f7f8;color:#173044"><h2>Lista ainda não disponível offline</h2><p>Abra o modo compra com internet pelo menos uma vez para salvar a lista neste aparelho.</p></body></html>',
-            { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
-          );
-        })
+        .catch(() => caches.match(OFFLINE_SHOPPING_PAGE))
+        .then((response) => response || caches.match(OFFLINE_SHOPPING_PAGE))
     );
     return;
   }
@@ -71,8 +65,7 @@ self.addEventListener('fetch', (event) => {
         const network = fetch(request)
           .then((response) => {
             if (response.ok) {
-              const clone = response.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
             }
             return response;
           })
@@ -148,7 +141,9 @@ self.addEventListener('sync', (event) => {
         if (body.ok) {
           await deleteOutbox(payload.client_purchase_id);
         }
-      } catch (_) {}
+      } catch (_) {
+        // Mantém a compra na fila. Nenhuma autenticação é solicitada offline.
+      }
     }
   })());
 });
