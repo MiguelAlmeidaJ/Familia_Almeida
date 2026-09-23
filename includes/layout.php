@@ -33,7 +33,7 @@ function render_sidebar(string $active, string $csrf): void
         ['key' => 'contas', 'href' => '/contas', 'label' => 'Contas recorrentes'],
         ['key' => 'metas', 'href' => '/metas', 'label' => 'Metas de gastos'],
         ['key' => 'dividas', 'href' => '/dividas', 'label' => 'Dívidas'],
-        ['key' => 'investimentos', 'href' => '/metas#investimento', 'label' => 'Investimentos'],
+        ['key' => 'investimentos', 'href' => '/metas?section=investment#investimento', 'label' => 'Investimentos'],
     ];
 
     $user = function_exists('current_user') ? current_user() : null;
