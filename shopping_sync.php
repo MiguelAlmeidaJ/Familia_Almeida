@@ -27,11 +27,15 @@ try {
     }
 
     $pdo = db();
+
     if (!shopping_schema_ready($pdo)) {
         throw new RuntimeException('Existe uma migration pendente para a lista de compras.');
     }
     if (!shopping_purchase_quantity_ready($pdo)) {
-        throw new RuntimeException('Existe uma atualização pendente para registrar a quantidade realmente comprada. Execute em Configurações > Manutenção.');
+        throw new RuntimeException('Execute a migration 007 para registrar a quantidade realmente comprada.');
+    }
+    if (!shopping_inventory_tracking_ready($pdo)) {
+        throw new RuntimeException('Execute a migration 008 para classificar consumo rápido e estoque.');
     }
 
     $listId = (int) ($payload['list_id'] ?? 0);
@@ -47,12 +51,13 @@ try {
     }
 
     $duplicateStmt = $pdo->prepare(
-        'SELECT p.id, p.transaction_id, p.total_amount
-         FROM shopping_purchases p
-         WHERE p.client_purchase_id = ?
+        'SELECT id, transaction_id, total_amount
+         FROM shopping_purchases
+         WHERE client_purchase_id = ?
          LIMIT 1'
     );
     $duplicateStmt->execute([$clientPurchaseId]);
+
     if ($duplicate = $duplicateStmt->fetch()) {
         echo json_encode([
             'ok' => true,
@@ -65,82 +70,111 @@ try {
     }
 
     $listStmt = $pdo->prepare(
-        'SELECT id, list_type, month
+        'SELECT id, month
          FROM shopping_lists
          WHERE id = ? AND list_type = "market"
          LIMIT 1'
     );
     $listStmt->execute([$listId]);
     $list = $listStmt->fetch();
+
     if (!$list) {
         throw new RuntimeException('Lista de mercado não encontrada.');
     }
 
-    $requested = [];
+    $existingRequested = [];
+    $localRequested = [];
+
     foreach ($itemsPayload as $item) {
         if (!is_array($item)) {
             continue;
         }
 
-        $itemId = (int) ($item['id'] ?? 0);
         $price = (float) ($item['purchased_price'] ?? 0);
         $purchasedQuantity = (float) ($item['purchased_quantity'] ?? 0);
         $store = trim((string) ($item['store_name'] ?? ''));
+        $trackInventory = !array_key_exists('track_inventory', $item) || (bool) $item['track_inventory'];
 
-        if ($itemId > 0 && $price > 0) {
-            $requested[$itemId] = [
-                'purchased_price' => $price,
-                'purchased_quantity' => $purchasedQuantity > 0 ? $purchasedQuantity : null,
-                'store_name' => substr($store, 0, 160),
-            ];
+        if ($price <= 0 || $purchasedQuantity <= 0) {
+            continue;
         }
+
+        $itemId = (int) ($item['id'] ?? 0);
+
+        $normalized = [
+            'purchased_price' => $price,
+            'purchased_quantity' => $purchasedQuantity,
+            'store_name' => substr($store, 0, 160),
+            'track_inventory' => $trackInventory,
+        ];
+
+        if ($itemId > 0) {
+            $existingRequested[$itemId] = $normalized;
+            continue;
+        }
+
+        $name = trim((string) ($item['name'] ?? ''));
+        $clientItemId = trim((string) ($item['client_item_id'] ?? $item['local_id'] ?? ''));
+        $plannedQuantity = (float) ($item['planned_quantity'] ?? $item['quantity'] ?? $purchasedQuantity);
+        $estimatedPrice = (float) ($item['estimated_price'] ?? 0);
+
+        if ($name === '' || $clientItemId === '' || strlen($clientItemId) > 100 || $plannedQuantity <= 0) {
+            throw new RuntimeException('Um produto adicionado offline está incompleto.');
+        }
+
+        $localRequested[] = $normalized + [
+            'client_item_id' => $clientItemId,
+            'name' => substr($name, 0, 160),
+            'planned_quantity' => $plannedQuantity,
+            'estimated_price' => $estimatedPrice > 0 ? $estimatedPrice : null,
+        ];
     }
 
-    if (!$requested) {
-        throw new RuntimeException('Selecione ao menos um produto e informe o preço comprado.');
+    if (!$existingRequested && !$localRequested) {
+        throw new RuntimeException('Selecione ao menos um produto e informe quantidade e preço comprados.');
     }
-
-    $placeholders = implode(',', array_fill(0, count($requested), '?'));
-    $itemStmt = $pdo->prepare(
-        'SELECT id, name, quantity, purchased
-         FROM shopping_items
-         WHERE list_id = ? AND id IN (' . $placeholders . ')
-         FOR UPDATE'
-    );
 
     $pdo->beginTransaction();
 
-    $itemStmt->execute(array_merge([$listId], array_keys($requested)));
-    $rows = $itemStmt->fetchAll();
+    $existingRows = [];
 
-    if (count($rows) !== count($requested)) {
-        throw new RuntimeException('Um ou mais produtos da compra não pertencem a esta lista.');
+    if ($existingRequested) {
+        $placeholders = implode(',', array_fill(0, count($existingRequested), '?'));
+        $itemStmt = $pdo->prepare(
+            'SELECT id, name, quantity, purchased, track_inventory
+             FROM shopping_items
+             WHERE list_id = ? AND id IN (' . $placeholders . ')
+             FOR UPDATE'
+        );
+        $itemStmt->execute(array_merge([$listId], array_keys($existingRequested)));
+        $existingRows = $itemStmt->fetchAll();
+
+        if (count($existingRows) !== count($existingRequested)) {
+            throw new RuntimeException('Um ou mais produtos não pertencem a esta lista.');
+        }
     }
 
     $total = 0.0;
     $stores = [];
 
-    foreach ($rows as $row) {
+    foreach ($existingRows as $row) {
         if ((bool) $row['purchased']) {
-            throw new RuntimeException('Um dos produtos já foi marcado como comprado. Atualize a lista antes de sincronizar novamente.');
+            throw new RuntimeException('Um dos produtos já foi comprado. Atualize a lista antes de sincronizar.');
         }
 
-        $itemId = (int) $row['id'];
-        $price = (float) $requested[$itemId]['purchased_price'];
-        $quantity = $requested[$itemId]['purchased_quantity'] !== null
-            ? (float) $requested[$itemId]['purchased_quantity']
-            : (float) $row['quantity'];
+        $requested = $existingRequested[(int) $row['id']];
+        $total += $requested['purchased_quantity'] * $requested['purchased_price'];
 
-        if ($quantity <= 0) {
-            throw new RuntimeException('A quantidade comprada precisa ser maior que zero.');
+        if ($requested['store_name'] !== '') {
+            $stores[strtolower($requested['store_name'])] = $requested['store_name'];
         }
+    }
 
-        $requested[$itemId]['purchased_quantity'] = $quantity;
-        $total += $quantity * $price;
+    foreach ($localRequested as $requested) {
+        $total += $requested['purchased_quantity'] * $requested['purchased_price'];
 
-        $store = trim((string) $requested[$itemId]['store_name']);
-        if ($store !== '') {
-            $stores[strtolower($store)] = $store;
+        if ($requested['store_name'] !== '') {
+            $stores[strtolower($requested['store_name'])] = $requested['store_name'];
         }
     }
 
@@ -179,33 +213,78 @@ try {
     ]);
     $purchaseId = (int) $pdo->lastInsertId();
 
-    $updateItem = $pdo->prepare(
-        'UPDATE shopping_items
-         SET purchase_id = ?, purchased_quantity = ?, purchased_price = ?, store_name = ?,
-             purchased = 1, purchased_at = NOW()
-         WHERE id = ? AND list_id = ?'
-    );
-
     $inventoryRows = [];
 
-    foreach ($rows as $row) {
-        $itemId = (int) $row['id'];
-        $updateItem->execute([
-            $purchaseId,
-            $requested[$itemId]['purchased_quantity'],
-            $requested[$itemId]['purchased_price'],
-            $requested[$itemId]['store_name'] !== '' ? $requested[$itemId]['store_name'] : null,
-            $itemId,
-            $listId,
-        ]);
+    if ($existingRows) {
+        $updateItem = $pdo->prepare(
+            'UPDATE shopping_items
+             SET purchase_id = ?,
+                 purchased_quantity = ?,
+                 purchased_price = ?,
+                 store_name = ?,
+                 track_inventory = ?,
+                 purchased = 1,
+                 purchased_at = NOW()
+             WHERE id = ? AND list_id = ?'
+        );
 
-        $row['purchased_quantity'] = $requested[$itemId]['purchased_quantity'];
-        $inventoryRows[] = $row;
+        foreach ($existingRows as $row) {
+            $itemId = (int) $row['id'];
+            $requested = $existingRequested[$itemId];
+
+            $updateItem->execute([
+                $purchaseId,
+                $requested['purchased_quantity'],
+                $requested['purchased_price'],
+                $requested['store_name'] !== '' ? $requested['store_name'] : null,
+                $requested['track_inventory'] ? 1 : 0,
+                $itemId,
+                $listId,
+            ]);
+
+            $row['purchased_quantity'] = $requested['purchased_quantity'];
+            $row['track_inventory'] = $requested['track_inventory'];
+            $inventoryRows[] = $row;
+        }
     }
 
-    // Se o módulo de estoque já estiver instalado, cada item comprado
-    // entra automaticamente no estoque. A chave do item de compra
-    // impede que uma sincronização repetida duplique a entrada.
+    $localItemMap = [];
+
+    if ($localRequested) {
+        $insertLocal = $pdo->prepare(
+            'INSERT INTO shopping_items
+                (list_id, purchase_id, name, quantity, purchased_quantity,
+                 estimated_price, purchased_price, store_name, track_inventory,
+                 purchased, purchased_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
+        );
+
+        foreach ($localRequested as $requested) {
+            $insertLocal->execute([
+                $listId,
+                $purchaseId,
+                $requested['name'],
+                $requested['planned_quantity'],
+                $requested['purchased_quantity'],
+                $requested['estimated_price'],
+                $requested['purchased_price'],
+                $requested['store_name'] !== '' ? $requested['store_name'] : null,
+                $requested['track_inventory'] ? 1 : 0,
+            ]);
+
+            $serverItemId = (int) $pdo->lastInsertId();
+            $localItemMap[$requested['client_item_id']] = $serverItemId;
+
+            $inventoryRows[] = [
+                'id' => $serverItemId,
+                'name' => $requested['name'],
+                'quantity' => $requested['planned_quantity'],
+                'purchased_quantity' => $requested['purchased_quantity'],
+                'track_inventory' => $requested['track_inventory'],
+            ];
+        }
+    }
+
     inventory_record_purchase_items(
         $pdo,
         $purchaseId,
@@ -221,6 +300,7 @@ try {
         'purchase_id' => $purchaseId,
         'transaction_id' => $transactionId,
         'total' => $total,
+        'local_item_map' => $localItemMap,
         'message' => 'Compra sincronizada e lançada nos gastos.',
     ], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $exception) {
