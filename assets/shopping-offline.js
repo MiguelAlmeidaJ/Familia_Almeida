@@ -731,8 +731,10 @@
     render();
 
     requestAnimationFrame(() => {
-      const row = listNode.querySelector('[data-item-id="' + CSS.escape(id) + '"]');
+      const row = Array.from(listNode.querySelectorAll('[data-item-id]'))
+        .find((candidate) => candidate.dataset.itemId === id);
       row?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      row?.querySelector('[data-field="purchased_quantity"]')?.focus();
     });
   }
 
