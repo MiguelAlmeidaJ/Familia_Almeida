@@ -27,6 +27,7 @@ DirectoryIndex index.php
     RewriteRule ^compras/?$ pages/compras.php [L,QSA]
     RewriteRule ^estoque/?$ pages/estoque.php [L,QSA]
     RewriteRule ^compras/mercado/?$ pages/compras_mercado.php [L,QSA]
+    RewriteRule ^compras/offline/?$ compras-offline.html [L]
     RewriteRule ^api/compras/sincronizar/?$ shopping_sync.php [L,QSA]
     RewriteRule ^contas/?$ pages/contas.php [L,QSA]
     RewriteRule ^metas/?$ pages/metas.php [L,QSA]
