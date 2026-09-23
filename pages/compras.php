@@ -164,7 +164,15 @@ $priorityLabels = ['high' => 'Alta', 'medium' => 'Média', 'low' => 'Baixa'];
                                             <?php if ($item['purchased']): ?><span class="shopping-done-tag">Comprado</span><?php endif; ?>
                                         </div>
                                         <span>
-                                            Qtd. <?= e(rtrim(rtrim(number_format((float) $item['quantity'], 2, ',', '.'), '0'), ',')) ?>
+                                            Qtd. <?= e(rtrim(rtrim(number_format(
+                                                (float) ($item['purchased'] ? ($item['purchased_quantity'] ?? $item['quantity']) : $item['quantity']),
+                                                2,
+                                                ',',
+                                                '.'
+                                            ), '0'), ',')) ?>
+                                            <?php if ($item['purchased']): ?>
+                                                • planejado <?= e(rtrim(rtrim(number_format((float) $item['quantity'], 2, ',', '.'), '0'), ',')) ?>
+                                            <?php endif; ?>
                                             <?php if ($item['purchased'] && $item['store_name']): ?>
                                                 • <?= e($item['store_name']) ?>
                                             <?php endif; ?>
@@ -187,7 +195,10 @@ $priorityLabels = ['high' => 'Alta', 'medium' => 'Média', 'low' => 'Baixa'];
                                             $unit = $item['purchased']
                                                 ? (float) ($item['purchased_price'] ?? 0)
                                                 : (float) ($item['estimated_price'] ?? 0);
-                                            echo $unit > 0 ? money($unit * (float) $item['quantity']) : '—';
+                                            $quantityUsed = $item['purchased']
+                                                ? (float) ($item['purchased_quantity'] ?? $item['quantity'])
+                                                : (float) $item['quantity'];
+                                            echo $unit > 0 ? money($unit * $quantityUsed) : '—';
                                             ?>
                                         </strong>
                                     </div>
