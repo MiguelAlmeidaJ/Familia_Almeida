@@ -161,3 +161,88 @@ function shopping_validate_url(string $url): ?string
 
     return $url;
 }
+
+
+function shopping_pending_market_item_exists(PDO $pdo, int $listId, string $name): bool
+{
+    if ($listId <= 0 || trim($name) === '' || !shopping_schema_ready($pdo)) {
+        return false;
+    }
+
+    $stmt = $pdo->prepare(
+        'SELECT id
+         FROM shopping_items
+         WHERE list_id = ?
+           AND purchased = 0
+           AND LOWER(name) = LOWER(?)
+         LIMIT 1'
+    );
+    $stmt->execute([$listId, trim($name)]);
+
+    return (bool) $stmt->fetchColumn();
+}
+
+function shopping_latest_market_price(PDO $pdo, string $name): ?float
+{
+    if (trim($name) === '' || !shopping_schema_ready($pdo)) {
+        return null;
+    }
+
+    $stmt = $pdo->prepare(
+        'SELECT
+            CASE
+                WHEN i.purchased_price IS NOT NULL AND i.purchased_price > 0 THEN i.purchased_price
+                WHEN i.estimated_price IS NOT NULL AND i.estimated_price > 0 THEN i.estimated_price
+                ELSE NULL
+            END AS price
+         FROM shopping_items i
+         INNER JOIN shopping_lists l ON l.id = i.list_id
+         WHERE l.list_type = "market"
+           AND LOWER(i.name) = LOWER(?)
+           AND (
+                (i.purchased_price IS NOT NULL AND i.purchased_price > 0)
+                OR (i.estimated_price IS NOT NULL AND i.estimated_price > 0)
+           )
+         ORDER BY
+            CASE WHEN i.purchased_price IS NOT NULL AND i.purchased_price > 0 THEN 0 ELSE 1 END,
+            COALESCE(i.purchased_at, i.updated_at, i.created_at) DESC,
+            i.id DESC
+         LIMIT 1'
+    );
+    $stmt->execute([trim($name)]);
+    $price = $stmt->fetchColumn();
+
+    return $price !== false && $price !== null ? (float) $price : null;
+}
+
+function shopping_add_market_item_if_missing(
+    PDO $pdo,
+    int $listId,
+    string $name,
+    float $quantity,
+    ?float $estimatedPrice = null
+): bool {
+    $name = trim($name);
+
+    if ($listId <= 0 || $name === '' || $quantity <= 0) {
+        throw new RuntimeException('Produto inválido para a lista de mercado.');
+    }
+
+    if (shopping_pending_market_item_exists($pdo, $listId, $name)) {
+        return false;
+    }
+
+    $stmt = $pdo->prepare(
+        'INSERT INTO shopping_items
+            (list_id, name, quantity, estimated_price)
+         VALUES (?, ?, ?, ?)'
+    );
+    $stmt->execute([
+        $listId,
+        $name,
+        $quantity,
+        $estimatedPrice !== null && $estimatedPrice > 0 ? $estimatedPrice : null,
+    ]);
+
+    return true;
+}
