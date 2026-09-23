@@ -273,7 +273,7 @@
   }
 
   function uuid() {
-    if (crypto?.randomUUID) return crypto.randomUUID();
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
     return 'purchase-' + Date.now() + '-' + Math.random().toString(16).slice(2);
   }
 
@@ -500,9 +500,22 @@
 
   window.addEventListener('online', async () => {
     updateConnectionUi();
+    const hadPending = Object.values(state.items || {}).some((item) => Boolean(item.pending_sync));
     const synced = await syncOutbox();
+
     if (synced) {
       window.location.reload();
+      return;
+    }
+
+    if (hadPending) {
+      try {
+        const remaining = await idbGetAll(OUTBOX_STORE);
+        const currentStillQueued = remaining.some((payload) => Number(payload.list_id) === Number(config.listId));
+        if (!currentStillQueued) {
+          window.location.reload();
+        }
+      } catch (_) {}
     }
   });
 
