@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#10343c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Lista offline • Família Almeida</title>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body class="shopping-mode-body">
+<div class="shopping-mode-shell">
+    <header class="shopping-mode-header">
+        <div>
+            <button type="button" class="shopping-mode-back shopping-offline-back" id="offline-back" aria-label="Voltar">←</button>
+            <div>
+                <small>LISTA DE MERCADO • OFFLINE</small>
+                <h1 id="offline-month-label">Lista salva</h1>
+            </div>
+        </div>
+
+        <div class="shopping-connection-status offline" id="shopping-connection-status">
+            <span></span>
+            <strong>Offline</strong>
+        </div>
+    </header>
+
+    <main class="shopping-mode-main">
+        <section id="offline-no-list" class="shopping-mode-unavailable" hidden>
+            <strong>Nenhuma lista foi salva neste aparelho ainda.</strong>
+            <p>Quando tiver internet, entre no sistema e abra “Usar durante a compra” uma vez. Depois disso esta página funcionará sem login e sem conexão.</p>
+            <a href="/compras/mercado">Preparar lista quando estiver online</a>
+        </section>
+
+        <div id="offline-shopping-content" hidden>
+            <section class="shopping-live-summary">
+                <div>
+                    <span>Selecionados</span>
+                    <strong id="shopping-selected-count">0</strong>
+                </div>
+                <div>
+                    <span>Estimado</span>
+                    <strong id="shopping-selected-estimated">R$ 0,00</strong>
+                </div>
+                <div class="actual">
+                    <span>Total da compra</span>
+                    <strong id="shopping-selected-actual">R$ 0,00</strong>
+                </div>
+            </section>
+
+            <div class="shopping-offline-banner" id="shopping-offline-banner">
+                <strong>Modo offline ativo.</strong>
+                <span>Nenhuma autenticação é necessária para usar esta lista. Tudo fica salvo neste aparelho.</span>
+            </div>
+
+            <div class="shopping-pending-sync-banner" id="shopping-pending-sync-banner" hidden>
+                <strong id="pending-sync-title">Compra aguardando sincronização.</strong>
+                <span id="pending-sync-copy">Quando a internet voltar, tentaremos enviar os dados para o financeiro.</span>
+            </div>
+
+            <section class="shopping-use-card">
+                <header>
+                    <div>
+                        <p class="eyebrow">DURANTE A COMPRA</p>
+                        <h2>Produtos pendentes</h2>
+                        <p>Marque o que colocou no carrinho e informe o preço real.</p>
+                    </div>
+                    <strong id="offline-item-count">0</strong>
+                </header>
+
+                <div class="shopping-live-list" id="shopping-live-list"></div>
+            </section>
+
+            <details class="shopping-bought-section" id="offline-bought-section" hidden>
+                <summary>
+                    <span>Já comprados / aguardando sincronização</span>
+                    <strong id="offline-bought-count">0</strong>
+                </summary>
+                <div id="offline-bought-list"></div>
+            </details>
+
+            <section class="shopping-offline-info">
+                <span>☁</span>
+                <div>
+                    <strong>Esta tela não depende da sua sessão</strong>
+                    <p>Se a internet voltar mas o login tiver expirado, a compra permanece guardada aqui. Entre no sistema depois para concluir a sincronização.</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="shopping-mode-footer" id="offline-footer" hidden>
+        <div>
+            <span>Total selecionado</span>
+            <strong id="shopping-footer-total">R$ 0,00</strong>
+        </div>
+        <button type="button" id="shopping-finalize-button" disabled>Finalizar compra</button>
+    </footer>
+</div>
+
+<script src="/assets/shopping-offline.js"></script>
+</body>
+</html>
