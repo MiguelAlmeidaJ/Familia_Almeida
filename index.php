@@ -211,7 +211,7 @@ function dashboard_bill_subtitle(array $bill): string
 
                     <div class="ref-investment-progress"><span style="width:<?= $investmentProgress ?>%"></span></div>
 
-                    <a class="ref-investment-meta" href="/metas#investimento">
+                    <a class="ref-investment-meta" href="/metas?tab=investimento">
                         <?= $investmentGoal > 0 ? number_format($investmentProgress, 0, ',', '.') . '% da meta mensal' : 'Defina sua meta mensal' ?>
                         <span>✎</span>
                     </a>
