@@ -22,7 +22,12 @@ $allowedReturns = ['/', '/movimentacoes', '/contas', '/metas', '/dividas'];
 if (!in_array($returnTo, $allowedReturns, true)) {
     $returnTo = '/';
 }
-$redirect = $returnTo . '?month=' . rawurlencode($month);
+$returnTab = (string) ($_POST['return_tab'] ?? '');
+if ($returnTo === '/metas' && in_array($returnTab, ['gastos', 'investimento'], true)) {
+    $redirect = '/metas?month=' . rawurlencode($month) . '&tab=' . rawurlencode($returnTab);
+} else {
+    $redirect = $returnTo . '?month=' . rawurlencode($month);
+}
 
 try {
     switch ($action) {
@@ -416,6 +421,18 @@ try {
             $stmt = $pdo->prepare('UPDATE spending_goals SET category = ?, monthly_limit = ? WHERE id = ?');
             $stmt->execute([$category, $limit, $goalId]);
             flash('success', 'Meta atualizada.');
+            break;
+
+        case 'delete_goal':
+            $goalId = (int) ($_POST['goal_id'] ?? 0);
+
+            if ($goalId <= 0) {
+                throw new RuntimeException('Meta inválida.');
+            }
+
+            $stmt = $pdo->prepare('DELETE FROM spending_goals WHERE id = ?');
+            $stmt->execute([$goalId]);
+            flash('success', 'Meta removida.');
             break;
 
         case 'add_debt':
