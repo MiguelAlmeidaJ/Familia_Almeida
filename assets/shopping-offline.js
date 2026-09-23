@@ -154,6 +154,10 @@
     const row = createEl('article', 'shopping-live-row');
     row.dataset.itemId = String(item.id);
 
+    if (!(Number(item.purchased_quantity) > 0)) {
+      item.purchased_quantity = Number(item.quantity || 1);
+    }
+
     const checkLabel = createEl('label', 'shopping-live-check');
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
@@ -167,7 +171,7 @@
       createEl(
         'span',
         '',
-        'Qtd. ' + quantityText(item.quantity) +
+        'Planejado: ' + quantityText(item.quantity) +
           ' • estimado ' +
           (Number(item.estimated_price || 0) > 0 ? money.format(Number(item.estimated_price)) + '/un.' : 'não informado')
       )
@@ -188,6 +192,28 @@
     const fields = createEl('div', 'shopping-purchase-fields');
     fields.hidden = !item.selected;
 
+    const quantityLabel = createEl('label', 'shopping-quantity-field');
+    quantityLabel.append(createEl('span', '', 'Qtd. comprada'));
+
+    const quantityControl = createEl('div', 'shopping-quantity-control');
+    const minusButton = createEl('button', '', '−');
+    minusButton.type = 'button';
+    minusButton.setAttribute('aria-label', 'Diminuir quantidade');
+
+    const quantityInput = document.createElement('input');
+    quantityInput.type = 'number';
+    quantityInput.min = '0.01';
+    quantityInput.step = '0.01';
+    quantityInput.inputMode = 'decimal';
+    quantityInput.value = Number(item.purchased_quantity || item.quantity || 1);
+
+    const plusButton = createEl('button', '', '＋');
+    plusButton.type = 'button';
+    plusButton.setAttribute('aria-label', 'Aumentar quantidade');
+
+    quantityControl.append(minusButton, quantityInput, plusButton);
+    quantityLabel.append(quantityControl);
+
     const priceLabel = document.createElement('label');
     priceLabel.append(createEl('span', '', 'Preço comprado / un.'));
     const priceInput = document.createElement('input');
@@ -199,7 +225,7 @@
     priceInput.value = item.purchased_price || '';
     priceLabel.append(priceInput);
 
-    const storeLabel = document.createElement('label');
+    const storeLabel = createEl('label', 'shopping-store-field');
     storeLabel.append(createEl('span', '', 'Qual mercado?'));
     const storeInput = document.createElement('input');
     storeInput.type = 'text';
@@ -208,18 +234,36 @@
     storeInput.value = item.store_name || '';
     storeLabel.append(storeInput);
 
-    const lineTotalWrap = createEl('div');
+    const lineTotalWrap = createEl('div', 'shopping-line-total-box');
     lineTotalWrap.append(createEl('span', '', 'Total deste produto'));
-    const lineTotal = createEl('strong', '', money.format(Number(item.quantity || 0) * Number(item.purchased_price || 0)));
+    const lineTotal = createEl(
+      'strong',
+      '',
+      money.format(Number(item.purchased_quantity || item.quantity || 0) * Number(item.purchased_price || 0))
+    );
     lineTotalWrap.append(lineTotal);
 
-    fields.append(priceLabel, storeLabel, lineTotalWrap);
+    fields.append(quantityLabel, priceLabel, storeLabel, lineTotalWrap);
     row.append(checkLabel, product, estimated, fields);
 
     row.classList.toggle('selected', Boolean(item.selected));
 
+    async function saveQuantity(value) {
+      const numeric = Math.max(0.01, Number(value || 0.01));
+      item.purchased_quantity = Math.round(numeric * 100) / 100;
+      quantityInput.value = String(item.purchased_quantity);
+      lineTotal.textContent = money.format(item.purchased_quantity * Number(priceInput.value || 0));
+      row.classList.remove('needs-quantity');
+      await saveState();
+      updateTotals();
+    }
+
     checkbox.addEventListener('change', async () => {
       item.selected = checkbox.checked;
+      if (checkbox.checked && !(Number(item.purchased_quantity) > 0)) {
+        item.purchased_quantity = Number(item.quantity || 1);
+        quantityInput.value = String(item.purchased_quantity);
+      }
       fields.hidden = !checkbox.checked;
       row.classList.toggle('selected', checkbox.checked);
       await saveState();
@@ -230,9 +274,25 @@
       }
     });
 
+    quantityInput.addEventListener('input', async () => {
+      item.purchased_quantity = quantityInput.value;
+      lineTotal.textContent = money.format(Number(quantityInput.value || 0) * Number(priceInput.value || 0));
+      row.classList.remove('needs-quantity');
+      await saveState();
+      updateTotals();
+    });
+
+    minusButton.addEventListener('click', () => {
+      saveQuantity(Number(quantityInput.value || item.purchased_quantity || item.quantity || 1) - 1);
+    });
+
+    plusButton.addEventListener('click', () => {
+      saveQuantity(Number(quantityInput.value || item.purchased_quantity || item.quantity || 1) + 1);
+    });
+
     priceInput.addEventListener('input', async () => {
       item.purchased_price = priceInput.value;
-      lineTotal.textContent = money.format(Number(item.quantity || 0) * Number(priceInput.value || 0));
+      lineTotal.textContent = money.format(Number(item.purchased_quantity || item.quantity || 0) * Number(priceInput.value || 0));
       row.classList.remove('needs-price');
       await saveState();
       updateTotals();
@@ -262,15 +322,15 @@
           'small',
           '',
           item.pending_sync
-            ? 'Aguardando sincronização • ' + (item.store_name || 'mercado não informado')
-            : (item.store_name || 'Mercado não informado') + ' • ' + money.format(Number(item.purchased_price || 0)) + '/un.'
+            ? 'Aguardando sincronização • qtd. ' + quantityText(item.purchased_quantity || item.quantity) + ' • ' + (item.store_name || 'mercado não informado')
+            : (item.store_name || 'Mercado não informado') + ' • qtd. ' + quantityText(item.purchased_quantity || item.quantity) + ' • ' + money.format(Number(item.purchased_price || 0)) + '/un.'
         )
       );
 
       const total = createEl(
         'strong',
         '',
-        money.format(Number(item.quantity || 0) * Number(item.purchased_price || 0))
+        money.format(Number(item.purchased_quantity || item.quantity || 0) * Number(item.purchased_price || 0))
       );
 
       row.append(icon, copy, total);
@@ -313,11 +373,11 @@
   function updateTotals() {
     const selected = selectedItems();
     const estimated = selected.reduce(
-      (sum, item) => sum + Number(item.quantity || 0) * Number(item.estimated_price || 0),
+      (sum, item) => sum + Number(item.purchased_quantity || item.quantity || 0) * Number(item.estimated_price || 0),
       0
     );
     const actual = selected.reduce(
-      (sum, item) => sum + Number(item.quantity || 0) * Number(item.purchased_price || 0),
+      (sum, item) => sum + Number(item.purchased_quantity || item.quantity || 0) * Number(item.purchased_price || 0),
       0
     );
 
@@ -344,12 +404,19 @@
 
   function buildPayload() {
     const selected = selectedItems();
-    const missing = selected.find((item) => !(Number(item.purchased_price || 0) > 0));
-
     if (!selected.length) {
       throw new Error('Selecione pelo menos um produto.');
     }
 
+    const missingQuantity = selected.find((item) => !(Number(item.purchased_quantity || 0) > 0));
+    if (missingQuantity) {
+      const row = listNode.querySelector('[data-item-id="' + String(missingQuantity.id) + '"]');
+      row?.classList.add('needs-quantity');
+      row?.querySelector('.shopping-quantity-control input')?.focus();
+      throw new Error('Informe a quantidade realmente comprada de todos os produtos selecionados.');
+    }
+
+    const missing = selected.find((item) => !(Number(item.purchased_price || 0) > 0));
     if (missing) {
       const row = listNode.querySelector('[data-item-id="' + String(missing.id) + '"]');
       row?.classList.add('needs-price');
@@ -364,6 +431,7 @@
       purchase_date: localDate(),
       items: selected.map((item) => ({
         id: Number(item.id),
+        purchased_quantity: Number(item.purchased_quantity || item.quantity || 0),
         purchased_price: Number(item.purchased_price || 0),
         store_name: String(item.store_name || '').trim()
       })),
@@ -381,6 +449,7 @@
       item.selected = false;
       item.pending_sync = true;
       item.pending_purchase_id = payload.client_purchase_id;
+      item.purchased_quantity = queued.purchased_quantity;
       item.purchased_price = queued.purchased_price;
       item.store_name = queued.store_name;
     });
@@ -429,6 +498,7 @@
       item.pending_sync = false;
       item.pending_purchase_id = null;
       item.purchased = true;
+      item.purchased_quantity = synced.purchased_quantity;
       item.purchased_price = synced.purchased_price;
       item.store_name = synced.store_name;
     });
@@ -446,7 +516,7 @@
 
     const total = payload.items.reduce((sum, selected) => {
       const item = state.items[String(selected.id)];
-      return sum + Number(item?.quantity || 0) * Number(selected.purchased_price || 0);
+      return sum + Number(selected.purchased_quantity || 0) * Number(selected.purchased_price || 0);
     }, 0);
 
     if (!confirm('Finalizar esta compra em ' + money.format(total) + '?')) return;
