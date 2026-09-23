@@ -52,7 +52,15 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() => caches.match(LATEST_SHOPPING_PAGE))
+        .catch(async () => {
+          const cached = await caches.match(LATEST_SHOPPING_PAGE);
+          if (cached) return cached;
+
+          return new Response(
+            '<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lista offline</title><body style="font-family:system-ui;padding:32px;background:#f4f7f8;color:#173044"><h2>Lista ainda não disponível offline</h2><p>Abra o modo compra com internet pelo menos uma vez para salvar a lista neste aparelho.</p></body></html>',
+            { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+          );
+        })
     );
     return;
   }
