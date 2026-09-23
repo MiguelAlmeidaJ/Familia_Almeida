@@ -220,3 +220,30 @@ function inventory_quantity_label(float $quantity, string $unit): string
     $formatted = rtrim(rtrim(number_format($quantity, 3, ',', '.'), '0'), ',');
     return $formatted . ' ' . $unit;
 }
+
+
+function inventory_needs_restock(array $item): bool
+{
+    $current = (float) ($item['current_quantity'] ?? 0);
+    $minimum = (float) ($item['min_quantity'] ?? 0);
+
+    return $current <= 0 || ($minimum > 0 && $current <= $minimum);
+}
+
+function inventory_restock_quantity(array $item): float
+{
+    if (!inventory_needs_restock($item)) {
+        return 0.0;
+    }
+
+    $current = max(0.0, (float) ($item['current_quantity'] ?? 0));
+    $minimum = max(0.0, (float) ($item['min_quantity'] ?? 0));
+
+    if ($minimum <= 0) {
+        return 1.0;
+    }
+
+    // Repõe até o mínimo. Quando já está exatamente no mínimo,
+    // sugere pelo menos uma unidade para realmente sair da zona de reposição.
+    return max(1.0, $minimum - $current);
+}
