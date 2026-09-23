@@ -22,14 +22,26 @@ $scheduledBills = array_values(array_filter(
 $csrf = csrf_token();
 $flash = pull_flash();
 
-$totalMonthly = array_reduce($currentBills, fn(float $sum, array $bill) => $sum + (float) $bill['amount'], 0.0);
-$paidCount = count(array_filter($currentBills, fn(array $bill) => $bill['paid']));
-$needsAmountCount = count(array_filter($currentBills, fn(array $bill) => $bill['needs_amount']));
-$pendingCount = count($currentBills) - $paidCount;
-
 [$year, $monthNumber] = array_map('intval', explode('-', $month));
 $monthNames = [1 => 'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 $monthLabel = $monthNames[$monthNumber] . ' de ' . $year;
+
+$currentDate = new DateTimeImmutable($month . '-01');
+$prevMonth = $currentDate->modify('-1 month')->format('Y-m');
+$nextMonth = $currentDate->modify('+1 month')->format('Y-m');
+
+$knownBills = array_values(array_filter($currentBills, fn(array $bill) => !$bill['needs_amount']));
+$paidBills = array_values(array_filter($currentBills, fn(array $bill) => $bill['paid']));
+$pendingBills = array_values(array_filter($currentBills, fn(array $bill) => !$bill['paid']));
+
+$expectedTotal = array_reduce($knownBills, fn(float $sum, array $bill) => $sum + (float) $bill['amount'], 0.0);
+$paidTotal = array_reduce(
+    array_filter($paidBills, fn(array $bill) => !$bill['needs_amount']),
+    fn(float $sum, array $bill) => $sum + (float) $bill['amount'],
+    0.0
+);
+$pendingTotal = max(0, $expectedTotal - $paidTotal);
+$needsAmountCount = count(array_filter($currentBills, fn(array $bill) => $bill['needs_amount']));
 
 $typeLabels = [
     'fixed' => 'Fixa',
@@ -37,406 +49,348 @@ $typeLabels = [
     'installment' => 'Parcelada',
 ];
 
-function recurring_bill_subtitle(array $bill, string $monthLabel): string
+function fixed_bill_subtitle(array $bill): string
 {
-    if ($bill['billing_type'] === 'installment') {
-        if ($bill['schedule_status'] === 'future') {
-            return 'Começa em ' . ($bill['start_month'] ?: '—');
-        }
-        if ($bill['schedule_status'] === 'completed') {
-            return 'Parcelamento concluído';
-        }
-        return 'Parcela ' . (int) $bill['installment_number'] . '/' . (int) $bill['installment_total'];
+    if ($bill['paid']) {
+        return 'Pago neste mês';
     }
 
     if ($bill['needs_amount']) {
-        return 'Informe o valor de ' . $monthLabel;
+        return 'Definir valor deste mês';
     }
 
-    return $bill['paid']
-        ? 'Pagamento confirmado em ' . $monthLabel
-        : 'Aguardando pagamento em ' . $monthLabel;
+    if ($bill['billing_type'] === 'installment') {
+        return 'Parcela ' . (int) $bill['installment_number'] . '/' . (int) $bill['installment_total'];
+    }
+
+    return 'Vence dia ' . (int) $bill['due_day'];
 }
 ?>
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Contas recorrentes • Família Almeida</title>
-<link rel="stylesheet" href="/assets/style.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Contas fixas • Família Almeida</title>
+    <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
-<div class="shell">
-<?php render_sidebar('contas', $csrf); ?>
-<main>
-<?php render_topbar($user); ?>
+<div class="shell ref-shell">
+    <?php render_sidebar('contas', $csrf); ?>
 
-<div class="content bills-page">
-<div class="page-head-row bills-head">
-<?php page_header('ORGANIZAÇÃO MENSAL', 'Contas recorrentes', 'Separe valores fixos, contas que variam todo mês e compras parceladas.'); ?>
+    <main>
+        <?php render_topbar($user); ?>
 
-<form method="get" class="month-filter">
-<label>
-<span>MÊS DE REFERÊNCIA</span>
-<input type="month" name="month" value="<?= e($month) ?>">
-</label>
-<button class="secondary" type="submit">Carregar</button>
-</form>
-</div>
+        <div class="content ref-dashboard fixed-reference-page">
+            <section class="ref-dashboard-heading fixed-reference-heading">
+                <div>
+                    <p class="eyebrow">CADA ESCOLHA CONTA</p>
+                    <h1>Contas fixas</h1>
+                    <p>As despesas que fazem parte da rotina da família.</p>
+                </div>
 
-<?php if ($flash): ?>
-<div class="alert <?= $flash['type'] === 'success' ? 'success' : '' ?>"><?= e($flash['message']) ?></div>
-<?php endif; ?>
+                <div class="ref-month-picker">
+                    <a href="?month=<?= e($prevMonth) ?>" aria-label="Mês anterior">‹</a>
+                    <span><?= e($monthLabel) ?></span>
+                    <span class="ref-calendar">▣</span>
+                    <a href="?month=<?= e($nextMonth) ?>" aria-label="Próximo mês">›</a>
+                </div>
+            </section>
 
-<?php if (!$recurringSchemaReady): ?>
-<div class="alert migration-alert">
-O banco ainda está no formato anterior. Execute as migrations antes de cadastrar ou editar recorrências.
-<a href="/configuracoes/manutencao">Ir para Manutenção →</a>
-</div>
-<?php endif; ?>
+            <?php if ($flash): ?>
+                <div class="alert <?= $flash['type'] === 'success' ? 'success' : '' ?>"><?= e($flash['message']) ?></div>
+            <?php endif; ?>
 
-<div class="recurring-explainer">
-<div><span class="bill-type-dot fixed"></span><strong>Fixa</strong><small>Mesmo valor como referência todos os meses.</small></div>
-<div><span class="bill-type-dot variable"></span><strong>Variável</strong><small>Água, luz e cartão: informe o valor de cada mês.</small></div>
-<div><span class="bill-type-dot installment"></span><strong>Parcelada</strong><small>Aparece somente durante a quantidade de parcelas definida.</small></div>
-</div>
+            <?php if (!$recurringSchemaReady): ?>
+                <div class="alert migration-alert">
+                    O banco ainda está no formato anterior.
+                    <a href="/configuracoes/manutencao">Executar migrations →</a>
+                </div>
+            <?php endif; ?>
 
-<div class="recurring-accounting-note">
-<strong>Atenção às parcelas no cartão:</strong>
-se uma compra parcelada já estiver incluída em uma fatura de cartão que você controla como conta variável, não registre o pagamento da parcela separadamente, pois isso duplicaria a saída. Use “Parcelada” aqui para cobranças próprias; o vínculo com fatura será tratado separadamente.
-</div>
+            <section class="fixed-reference-summary">
+                <div>
+                    <span>Previsto em contas</span>
+                    <strong><?= money($expectedTotal) ?></strong>
+                    <?php if ($needsAmountCount): ?>
+                        <small><?= $needsAmountCount ?> conta(s) ainda sem valor definido</small>
+                    <?php endif; ?>
+                </div>
+                <div class="paid">
+                    <span>Já pago</span>
+                    <strong><?= money($paidTotal) ?></strong>
+                    <small><?= count($paidBills) ?> de <?= count($currentBills) ?> contas</small>
+                </div>
+                <div>
+                    <span>A pagar</span>
+                    <strong><?= money($pendingTotal) ?></strong>
+                    <small><?= count($pendingBills) ?> conta(s) pendente(s)</small>
+                </div>
+            </section>
 
-<div class="bills-summary">
-<div class="summary-card">
-<span>Recorrências do mês</span>
-<strong><?= count($currentBills) ?></strong>
-<small>contas previstas em <?= e($monthLabel) ?></small>
-</div>
-<div class="summary-card">
-<span>Valor conhecido</span>
-<strong><?= money($totalMonthly) ?></strong>
-<small><?= $needsAmountCount ? $needsAmountCount . ' conta(s) ainda sem valor' : 'todos os valores informados' ?></small>
-</div>
-<div class="summary-card">
-<span>Pagas</span>
-<strong><?= $paidCount ?>/<?= count($currentBills) ?></strong>
-<small>confirmadas nas movimentações</small>
-</div>
-<div class="summary-card <?= $needsAmountCount > 0 ? 'attention' : ($pendingCount > 0 ? '' : 'success') ?>">
-<span><?= $needsAmountCount > 0 ? 'Aguardando valor' : 'Pendentes' ?></span>
-<strong><?= $needsAmountCount > 0 ? $needsAmountCount : $pendingCount ?></strong>
-<small><?= $needsAmountCount > 0 ? 'variáveis precisam ser atualizadas' : ($pendingCount > 0 ? 'ainda aguardando pagamento' : 'mês em dia') ?></small>
-</div>
-</div>
+            <section class="card fixed-reference-card">
+                <header class="fixed-reference-card-head">
+                    <div>
+                        <h2>Despesas fixas</h2>
+                        <p>Valores e vencimentos são reaproveitados nos próximos meses. Pagamentos não.</p>
+                    </div>
 
-<div class="bills-workspace recurring-workspace">
-<section class="card new-bill-card">
-<div class="section-title">
-<div>
-<p class="eyebrow">NOVA RECORRÊNCIA</p>
-<h2>Adicionar conta</h2>
-</div>
-<span class="section-icon">＋</span>
-</div>
+                    <button class="ref-green-button fixed-add-button" type="button" onclick="openNewBill()">
+                        ＋&nbsp; Adicionar conta
+                    </button>
+                </header>
 
-<form method="post" action="/acao" class="stack-form recurring-form" id="newRecurringForm">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-<input type="hidden" name="return_to" value="/contas">
-<input type="hidden" name="action" value="add_bill">
-<input type="hidden" name="month" value="<?= e($month) ?>">
+                <div class="fixed-reference-list">
+                    <?php if ($currentBills): ?>
+                        <?php foreach ($currentBills as $bill): ?>
+                            <div class="fixed-reference-row <?= $bill['paid'] ? 'is-paid' : '' ?>">
+                                <div class="fixed-reference-day">
+                                    <small>DIA</small>
+                                    <strong><?= str_pad((string) $bill['due_day'], 2, '0', STR_PAD_LEFT) ?></strong>
+                                </div>
 
-<label>Tipo
-<select name="billing_type" class="billing-type-select" data-form="new" required>
-<option value="fixed">Fixa — valor recorrente</option>
-<option value="variable">Variável — valor muda todo mês</option>
-<option value="installment">Parcelada — quantidade definida</option>
-</select>
-</label>
+                                <div class="fixed-reference-copy">
+                                    <div class="fixed-reference-title">
+                                        <strong><?= e($bill['name']) ?></strong>
+                                        <span class="fixed-type-tag <?= e($bill['billing_type']) ?>">
+                                            <?= e($typeLabels[$bill['billing_type']] ?? 'Conta') ?>
+                                        </span>
+                                        <?php if ($bill['paid']): ?>
+                                            <span class="fixed-paid-tag">Pago</span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <span><?= e(fixed_bill_subtitle($bill)) ?></span>
+                                </div>
 
-<label>Nome da conta
-<input name="name" maxlength="120" placeholder="Ex.: Aluguel, Água, Notebook" required>
-</label>
+                                <div class="fixed-reference-value">
+                                    <strong><?= $bill['needs_amount'] ? '—' : money($bill['amount']) ?></strong>
+                                    <?php if ($bill['billing_type'] === 'installment' && !empty($bill['installment_number'])): ?>
+                                        <small><?= (int) $bill['installment_number'] ?>/<?= (int) $bill['installment_total'] ?></small>
+                                    <?php endif; ?>
+                                </div>
 
-<div class="form-grid-2">
-<label>
-<span class="amount-field-label">Valor mensal</span>
-<div class="money-input"><span>R$</span><input type="number" name="amount" class="billing-amount-input" min="0" step="0.01" placeholder="0,00" required></div>
-</label>
-<label>Vencimento
-<input type="number" name="due_day" min="1" max="31" value="10" required>
-</label>
-</div>
+                                <div class="fixed-reference-actions">
+                                    <?php if (!$bill['paid']): ?>
+                                        <?php if ($bill['needs_amount']): ?>
+                                            <button
+                                                type="button"
+                                                class="fixed-text-action emphasis"
+                                                onclick='openMonthlyAmount(
+                                                    <?= (int) $bill["id"] ?>,
+                                                    <?= json_encode($bill["name"], JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+                                                    <?= json_encode($bill["amount_due"] ?? $bill["amount"]) ?>,
+                                                    <?= json_encode($bill["billing_type"]) ?>
+                                                )'
+                                            >Definir valor</button>
+                                        <?php else: ?>
+                                            <form method="post" action="/acao">
+                                                <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                                                <input type="hidden" name="return_to" value="/contas">
+                                                <input type="hidden" name="action" value="toggle_bill">
+                                                <input type="hidden" name="month" value="<?= e($month) ?>">
+                                                <input type="hidden" name="bill_id" value="<?= (int) $bill['id'] ?>">
+                                                <input type="hidden" name="paid" value="1">
+                                                <button class="fixed-text-action" type="submit">Marcar paga</button>
+                                            </form>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <form method="post" action="/acao">
+                                            <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                                            <input type="hidden" name="return_to" value="/contas">
+                                            <input type="hidden" name="action" value="toggle_bill">
+                                            <input type="hidden" name="month" value="<?= e($month) ?>">
+                                            <input type="hidden" name="bill_id" value="<?= (int) $bill['id'] ?>">
+                                            <input type="hidden" name="paid" value="0">
+                                            <button class="fixed-text-action muted" type="submit">Desmarcar</button>
+                                        </form>
+                                    <?php endif; ?>
 
-<div class="installment-fields" hidden>
-<label>Mês da primeira parcela
-<input type="month" name="start_month" value="<?= e($month) ?>">
-</label>
-<label>Total de parcelas
-<input type="number" name="installment_total" min="1" max="360" value="10">
-</label>
-</div>
+                                    <button
+                                        type="button"
+                                        class="fixed-icon-action"
+                                        title="Editar"
+                                        onclick='openBillEditor(
+                                            <?= (int) $bill["id"] ?>,
+                                            <?= json_encode($bill["name"], JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+                                            <?= json_encode($bill["billing_type"]) ?>,
+                                            <?= json_encode($bill["base_amount"]) ?>,
+                                            <?= (int) $bill["due_day"] ?>,
+                                            <?= json_encode($bill["start_month"]) ?>,
+                                            <?= json_encode($bill["installment_total"]) ?>
+                                        )'
+                                    >✎</button>
 
-<div class="billing-form-hint" data-hint>
-Este valor será usado como padrão em todos os meses.
-</div>
+                                    <form method="post" action="/acao" onsubmit="return confirm('Excluir esta conta definitivamente? Pagamentos e movimentações gerados por ela também serão removidos.')">
+                                        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                                        <input type="hidden" name="return_to" value="/contas">
+                                        <input type="hidden" name="action" value="delete_bill">
+                                        <input type="hidden" name="month" value="<?= e($month) ?>">
+                                        <input type="hidden" name="bill_id" value="<?= (int) $bill['id'] ?>">
+                                        <button class="fixed-icon-action danger" type="submit" title="Excluir">⌫</button>
+                                    </form>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="ref-empty fixed-reference-empty">Nenhuma conta cadastrada para este mês.</div>
+                    <?php endif; ?>
+                </div>
 
-<button class="primary" type="submit">Adicionar recorrência</button>
-</form>
-</section>
+                <footer class="fixed-reference-footer">
+                    Contas variáveis, como água, luz e cartão, podem ter um valor diferente em cada mês.
+                    Compras parceladas encerram automaticamente depois da última parcela.
+                </footer>
+            </section>
 
-<section class="card bills-list-card">
-<div class="card-head bills-list-head">
-<div>
-<p class="eyebrow">CONTAS DO MÊS</p>
-<h2><?= count($currentBills) ?> compromissos em <?= e($monthLabel) ?></h2>
-</div>
-<div class="list-legend"><span class="legend-dot paid"></span> Pago <span class="legend-dot pending"></span> Pendente</div>
-</div>
+            <?php if ($scheduledBills || $archivedBills): ?>
+                <section class="fixed-reference-secondary">
+                    <?php if ($scheduledBills): ?>
+                        <details class="fixed-reference-details">
+                            <summary>Parcelamentos fora do mês selecionado <span><?= count($scheduledBills) ?></span></summary>
+                            <div>
+                                <?php foreach ($scheduledBills as $bill): ?>
+                                    <p>
+                                        <strong><?= e($bill['name']) ?></strong>
+                                        — <?= $bill['schedule_status'] === 'future' ? 'começa em ' . e((string) $bill['start_month']) : 'concluído' ?>
+                                    </p>
+                                <?php endforeach; ?>
+                            </div>
+                        </details>
+                    <?php endif; ?>
 
-<div class="managed-bill-list recurring-list">
-<?php if ($currentBills): ?>
-<?php foreach ($currentBills as $bill): ?>
-<article class="managed-bill recurring-bill <?= $bill['paid'] ? 'is-paid' : '' ?> <?= $bill['needs_amount'] ? 'needs-value' : '' ?>">
-<form method="post" action="/acao" class="bill-check-form">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-<input type="hidden" name="return_to" value="/contas">
-<input type="hidden" name="action" value="toggle_bill">
-<input type="hidden" name="month" value="<?= e($month) ?>">
-<input type="hidden" name="bill_id" value="<?= (int) $bill['id'] ?>">
-<input type="hidden" name="paid" value="<?= $bill['paid'] ? '0' : '1' ?>">
-<button
-    class="check large <?= $bill['paid'] ? 'done' : '' ?>"
-    type="submit"
-    <?= $bill['needs_amount'] && !$bill['paid'] ? 'disabled' : '' ?>
-    title="<?= $bill['needs_amount'] ? 'Informe o valor do mês antes de pagar' : ($bill['paid'] ? 'Marcar como pendente' : 'Marcar como paga') ?>"
-><?= $bill['paid'] ? '✓' : '' ?></button>
-</form>
+                    <?php if ($archivedBills): ?>
+                        <details class="fixed-reference-details">
+                            <summary>Contas arquivadas <span><?= count($archivedBills) ?></span></summary>
+                            <div class="fixed-archived-list">
+                                <?php foreach ($archivedBills as $bill): ?>
+                                    <div>
+                                        <span><?= e($bill['name']) ?></span>
+                                        <form method="post" action="/acao">
+                                            <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                                            <input type="hidden" name="return_to" value="/contas">
+                                            <input type="hidden" name="action" value="restore_bill">
+                                            <input type="hidden" name="month" value="<?= e($month) ?>">
+                                            <input type="hidden" name="bill_id" value="<?= (int) $bill['id'] ?>">
+                                            <button class="fixed-text-action" type="submit">Restaurar</button>
+                                        </form>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </details>
+                    <?php endif; ?>
+                </section>
+            <?php endif; ?>
 
-<div class="bill-date-badge">
-<small>VENCE</small>
-<strong><?= str_pad((string) $bill['due_day'], 2, '0', STR_PAD_LEFT) ?></strong>
-</div>
-
-<div class="managed-bill-info">
-<div class="bill-name-line">
-<strong><?= e($bill['name']) ?></strong>
-<span class="bill-type-badge <?= e($bill['billing_type']) ?>"><?= e($typeLabels[$bill['billing_type']] ?? 'Conta') ?></span>
-<?php if ($bill['paid']): ?>
-<span class="status-pill paid">Pago</span>
-<?php elseif ($bill['needs_amount']): ?>
-<span class="status-pill value-needed">Informar valor</span>
-<?php else: ?>
-<span class="status-pill pending">Pendente</span>
-<?php endif; ?>
-</div>
-<span><?= e(recurring_bill_subtitle($bill, $monthLabel)) ?></span>
-</div>
-
-<div class="managed-bill-amount recurring-amount">
-<?php if ($bill['needs_amount']): ?>
-<span class="amount-missing">—</span>
-<?php else: ?>
-<?= money($bill['amount']) ?>
-<?php endif; ?>
-<?php if ($bill['billing_type'] === 'installment'): ?>
-<small><?= (int) $bill['installment_number'] ?>/<?= (int) $bill['installment_total'] ?></small>
-<?php endif; ?>
-</div>
-
-<div class="managed-bill-actions recurring-actions">
-<button
-    class="action-button <?= $bill['needs_amount'] ? 'emphasis' : '' ?>"
-    type="button"
-    onclick='openMonthlyAmount(<?= (int) $bill["id"] ?>, <?= json_encode($bill["name"], JSON_HEX_APOS | JSON_HEX_QUOT) ?>, <?= json_encode($bill["amount_due"] ?? $bill["amount"]) ?>, <?= json_encode($bill["billing_type"]) ?>)'
-><?= $bill['needs_amount'] ? 'Informar valor' : 'Valor do mês' ?></button>
-
-<button class="action-button" type="button"
-onclick='openBillEditor(
-    <?= (int) $bill["id"] ?>,
-    <?= json_encode($bill["name"], JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
-    <?= json_encode($bill["billing_type"]) ?>,
-    <?= json_encode($bill["base_amount"]) ?>,
-    <?= (int) $bill["due_day"] ?>,
-    <?= json_encode($bill["start_month"]) ?>,
-    <?= json_encode($bill["installment_total"]) ?>
-)'>Editar</button>
-
-<form method="post" action="/acao" onsubmit="return confirm('Arquivar esta recorrência? O histórico já registrado será preservado.')">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-<input type="hidden" name="return_to" value="/contas">
-<input type="hidden" name="action" value="archive_bill">
-<input type="hidden" name="month" value="<?= e($month) ?>">
-<input type="hidden" name="bill_id" value="<?= (int) $bill['id'] ?>">
-<button class="action-button muted" type="submit">Arquivar</button>
-</form>
-</div>
-</article>
-<?php endforeach; ?>
-<?php else: ?>
-<div class="empty bills-empty"><div class="bubble">▤</div><strong>Nenhuma recorrência neste mês.</strong><span>Cadastre uma conta fixa, variável ou parcelada.</span></div>
-<?php endif; ?>
-</div>
-</section>
-</div>
-
-<?php if ($scheduledBills): ?>
-<section class="card recurring-secondary-section">
-<div class="card-head">
-<div><p class="eyebrow">PARCELAMENTOS</p><h2>Fora do mês selecionado</h2></div>
-<span class="muted-copy"><?= count($scheduledBills) ?> parcelamento(s)</span>
-</div>
-<div class="scheduled-list">
-<?php foreach ($scheduledBills as $bill): ?>
-<div class="scheduled-row">
-<div class="scheduled-icon"><?= $bill['schedule_status'] === 'future' ? '→' : '✓' ?></div>
-<div>
-<strong><?= e($bill['name']) ?></strong>
-<span>
-<?php if ($bill['schedule_status'] === 'future'): ?>
-Começa em <?= e((string) $bill['start_month']) ?> • <?= (int) $bill['installment_total'] ?>x de <?= money($bill['base_amount']) ?>
-<?php else: ?>
-Concluído • <?= (int) $bill['installment_total'] ?>x de <?= money($bill['base_amount']) ?>
-<?php endif; ?>
-</span>
-</div>
-<button class="action-button" type="button"
-onclick='openBillEditor(
-    <?= (int) $bill["id"] ?>,
-    <?= json_encode($bill["name"], JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
-    <?= json_encode($bill["billing_type"]) ?>,
-    <?= json_encode($bill["base_amount"]) ?>,
-    <?= (int) $bill["due_day"] ?>,
-    <?= json_encode($bill["start_month"]) ?>,
-    <?= json_encode($bill["installment_total"]) ?>
-)'>Editar</button>
-</div>
-<?php endforeach; ?>
-</div>
-</section>
-<?php endif; ?>
-
-<?php if ($archivedBills): ?>
-<section class="card archived-section">
-<details>
-<summary>
-<div><p class="eyebrow">ARQUIVO</p><strong><?= count($archivedBills) ?> recorrência(s) arquivada(s)</strong></div>
-<span>Ver contas</span>
-</summary>
-<div class="archived-list">
-<?php foreach ($archivedBills as $bill): ?>
-<div class="archived-row">
-<div>
-<strong><?= e($bill['name']) ?></strong>
-<span><?= e($typeLabels[$bill['billing_type']] ?? 'Conta') ?> • dia <?= (int) $bill['due_day'] ?><?= $bill['base_amount'] > 0 ? ' • ' . money($bill['base_amount']) : '' ?></span>
-</div>
-<form method="post" action="/acao">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-<input type="hidden" name="return_to" value="/contas">
-<input type="hidden" name="action" value="restore_bill">
-<input type="hidden" name="month" value="<?= e($month) ?>">
-<input type="hidden" name="bill_id" value="<?= (int) $bill['id'] ?>">
-<button class="secondary small-button" type="submit">Restaurar</button>
-</form>
-</div>
-<?php endforeach; ?>
-</div>
-</details>
-</section>
-<?php endif; ?>
-</div>
-</main>
+            <footer class="ref-page-footer fixed-reference-page-footer">
+                <span>Família Almeida&nbsp;&nbsp; / &nbsp;&nbsp;Um mês de cada vez.</span>
+                <span>Dados salvos na sua conta</span>
+            </footer>
+        </div>
+    </main>
 </div>
 
-<dialog id="monthly-amount-dialog" class="bill-edit-dialog">
-<form method="post" action="/acao" class="dialog-form">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-<input type="hidden" name="return_to" value="/contas">
-<input type="hidden" name="action" value="set_bill_month_amount">
-<input type="hidden" name="month" value="<?= e($month) ?>">
-<input type="hidden" name="bill_id" id="monthly-bill-id">
+<dialog id="bill-dialog" class="fixed-reference-dialog">
+    <form method="post" action="/acao" class="fixed-reference-dialog-form recurring-form" id="billForm">
+        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+        <input type="hidden" name="return_to" value="/contas">
+        <input type="hidden" name="action" id="bill-action" value="add_bill">
+        <input type="hidden" name="month" value="<?= e($month) ?>">
+        <input type="hidden" name="bill_id" id="bill-id">
 
-<div class="dialog-head">
-<div><p class="eyebrow">VALOR DE <?= e(strtoupper($monthNames[$monthNumber])) ?></p><h3 id="monthly-bill-title">Conta</h3></div>
-<button type="button" onclick="document.getElementById('monthly-amount-dialog').close()">×</button>
-</div>
+        <div class="fixed-reference-dialog-head">
+            <div>
+                <h3 id="bill-dialog-title">Nova conta fixa</h3>
+                <p id="bill-dialog-subtitle">Configure o valor e o dia de vencimento.</p>
+            </div>
+            <button type="button" onclick="document.getElementById('bill-dialog').close()">×</button>
+        </div>
 
-<label>Valor deste mês
-<input type="number" name="amount" id="monthly-bill-amount" min="0.01" step="0.01" required>
-</label>
+        <label>Descrição
+            <input id="bill-name" name="name" maxlength="120" placeholder="Ex.: Aluguel, Internet, Água" required>
+        </label>
 
-<div class="dialog-note" id="monthly-bill-note">
-Este valor vale somente para <?= e($monthLabel) ?> e não altera os demais meses.
-</div>
+        <div class="fixed-reference-dialog-grid">
+            <label>
+                <span class="amount-field-label">Valor (R$)</span>
+                <input id="bill-amount" class="billing-amount-input" type="number" name="amount" min="0" step="0.01" placeholder="0,00">
+            </label>
 
-<button class="primary" type="submit">Salvar valor do mês</button>
-</form>
+            <label>Dia do vencimento
+                <input id="bill-day" type="number" name="due_day" min="1" max="31" value="10" required>
+            </label>
+        </div>
+
+        <label>Tipo de conta
+            <select id="bill-type" class="billing-type-select" name="billing_type" required>
+                <option value="fixed">Fixa — mesmo valor todo mês</option>
+                <option value="variable">Variável — muda todo mês</option>
+                <option value="installment">Parcelada — termina após algumas parcelas</option>
+            </select>
+        </label>
+
+        <div class="installment-fields" hidden>
+            <div class="fixed-reference-dialog-grid">
+                <label>Mês da primeira parcela
+                    <input id="bill-start" type="month" name="start_month" value="<?= e($month) ?>">
+                </label>
+
+                <label>Total de parcelas
+                    <input id="bill-total" type="number" name="installment_total" min="1" max="360" value="10">
+                </label>
+            </div>
+        </div>
+
+        <div class="billing-form-hint" data-hint></div>
+
+        <div class="fixed-reference-dialog-actions">
+            <button class="fixed-cancel-button" type="button" onclick="document.getElementById('bill-dialog').close()">Cancelar</button>
+            <button class="fixed-save-button" type="submit">Salvar ✓</button>
+        </div>
+    </form>
 </dialog>
 
-<dialog id="edit-bill-dialog" class="bill-edit-dialog">
-<form method="post" action="/acao" class="dialog-form recurring-form" id="editRecurringForm">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-<input type="hidden" name="return_to" value="/contas">
-<input type="hidden" name="action" value="update_bill">
-<input type="hidden" name="month" value="<?= e($month) ?>">
-<input type="hidden" name="bill_id" id="edit-bill-id">
+<dialog id="monthly-amount-dialog" class="fixed-reference-dialog fixed-reference-small-dialog">
+    <form method="post" action="/acao" class="fixed-reference-dialog-form">
+        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+        <input type="hidden" name="return_to" value="/contas">
+        <input type="hidden" name="action" value="set_bill_month_amount">
+        <input type="hidden" name="month" value="<?= e($month) ?>">
+        <input type="hidden" name="bill_id" id="monthly-bill-id">
 
-<div class="dialog-head">
-<div><p class="eyebrow">EDITAR RECORRÊNCIA</p><h3 id="edit-bill-title">Conta</h3></div>
-<button type="button" onclick="document.getElementById('edit-bill-dialog').close()">×</button>
-</div>
+        <div class="fixed-reference-dialog-head">
+            <div>
+                <h3 id="monthly-bill-title">Valor do mês</h3>
+                <p>Este valor vale somente para <?= e($monthLabel) ?>.</p>
+            </div>
+            <button type="button" onclick="document.getElementById('monthly-amount-dialog').close()">×</button>
+        </div>
 
-<label>Tipo
-<select name="billing_type" id="edit-billing-type" class="billing-type-select" data-form="edit" required>
-<option value="fixed">Fixa — valor recorrente</option>
-<option value="variable">Variável — valor muda todo mês</option>
-<option value="installment">Parcelada — quantidade definida</option>
-</select>
-</label>
+        <label>Valor (R$)
+            <input type="number" name="amount" id="monthly-bill-amount" min="0.01" step="0.01" required>
+        </label>
 
-<label>Nome da conta
-<input name="name" id="edit-bill-name" maxlength="120" required>
-</label>
-
-<div class="form-grid-2">
-<label>
-<span class="amount-field-label">Valor mensal</span>
-<input type="number" name="amount" id="edit-bill-amount" class="billing-amount-input" min="0" step="0.01" required>
-</label>
-<label>Dia do vencimento
-<input type="number" name="due_day" id="edit-bill-day" min="1" max="31" required>
-</label>
-</div>
-
-<div class="installment-fields" hidden>
-<label>Mês da primeira parcela
-<input type="month" name="start_month" id="edit-bill-start">
-</label>
-<label>Total de parcelas
-<input type="number" name="installment_total" id="edit-bill-total" min="1" max="360">
-</label>
-</div>
-
-<div class="billing-form-hint" data-hint></div>
-<div class="dialog-note">A edição altera os próximos meses. Pagamentos já registrados mantêm o valor histórico daquele mês.</div>
-<button class="primary" type="submit">Salvar alterações</button>
-</form>
+        <div class="fixed-reference-dialog-actions">
+            <button class="fixed-cancel-button" type="button" onclick="document.getElementById('monthly-amount-dialog').close()">Cancelar</button>
+            <button class="fixed-save-button" type="submit">Salvar ✓</button>
+        </div>
+    </form>
 </dialog>
 
 <script>
 const billingHints = {
-    fixed: 'Use para valores normalmente estáveis, como aluguel ou internet. Você ainda pode ajustar um mês isoladamente.',
-    variable: 'Use para água, luz e fatura do cartão. O sistema pedirá o valor de cada mês antes do pagamento.',
-    installment: 'Informe o valor de cada parcela, o primeiro mês e quantas parcelas existem.'
+    fixed: 'Use para aluguel, internet e outras despesas com valor normalmente estável.',
+    variable: 'Use para água, luz, gás e fatura do cartão. O valor é definido mês a mês.',
+    installment: 'Informe o valor de cada parcela, o mês inicial e a quantidade total.'
 };
 
-function syncBillingForm(form) {
-    const type = form.querySelector('.billing-type-select').value;
-    const amount = form.querySelector('.billing-amount-input');
+function syncBillingForm() {
+    const form = document.getElementById('billForm');
+    const type = document.getElementById('bill-type').value;
+    const amount = document.getElementById('bill-amount');
     const amountLabel = form.querySelector('.amount-field-label');
     const installmentFields = form.querySelector('.installment-fields');
+    const installmentInputs = installmentFields.querySelectorAll('input');
     const hint = form.querySelector('[data-hint]');
-    const installmentInputs = installmentFields ? installmentFields.querySelectorAll('input') : [];
 
     if (type === 'variable') {
         amount.required = false;
@@ -445,47 +399,62 @@ function syncBillingForm(form) {
         installmentInputs.forEach(input => input.required = false);
     } else if (type === 'installment') {
         amount.required = true;
-        amountLabel.textContent = 'Valor de cada parcela';
+        amountLabel.textContent = 'Valor da parcela (R$)';
         installmentFields.hidden = false;
         installmentInputs.forEach(input => input.required = true);
     } else {
         amount.required = true;
-        amountLabel.textContent = 'Valor mensal';
+        amountLabel.textContent = 'Valor (R$)';
         installmentFields.hidden = true;
         installmentInputs.forEach(input => input.required = false);
     }
 
-    if (hint) hint.textContent = billingHints[type] || '';
+    hint.textContent = billingHints[type] || '';
 }
 
-document.querySelectorAll('.billing-type-select').forEach(select => {
-    select.addEventListener('change', () => syncBillingForm(select.closest('.recurring-form')));
-});
-document.querySelectorAll('.recurring-form').forEach(syncBillingForm);
+document.getElementById('bill-type').addEventListener('change', syncBillingForm);
 
-function openMonthlyAmount(id, name, amount, type) {
-    document.getElementById('monthly-bill-id').value = id;
-    document.getElementById('monthly-bill-title').textContent = name;
-    document.getElementById('monthly-bill-amount').value = Number(amount) > 0 ? amount : '';
-    document.getElementById('monthly-bill-note').textContent =
-        type === 'variable'
-            ? 'Este valor vale somente para <?= e($monthLabel) ?>. No próximo mês o sistema pedirá um novo valor.'
-            : 'Este ajuste vale somente para <?= e($monthLabel) ?> e não muda o valor padrão da recorrência.';
-    document.getElementById('monthly-amount-dialog').showModal();
+function openNewBill() {
+    const form = document.getElementById('billForm');
+    form.reset();
+
+    document.getElementById('bill-action').value = 'add_bill';
+    document.getElementById('bill-id').value = '';
+    document.getElementById('bill-dialog-title').textContent = 'Nova conta fixa';
+    document.getElementById('bill-dialog-subtitle').textContent = 'Configure o valor e o dia de vencimento.';
+    document.getElementById('bill-type').value = 'fixed';
+    document.getElementById('bill-day').value = '10';
+    document.getElementById('bill-start').value = '<?= e($month) ?>';
+    document.getElementById('bill-total').value = '10';
+
+    syncBillingForm();
+    document.getElementById('bill-dialog').showModal();
 }
 
 function openBillEditor(id, name, type, amount, dueDay, startMonth, installmentTotal) {
-    document.getElementById('edit-bill-id').value = id;
-    document.getElementById('edit-bill-name').value = name;
-    document.getElementById('edit-billing-type').value = type;
-    document.getElementById('edit-bill-amount').value = amount;
-    document.getElementById('edit-bill-day').value = dueDay;
-    document.getElementById('edit-bill-start').value = startMonth || '<?= e($month) ?>';
-    document.getElementById('edit-bill-total').value = installmentTotal || 10;
-    document.getElementById('edit-bill-title').textContent = name;
-    syncBillingForm(document.getElementById('editRecurringForm'));
-    document.getElementById('edit-bill-dialog').showModal();
+    document.getElementById('bill-action').value = 'update_bill';
+    document.getElementById('bill-id').value = id;
+    document.getElementById('bill-name').value = name;
+    document.getElementById('bill-type').value = type;
+    document.getElementById('bill-amount').value = amount || '';
+    document.getElementById('bill-day').value = dueDay;
+    document.getElementById('bill-start').value = startMonth || '<?= e($month) ?>';
+    document.getElementById('bill-total').value = installmentTotal || 10;
+    document.getElementById('bill-dialog-title').textContent = 'Editar conta fixa';
+    document.getElementById('bill-dialog-subtitle').textContent = 'Atualize os dados da recorrência sem perder o histórico.';
+
+    syncBillingForm();
+    document.getElementById('bill-dialog').showModal();
 }
+
+function openMonthlyAmount(id, name, amount) {
+    document.getElementById('monthly-bill-id').value = id;
+    document.getElementById('monthly-bill-title').textContent = name;
+    document.getElementById('monthly-bill-amount').value = Number(amount) > 0 ? amount : '';
+    document.getElementById('monthly-amount-dialog').showModal();
+}
+
+syncBillingForm();
 </script>
 </body>
 </html>
