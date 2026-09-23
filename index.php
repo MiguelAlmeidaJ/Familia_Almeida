@@ -48,7 +48,7 @@ foreach ($data['transactions'] as $transaction) {
     }
 
     if (!empty($transaction['bill_payment_id'])
-        || in_array(mb_strtolower((string) $transaction['category']), ['contas recorrentes', 'contas fixas'], true)) {
+        || in_array(strtolower((string) $transaction['category']), ['contas recorrentes', 'contas fixas'], true)) {
         $recurringPaid += (float) $transaction['amount'];
     } else {
         $variableExpenses += (float) $transaction['amount'];
