@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/finance.php';
 require_once __DIR__ . '/includes/receipts.php';
+require_once __DIR__ . '/includes/shopping.php';
 
 $user = require_auth();
 
@@ -19,13 +20,15 @@ $pdo = db();
 $action = (string) ($_POST['action'] ?? '');
 $month = valid_month($_POST['month'] ?? null);
 $returnTo = (string) ($_POST['return_to'] ?? '/');
-$allowedReturns = ['/', '/movimentacoes', '/contas', '/metas', '/dividas'];
+$allowedReturns = ['/', '/movimentacoes', '/contas', '/metas', '/dividas', '/compras'];
 if (!in_array($returnTo, $allowedReturns, true)) {
     $returnTo = '/';
 }
 $returnTab = (string) ($_POST['return_tab'] ?? '');
 if ($returnTo === '/metas' && in_array($returnTab, ['gastos', 'investimento'], true)) {
     $redirect = '/metas?month=' . rawurlencode($month) . '&tab=' . rawurlencode($returnTab);
+} elseif ($returnTo === '/compras' && in_array($returnTab, ['mercado', 'moveis'], true)) {
+    $redirect = '/compras?month=' . rawurlencode($month) . '&tab=' . rawurlencode($returnTab);
 } else {
     $redirect = $returnTo . '?month=' . rawurlencode($month);
 }
@@ -120,6 +123,226 @@ try {
 
             flash('success', 'Nota removida.');
             break;
+        case 'add_market_item':
+            if (!shopping_schema_ready($pdo)) {
+                throw new RuntimeException('Execute a migration da lista de compras em Configurações > Manutenção.');
+            }
+
+            $name = trim((string) ($_POST['name'] ?? ''));
+            $quantity = (float) str_replace(',', '.', (string) ($_POST['quantity'] ?? '1'));
+            $estimatedPrice = (float) str_replace(',', '.', (string) ($_POST['estimated_price'] ?? '0'));
+
+            if ($name === '' || $quantity <= 0 || $estimatedPrice < 0) {
+                throw new RuntimeException('Revise os dados do produto.');
+            }
+
+            $list = shopping_get_list($pdo, 'market', $month, (int) $user['id'], true);
+            if (!$list) {
+                throw new RuntimeException('Não foi possível preparar a lista do mês.');
+            }
+
+            $stmt = $pdo->prepare(
+                'INSERT INTO shopping_items
+                    (list_id, name, quantity, estimated_price)
+                 VALUES (?, ?, ?, ?)'
+            );
+            $stmt->execute([(int) $list['id'], $name, $quantity, $estimatedPrice > 0 ? $estimatedPrice : null]);
+
+            flash('success', 'Produto adicionado à lista de mercado.');
+            break;
+
+        case 'update_market_item':
+            if (!shopping_schema_ready($pdo)) {
+                throw new RuntimeException('Execute a migration da lista de compras.');
+            }
+
+            $itemId = (int) ($_POST['item_id'] ?? 0);
+            $name = trim((string) ($_POST['name'] ?? ''));
+            $quantity = (float) str_replace(',', '.', (string) ($_POST['quantity'] ?? '1'));
+            $estimatedPrice = (float) str_replace(',', '.', (string) ($_POST['estimated_price'] ?? '0'));
+
+            if ($itemId <= 0 || $name === '' || $quantity <= 0 || $estimatedPrice < 0) {
+                throw new RuntimeException('Revise os dados do produto.');
+            }
+
+            $stmt = $pdo->prepare(
+                'UPDATE shopping_items i
+                 INNER JOIN shopping_lists l ON l.id = i.list_id
+                 SET i.name = ?, i.quantity = ?, i.estimated_price = ?
+                 WHERE i.id = ?
+                   AND l.list_type = "market"
+                   AND i.purchased = 0'
+            );
+            $stmt->execute([$name, $quantity, $estimatedPrice > 0 ? $estimatedPrice : null, $itemId]);
+
+            if ($stmt->rowCount() === 0) {
+                $check = $pdo->prepare('SELECT purchased FROM shopping_items WHERE id = ? LIMIT 1');
+                $check->execute([$itemId]);
+                if ((bool) $check->fetchColumn()) {
+                    throw new RuntimeException('Produtos já comprados não podem ser alterados. O gasto já foi registrado.');
+                }
+            }
+
+            flash('success', 'Produto atualizado.');
+            break;
+
+        case 'delete_market_item':
+            if (!shopping_schema_ready($pdo)) {
+                throw new RuntimeException('Execute a migration da lista de compras.');
+            }
+
+            $itemId = (int) ($_POST['item_id'] ?? 0);
+            if ($itemId <= 0) {
+                throw new RuntimeException('Produto inválido.');
+            }
+
+            $stmt = $pdo->prepare(
+                'DELETE i
+                 FROM shopping_items i
+                 INNER JOIN shopping_lists l ON l.id = i.list_id
+                 WHERE i.id = ?
+                   AND l.list_type = "market"
+                   AND i.purchased = 0'
+            );
+            $stmt->execute([$itemId]);
+
+            if ($stmt->rowCount() === 0) {
+                throw new RuntimeException('Produto comprado não pode ser excluído porque já faz parte do histórico.');
+            }
+
+            flash('success', 'Produto removido da lista.');
+            break;
+
+        case 'copy_market_previous':
+            if (!shopping_schema_ready($pdo)) {
+                throw new RuntimeException('Execute a migration da lista de compras.');
+            }
+
+            $currentList = shopping_get_list($pdo, 'market', $month, (int) $user['id'], true);
+            $previousList = shopping_previous_market_list($pdo, $month);
+
+            if (!$currentList || !$previousList) {
+                throw new RuntimeException('Não existe lista no mês anterior para importar.');
+            }
+
+            $pdo->beginTransaction();
+
+            $copy = $pdo->prepare(
+                'INSERT INTO shopping_items
+                    (list_id, name, quantity, estimated_price)
+                 SELECT ?, old.name, old.quantity, old.estimated_price
+                 FROM shopping_items old
+                 WHERE old.list_id = ?
+                   AND NOT EXISTS (
+                       SELECT 1
+                       FROM shopping_items current_item
+                       WHERE current_item.list_id = ?
+                         AND LOWER(current_item.name) = LOWER(old.name)
+                   )'
+            );
+            $copy->execute([(int) $currentList['id'], (int) $previousList['id'], (int) $currentList['id']]);
+
+            $updateList = $pdo->prepare('UPDATE shopping_lists SET copied_from_id = ? WHERE id = ?');
+            $updateList->execute([(int) $previousList['id'], (int) $currentList['id']]);
+
+            $pdo->commit();
+
+            flash('success', $copy->rowCount() . ' produto(s) importado(s) do mês anterior.');
+            break;
+
+        case 'add_furniture_item':
+            if (!shopping_schema_ready($pdo)) {
+                throw new RuntimeException('Execute a migration da lista de compras.');
+            }
+
+            $name = trim((string) ($_POST['name'] ?? ''));
+            $category = trim((string) ($_POST['category'] ?? ''));
+            $priority = (string) ($_POST['priority'] ?? 'medium');
+            $estimatedPrice = (float) str_replace(',', '.', (string) ($_POST['estimated_price'] ?? '0'));
+            $productUrl = shopping_validate_url((string) ($_POST['product_url'] ?? ''));
+
+            if ($name === '' || $category === '' || !in_array($priority, ['high', 'medium', 'low'], true) || $estimatedPrice < 0) {
+                throw new RuntimeException('Revise os dados do móvel.');
+            }
+
+            $list = shopping_get_list($pdo, 'furniture', null, (int) $user['id'], true);
+            if (!$list) {
+                throw new RuntimeException('Não foi possível preparar a lista de móveis.');
+            }
+
+            $stmt = $pdo->prepare(
+                'INSERT INTO shopping_items
+                    (list_id, name, category, priority, estimated_price, product_url)
+                 VALUES (?, ?, ?, ?, ?, ?)'
+            );
+            $stmt->execute([
+                (int) $list['id'],
+                $name,
+                $category,
+                $priority,
+                $estimatedPrice > 0 ? $estimatedPrice : null,
+                $productUrl,
+            ]);
+
+            flash('success', 'Item adicionado à lista de móveis.');
+            break;
+
+        case 'update_furniture_item':
+            if (!shopping_schema_ready($pdo)) {
+                throw new RuntimeException('Execute a migration da lista de compras.');
+            }
+
+            $itemId = (int) ($_POST['item_id'] ?? 0);
+            $name = trim((string) ($_POST['name'] ?? ''));
+            $category = trim((string) ($_POST['category'] ?? ''));
+            $priority = (string) ($_POST['priority'] ?? 'medium');
+            $estimatedPrice = (float) str_replace(',', '.', (string) ($_POST['estimated_price'] ?? '0'));
+            $productUrl = shopping_validate_url((string) ($_POST['product_url'] ?? ''));
+
+            if ($itemId <= 0 || $name === '' || $category === '' || !in_array($priority, ['high', 'medium', 'low'], true) || $estimatedPrice < 0) {
+                throw new RuntimeException('Revise os dados do móvel.');
+            }
+
+            $stmt = $pdo->prepare(
+                'UPDATE shopping_items i
+                 INNER JOIN shopping_lists l ON l.id = i.list_id
+                 SET i.name = ?, i.category = ?, i.priority = ?,
+                     i.estimated_price = ?, i.product_url = ?
+                 WHERE i.id = ? AND l.list_type = "furniture"'
+            );
+            $stmt->execute([
+                $name,
+                $category,
+                $priority,
+                $estimatedPrice > 0 ? $estimatedPrice : null,
+                $productUrl,
+                $itemId,
+            ]);
+
+            flash('success', 'Item da lista de móveis atualizado.');
+            break;
+
+        case 'delete_furniture_item':
+            if (!shopping_schema_ready($pdo)) {
+                throw new RuntimeException('Execute a migration da lista de compras.');
+            }
+
+            $itemId = (int) ($_POST['item_id'] ?? 0);
+            if ($itemId <= 0) {
+                throw new RuntimeException('Item inválido.');
+            }
+
+            $stmt = $pdo->prepare(
+                'DELETE i
+                 FROM shopping_items i
+                 INNER JOIN shopping_lists l ON l.id = i.list_id
+                 WHERE i.id = ? AND l.list_type = "furniture"'
+            );
+            $stmt->execute([$itemId]);
+
+            flash('success', 'Item removido da lista de móveis.');
+            break;
+
         case 'add_bill':
             $name = trim((string) ($_POST['name'] ?? ''));
             $billingType = (string) ($_POST['billing_type'] ?? 'fixed');
