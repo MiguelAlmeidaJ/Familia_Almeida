@@ -380,6 +380,7 @@
       if (!item) return;
       item.selected = false;
       item.pending_sync = true;
+      item.pending_purchase_id = payload.client_purchase_id;
       item.purchased_price = queued.purchased_price;
       item.store_name = queued.store_name;
     });
@@ -426,6 +427,7 @@
       if (!item) return;
       item.selected = false;
       item.pending_sync = false;
+      item.pending_purchase_id = null;
       item.purchased = true;
       item.purchased_price = synced.purchased_price;
       item.store_name = synced.store_name;
@@ -475,6 +477,29 @@
     } finally {
       finalizeButton.textContent = 'Finalizar compra';
       updateSyncUi();
+    }
+  }
+
+  async function reconcileBackgroundSync() {
+    if (!state) return;
+
+    const queued = await idbGetAll(OUTBOX_STORE);
+    const queuedIds = new Set(queued.map((payload) => String(payload.client_purchase_id || '')));
+    let changed = false;
+
+    Object.values(state.items || {}).forEach((item) => {
+      if (!item.pending_sync || !item.pending_purchase_id) return;
+
+      if (!queuedIds.has(String(item.pending_purchase_id))) {
+        item.pending_sync = false;
+        item.pending_purchase_id = null;
+        item.purchased = true;
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      await saveState();
     }
   }
 
@@ -560,6 +585,7 @@
     }
 
     localStorage.setItem(ACTIVE_KEY, state.key);
+    await reconcileBackgroundSync();
     monthLabel.textContent = formatMonth(state.month);
     noList.hidden = true;
     content.hidden = false;
