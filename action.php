@@ -6,6 +6,7 @@ require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/finance.php';
 require_once __DIR__ . '/includes/receipts.php';
 require_once __DIR__ . '/includes/shopping.php';
+require_once __DIR__ . '/includes/inventory.php';
 
 $user = require_auth();
 
@@ -20,7 +21,7 @@ $pdo = db();
 $action = (string) ($_POST['action'] ?? '');
 $month = valid_month($_POST['month'] ?? null);
 $returnTo = (string) ($_POST['return_to'] ?? '/');
-$allowedReturns = ['/', '/movimentacoes', '/contas', '/metas', '/dividas', '/compras'];
+$allowedReturns = ['/', '/movimentacoes', '/contas', '/metas', '/dividas', '/compras', '/estoque'];
 if (!in_array($returnTo, $allowedReturns, true)) {
     $returnTo = '/';
 }
@@ -123,6 +124,154 @@ try {
 
             flash('success', 'Nota removida.');
             break;
+        case 'add_inventory_item':
+            if (!inventory_schema_ready($pdo)) {
+                throw new RuntimeException('Execute a migration do estoque em Configurações > Manutenção.');
+            }
+
+            $name = trim((string) ($_POST['name'] ?? ''));
+            $category = trim((string) ($_POST['category'] ?? ''));
+            $unit = trim((string) ($_POST['unit'] ?? 'un'));
+            $minQuantity = (float) str_replace(',', '.', (string) ($_POST['min_quantity'] ?? '0'));
+            $initialQuantity = (float) str_replace(',', '.', (string) ($_POST['initial_quantity'] ?? '0'));
+
+            if ($name === '' || $unit === '' || $minQuantity < 0 || $initialQuantity < 0) {
+                throw new RuntimeException('Revise os dados do produto de estoque.');
+            }
+
+            $exists = $pdo->prepare('SELECT id FROM inventory_items WHERE LOWER(name) = LOWER(?) LIMIT 1');
+            $exists->execute([$name]);
+            if ($exists->fetchColumn()) {
+                throw new RuntimeException('Esse produto já existe no estoque. Edite o item existente ou registre uma entrada.');
+            }
+
+            $pdo->beginTransaction();
+
+            $insert = $pdo->prepare(
+                'INSERT INTO inventory_items (name, category, unit, min_quantity)
+                 VALUES (?, ?, ?, ?)'
+            );
+            $insert->execute([
+                $name,
+                $category !== '' ? $category : null,
+                $unit,
+                $minQuantity,
+            ]);
+            $itemId = (int) $pdo->lastInsertId();
+
+            if ($initialQuantity > 0) {
+                $movement = $pdo->prepare(
+                    'INSERT INTO inventory_movements
+                        (inventory_item_id, movement_type, source_type, quantity, note, occurred_at, created_by)
+                     VALUES (?, "entry", "manual", ?, "Estoque inicial", NOW(), ?)'
+                );
+                $movement->execute([$itemId, $initialQuantity, (int) $user['id']]);
+            }
+
+            $pdo->commit();
+            flash('success', 'Produto adicionado ao estoque.');
+            break;
+
+        case 'update_inventory_item':
+            if (!inventory_schema_ready($pdo)) {
+                throw new RuntimeException('Execute a migration do estoque.');
+            }
+
+            $itemId = (int) ($_POST['item_id'] ?? 0);
+            $name = trim((string) ($_POST['name'] ?? ''));
+            $category = trim((string) ($_POST['category'] ?? ''));
+            $unit = trim((string) ($_POST['unit'] ?? 'un'));
+            $minQuantity = (float) str_replace(',', '.', (string) ($_POST['min_quantity'] ?? '0'));
+
+            if ($itemId <= 0 || $name === '' || $unit === '' || $minQuantity < 0) {
+                throw new RuntimeException('Revise os dados do produto de estoque.');
+            }
+
+            $duplicate = $pdo->prepare('SELECT id FROM inventory_items WHERE LOWER(name) = LOWER(?) AND id <> ? LIMIT 1');
+            $duplicate->execute([$name, $itemId]);
+            if ($duplicate->fetchColumn()) {
+                throw new RuntimeException('Já existe outro produto com esse nome no estoque.');
+            }
+
+            $stmt = $pdo->prepare(
+                'UPDATE inventory_items
+                 SET name = ?, category = ?, unit = ?, min_quantity = ?, active = 1
+                 WHERE id = ?'
+            );
+            $stmt->execute([
+                $name,
+                $category !== '' ? $category : null,
+                $unit,
+                $minQuantity,
+                $itemId,
+            ]);
+
+            flash('success', 'Produto de estoque atualizado.');
+            break;
+
+        case 'archive_inventory_item':
+            if (!inventory_schema_ready($pdo)) {
+                throw new RuntimeException('Execute a migration do estoque.');
+            }
+
+            $itemId = (int) ($_POST['item_id'] ?? 0);
+            if ($itemId <= 0) {
+                throw new RuntimeException('Produto inválido.');
+            }
+
+            $stmt = $pdo->prepare('UPDATE inventory_items SET active = 0 WHERE id = ?');
+            $stmt->execute([$itemId]);
+
+            flash('success', 'Produto arquivado. O histórico foi preservado.');
+            break;
+
+        case 'inventory_movement':
+            if (!inventory_schema_ready($pdo)) {
+                throw new RuntimeException('Execute a migration do estoque.');
+            }
+
+            $itemId = (int) ($_POST['item_id'] ?? 0);
+            $movementType = (string) ($_POST['movement_type'] ?? '');
+            $quantity = (float) str_replace(',', '.', (string) ($_POST['quantity'] ?? '0'));
+            $note = trim((string) ($_POST['note'] ?? ''));
+            $occurredOn = (string) ($_POST['occurred_on'] ?? date('Y-m-d'));
+
+            if ($itemId <= 0 || !in_array($movementType, ['entry', 'exit'], true) || $quantity <= 0) {
+                throw new RuntimeException('Revise a movimentação do estoque.');
+            }
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $occurredOn)) {
+                throw new RuntimeException('Data da movimentação inválida.');
+            }
+
+            $pdo->beginTransaction();
+            $balance = inventory_balance($pdo, $itemId, true);
+
+            if ($movementType === 'exit' && $quantity > $balance) {
+                throw new RuntimeException(
+                    'A saída é maior que o saldo disponível (' .
+                    inventory_quantity_label($balance, (string) ($_POST['unit'] ?? 'un')) .
+                    ').'
+                );
+            }
+
+            $stmt = $pdo->prepare(
+                'INSERT INTO inventory_movements
+                    (inventory_item_id, movement_type, source_type, quantity, note, occurred_at, created_by)
+                 VALUES (?, ?, "manual", ?, ?, ?, ?)'
+            );
+            $stmt->execute([
+                $itemId,
+                $movementType,
+                $quantity,
+                $note !== '' ? $note : null,
+                $occurredOn . ' ' . date('H:i:s'),
+                (int) $user['id'],
+            ]);
+
+            $pdo->commit();
+            flash('success', $movementType === 'entry' ? 'Entrada registrada no estoque.' : 'Saída registrada no estoque.');
+            break;
+
         case 'add_market_item':
             if (!shopping_schema_ready($pdo)) {
                 throw new RuntimeException('Execute a migration da lista de compras em Configurações > Manutenção.');
