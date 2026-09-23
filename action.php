@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/finance.php';
+require_once __DIR__ . '/includes/receipts.php';
 
 $user = require_auth();
 
@@ -37,22 +38,88 @@ try {
             $category = trim((string) ($_POST['category'] ?? ''));
             $amount = (float) str_replace(',', '.', (string) ($_POST['amount'] ?? '0'));
             $date = (string) ($_POST['date'] ?? '');
+            $receiptUploads = prepare_receipt_uploads($_FILES['receipt_files'] ?? null);
 
             if (!in_array($type, ['income', 'expense', 'investment'], true)) {
                 throw new RuntimeException('Tipo de lançamento inválido.');
             }
-            if ($description === '' || $category === '' || $amount <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            if ($description === '' || $category === '' || $amount <= 0 || !preg_match('/^\\d{4}-\\d{2}-\\d{2}$/', $date)) {
                 throw new RuntimeException('Preencha corretamente os dados do lançamento.');
             }
+            if ($receiptUploads && $type !== 'expense') {
+                throw new RuntimeException('Notas e comprovantes podem ser anexados somente a gastos.');
+            }
+            if ($receiptUploads && !receipts_schema_ready($pdo)) {
+                throw new RuntimeException('Existe uma migration pendente para anexar notas. Execute em Configurações > Manutenção.');
+            }
+
+            $pdo->beginTransaction();
 
             $stmt = $pdo->prepare(
                 'INSERT INTO transactions (created_by, type, description, category, amount, occurred_on)
                  VALUES (?, ?, ?, ?, ?, ?)'
             );
             $stmt->execute([(int) $user['id'], $type, $description, $category, $amount, $date]);
-            flash('success', 'Lançamento salvo.');
+
+            $transactionId = (int) $pdo->lastInsertId();
+            save_receipts_for_transaction($pdo, $transactionId, (int) $user['id'], $receiptUploads);
+
+            $pdo->commit();
+            flash('success', $receiptUploads ? 'Gasto e nota salvos.' : 'Lançamento salvo.');
             break;
 
+        case 'add_receipts':
+            $transactionId = (int) ($_POST['transaction_id'] ?? 0);
+            $receiptUploads = prepare_receipt_uploads($_FILES['receipt_files'] ?? null);
+
+            if ($transactionId <= 0 || !$receiptUploads) {
+                throw new RuntimeException('Selecione pelo menos uma nota para anexar.');
+            }
+            if (!receipts_schema_ready($pdo)) {
+                throw new RuntimeException('Existe uma migration pendente para anexar notas. Execute em Configurações > Manutenção.');
+            }
+
+            $stmt = $pdo->prepare('SELECT id, type FROM transactions WHERE id = ? LIMIT 1');
+            $stmt->execute([$transactionId]);
+            $transaction = $stmt->fetch();
+
+            if (!$transaction || $transaction['type'] !== 'expense') {
+                throw new RuntimeException('Só é possível anexar notas a gastos.');
+            }
+
+            $pdo->beginTransaction();
+            save_receipts_for_transaction($pdo, $transactionId, (int) $user['id'], $receiptUploads);
+            $pdo->commit();
+
+            flash('success', count($receiptUploads) === 1 ? 'Nota anexada.' : count($receiptUploads) . ' notas anexadas.');
+            break;
+
+        case 'delete_receipt':
+            $receiptId = (int) ($_POST['receipt_id'] ?? 0);
+
+            if ($receiptId <= 0 || !receipts_schema_ready($pdo)) {
+                throw new RuntimeException('Comprovante inválido.');
+            }
+
+            $stmt = $pdo->prepare(
+                'SELECT id, stored_name
+                 FROM transaction_receipts
+                 WHERE id = ?
+                 LIMIT 1'
+            );
+            $stmt->execute([$receiptId]);
+            $receipt = $stmt->fetch();
+
+            if (!$receipt) {
+                throw new RuntimeException('Comprovante não encontrado.');
+            }
+
+            $delete = $pdo->prepare('DELETE FROM transaction_receipts WHERE id = ?');
+            $delete->execute([$receiptId]);
+            delete_receipt_files([$receipt]);
+
+            flash('success', 'Nota removida.');
+            break;
         case 'add_bill':
             $name = trim((string) ($_POST['name'] ?? ''));
             $billingType = (string) ($_POST['billing_type'] ?? 'fixed');
@@ -507,6 +574,8 @@ try {
                 throw new RuntimeException('Lançamento inválido.');
             }
 
+            $receiptFiles = receipt_files_for_transaction($pdo, $transactionId);
+
             $pdo->beginTransaction();
             $stmt = $pdo->prepare('SELECT id, type, amount, debt_id, bill_payment_id FROM transactions WHERE id = ? FOR UPDATE');
             $stmt->execute([$transactionId]);
@@ -530,6 +599,7 @@ try {
             $stmt = $pdo->prepare('DELETE FROM transactions WHERE id = ?');
             $stmt->execute([$transactionId]);
             $pdo->commit();
+            delete_receipt_files($receiptFiles);
             flash('success', 'Lançamento removido.');
             break;
 
