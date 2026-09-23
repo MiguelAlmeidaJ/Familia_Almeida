@@ -104,6 +104,7 @@
         id: Number(item.id),
         name: String(item.name || ''),
         quantity: Number(item.quantity || 0),
+        purchased_quantity: Number(item.purchased_quantity || item.quantity || 0),
         estimated_price: Number(item.estimated_price || 0),
         selected: false,
         purchased_price: item.purchased_price || '',
@@ -144,6 +145,7 @@
         server.items[id] = {
           ...serverItem,
           selected: Boolean(local.selected),
+          purchased_quantity: Number(local.purchased_quantity || serverItem.quantity || 0),
           purchased_price: local.purchased_price ?? '',
           store_name: local.store_name ?? '',
           pending_sync: Boolean(local.pending_sync),
@@ -173,6 +175,7 @@
         id: Number(id),
         name: row.querySelector('.shopping-live-product strong')?.textContent?.trim() || '',
         quantity: Number(row.dataset.quantity || 0),
+        purchased_quantity: Number(row.dataset.quantity || 0),
         estimated_price: Number(row.dataset.estimatedPrice || 0),
         selected: false,
         purchased_price: '',
@@ -187,12 +190,14 @@
   function applyRowState(row) {
     const item = rowState(row);
     const checkbox = row.querySelector('[data-field="selected"]');
+    const quantity = row.querySelector('[data-field="purchased_quantity"]');
     const price = row.querySelector('[data-field="purchased_price"]');
     const store = row.querySelector('[data-field="store_name"]');
     const fields = row.querySelector('[data-purchase-fields]');
     const lock = row.querySelector('[data-sync-lock]');
 
     checkbox.checked = Boolean(item.selected || item.pending_sync);
+    quantity.value = Number(item.purchased_quantity || item.quantity || 0);
     price.value = item.purchased_price || '';
     store.value = item.store_name || '';
 
@@ -200,8 +205,12 @@
     lock.hidden = !item.pending_sync;
 
     checkbox.disabled = Boolean(item.pending_sync);
+    quantity.disabled = Boolean(item.pending_sync);
     price.disabled = Boolean(item.pending_sync);
     store.disabled = Boolean(item.pending_sync);
+    row.querySelectorAll('[data-qty-action]').forEach((button) => {
+      button.disabled = Boolean(item.pending_sync);
+    });
 
     row.classList.toggle('selected', checkbox.checked);
     row.classList.toggle('pending-sync', Boolean(item.pending_sync));
@@ -210,9 +219,10 @@
   }
 
   function updateLineTotal(row) {
+    const quantityInput = row.querySelector('[data-field="purchased_quantity"]');
     const priceInput = row.querySelector('[data-field="purchased_price"]');
     const totalNode = row.querySelector('[data-line-total]');
-    const quantity = Number(row.dataset.quantity || 0);
+    const quantity = Number(quantityInput.value || 0);
     const price = Number(priceInput.value || 0);
     totalNode.textContent = money.format(quantity * price);
   }
@@ -228,12 +238,13 @@
       if (!item.selected && !item.pending_sync) return;
 
       count += 1;
-      const quantity = Number(row.dataset.quantity || 0);
+      const plannedQuantity = Number(row.dataset.quantity || 0);
+      const purchasedQuantity = Number(item.purchased_quantity || plannedQuantity || 0);
       const approximate = Number(row.dataset.estimatedPrice || 0);
       const purchased = Number(item.purchased_price || 0);
 
-      estimated += quantity * approximate;
-      actual += quantity * purchased;
+      estimated += purchasedQuantity * approximate;
+      actual += purchasedQuantity * purchased;
       hasPendingSync = hasPendingSync || Boolean(item.pending_sync);
     });
 
@@ -249,6 +260,7 @@
   function bindRows() {
     rows.forEach((row) => {
       const checkbox = row.querySelector('[data-field="selected"]');
+      const quantity = row.querySelector('[data-field="purchased_quantity"]');
       const price = row.querySelector('[data-field="purchased_price"]');
       const store = row.querySelector('[data-field="store_name"]');
       const fields = row.querySelector('[data-purchase-fields]');
@@ -256,6 +268,10 @@
       checkbox.addEventListener('change', async () => {
         const item = rowState(row);
         item.selected = checkbox.checked;
+        if (checkbox.checked && !(Number(item.purchased_quantity) > 0)) {
+          item.purchased_quantity = Number(row.dataset.quantity || 1);
+          quantity.value = item.purchased_quantity;
+        }
         fields.hidden = !checkbox.checked;
         row.classList.toggle('selected', checkbox.checked);
         await saveState();
@@ -264,6 +280,31 @@
         if (checkbox.checked) {
           requestAnimationFrame(() => price.focus());
         }
+      });
+
+      quantity.addEventListener('input', async () => {
+        const item = rowState(row);
+        item.purchased_quantity = quantity.value;
+        row.classList.remove('needs-quantity');
+        updateLineTotal(row);
+        await saveState();
+        updateTotals();
+      });
+
+      row.querySelectorAll('[data-qty-action]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const direction = button.dataset.qtyAction === 'minus' ? -1 : 1;
+          const currentItem = rowState(row);
+          const current = Number(quantity.value || currentItem.purchased_quantity || row.dataset.quantity || 1);
+          const next = Math.max(0.01, Math.round((current + direction) * 100) / 100);
+          quantity.value = String(next);
+
+          const item = rowState(row);
+          item.purchased_quantity = next;
+          updateLineTotal(row);
+          await saveState();
+          updateTotals();
+        });
       });
 
       price.addEventListener('input', async () => {
@@ -311,6 +352,7 @@
 
       items.push({
         id: Number(row.dataset.itemId),
+        purchased_quantity: Number(item.purchased_quantity || row.dataset.quantity || 0),
         purchased_price: Number(item.purchased_price || 0),
         store_name: String(item.store_name || '').trim()
       });
@@ -322,6 +364,14 @@
   function validateSelection(items) {
     if (!items.length) {
       return 'Selecione pelo menos um produto.';
+    }
+
+    const missingQuantity = items.find((item) => !(item.purchased_quantity > 0));
+    if (missingQuantity) {
+      const row = rows.find((candidate) => Number(candidate.dataset.itemId) === missingQuantity.id);
+      row?.classList.add('needs-quantity');
+      row?.querySelector('[data-field="purchased_quantity"]')?.focus();
+      return 'Informe a quantidade realmente comprada de todos os produtos selecionados.';
     }
 
     const missing = items.find((item) => !(item.purchased_price > 0));
@@ -369,6 +419,7 @@
       item.selected = true;
       item.pending_sync = true;
       item.pending_purchase_id = payload.client_purchase_id;
+      item.purchased_quantity = queuedItem.purchased_quantity;
       item.purchased_price = queuedItem.purchased_price;
       item.store_name = queuedItem.store_name;
     });
@@ -401,7 +452,7 @@
 
     const total = items.reduce((sum, item) => {
       const row = rows.find((candidate) => Number(candidate.dataset.itemId) === item.id);
-      return sum + (Number(row?.dataset.quantity || 0) * item.purchased_price);
+      return sum + (Number(item.purchased_quantity || 0) * item.purchased_price);
     }, 0);
 
     if (!confirm('Finalizar esta compra em ' + money.format(total) + '? O valor será lançado automaticamente em Gastos.')) {
