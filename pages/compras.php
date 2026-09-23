@@ -162,6 +162,9 @@ $priorityLabels = ['high' => 'Alta', 'medium' => 'Média', 'low' => 'Baixa'];
                                         <div>
                                             <strong><?= e($item['name']) ?></strong>
                                             <?php if ($item['purchased']): ?><span class="shopping-done-tag">Comprado</span><?php endif; ?>
+                                            <span class="shopping-stock-tag <?= !empty($item['track_inventory']) ? 'stock' : 'quick' ?>">
+                                                <?= !empty($item['track_inventory']) ? 'Estoque' : 'Consumo rápido' ?>
+                                            </span>
                                         </div>
                                         <span>
                                             Qtd. <?= e(rtrim(rtrim(number_format(
@@ -213,7 +216,8 @@ $priorityLabels = ['high' => 'Alta', 'medium' => 'Média', 'low' => 'Baixa'];
                                                     <?= (int) $item["id"] ?>,
                                                     <?= json_encode($item["name"], JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
                                                     <?= json_encode($item["quantity"]) ?>,
-                                                    <?= json_encode($item["estimated_price"]) ?>
+                                                    <?= json_encode($item["estimated_price"]) ?>,
+                                                    <?= !empty($item["track_inventory"]) ? 'true' : 'false' ?>
                                                 )'
                                             >✎</button>
 
@@ -376,7 +380,14 @@ $priorityLabels = ['high' => 'Alta', 'medium' => 'Média', 'low' => 'Baixa'];
             </label>
         </div>
 
-        <div class="shopping-dialog-note">Preço comprado e mercado serão informados somente no modo compra.</div>
+        <label>Destino do produto
+            <select name="track_inventory" id="market-item-track" required>
+                <option value="1">Vai para o estoque da casa</option>
+                <option value="0">Consumo rápido — não entra no estoque</option>
+            </select>
+        </label>
+
+        <div class="shopping-dialog-note">Use “Consumo rápido” para bombom, lanche, bebida consumida na hora e outros itens que não precisam de controle no estoque.</div>
 
         <div class="fixed-reference-dialog-actions">
             <button class="fixed-cancel-button" type="button" onclick="document.getElementById('market-item-dialog').close()">Cancelar</button>
@@ -441,16 +452,18 @@ function openMarketItemCreate() {
     document.getElementById('market-item-action').value = 'add_market_item';
     document.getElementById('market-item-id').value = '';
     document.getElementById('market-item-quantity').value = '1';
+    document.getElementById('market-item-track').value = '1';
     document.getElementById('market-item-title').textContent = 'Adicionar produto';
     document.getElementById('market-item-dialog').showModal();
 }
 
-function openMarketItemEdit(id, name, quantity, estimatedPrice) {
+function openMarketItemEdit(id, name, quantity, estimatedPrice, trackInventory) {
     document.getElementById('market-item-action').value = 'update_market_item';
     document.getElementById('market-item-id').value = id;
     document.getElementById('market-item-name').value = name;
     document.getElementById('market-item-quantity').value = quantity;
     document.getElementById('market-item-estimated').value = estimatedPrice || '';
+    document.getElementById('market-item-track').value = trackInventory ? '1' : '0';
     document.getElementById('market-item-title').textContent = 'Editar produto';
     document.getElementById('market-item-dialog').showModal();
 }
