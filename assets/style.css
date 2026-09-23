@@ -2209,3 +2209,194 @@ html.sidebar-collapsed .ref-sidebar .modern-logout{justify-content:center;width:
   .shopping-connection-status{width:28px;height:28px;justify-content:center;padding:0}
   .shopping-mode-footer button{min-width:126px;font-size:9px}
 }
+
+
+/* =========================================================
+   MOBILE 2.0 — COMPRAS + SIDEBAR
+   ========================================================= */
+.shopping-stock-tag{
+  display:inline-flex;
+  align-items:center;
+  min-height:20px;
+  padding:0 7px;
+  border-radius:99px;
+  font-size:9px;
+  font-weight:800;
+  white-space:nowrap
+}
+.shopping-stock-tag.stock{background:#e7f4ef;color:#247d69}
+.shopping-stock-tag.quick{background:#fff1dc;color:#9b6c1f}
+.shopping-live-product-title{display:flex;align-items:center;gap:7px;min-width:0}
+.shopping-live-product-title>strong{min-width:0}
+.shopping-destination-field select{
+  width:100%;
+  height:44px;
+  border:1px solid #d5e2e6;
+  border-radius:9px;
+  background:#fff;
+  color:#173044;
+  padding:0 10px;
+  font-size:14px
+}
+.shopping-offline-head-actions{display:flex;align-items:center;gap:8px}
+.shopping-offline-head-actions>button{
+  min-height:32px;
+  padding:0 10px;
+  border:1px solid #b9d9d1;
+  border-radius:8px;
+  background:#edf7f4;
+  color:#147a66;
+  font-size:11px;
+  font-weight:800
+}
+.shopping-offline-head-actions>strong{
+  min-width:30px;
+  height:30px;
+  padding:0 8px;
+  border-radius:99px;
+  background:#f1f5f6;
+  color:#647985;
+  display:grid;
+  place-items:center;
+  font-size:10px
+}
+.shopping-offline-product-dialog{
+  width:min(520px,calc(100vw - 24px));
+  max-height:calc(100dvh - 24px);
+  border:0;
+  border-radius:16px;
+  padding:0;
+  overflow:auto;
+  box-shadow:0 24px 70px rgba(10,38,48,.28)
+}
+.shopping-offline-product-dialog::backdrop{background:rgba(7,28,35,.54);backdrop-filter:blur(3px)}
+.shopping-offline-product-dialog form{padding:20px;display:grid;gap:15px;background:#fff}
+.shopping-offline-dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.shopping-offline-dialog-head small{font-size:9px;letter-spacing:.14em;color:#98752b;font-weight:800}
+.shopping-offline-dialog-head h2{margin:4px 0 0;font-size:20px;color:#173044}
+.shopping-offline-dialog-head p{margin:6px 0 0;font-size:12px;line-height:1.45;color:#7c8f99}
+.shopping-offline-dialog-head>button{
+  width:38px;height:38px;border:0;border-radius:9px;background:#f2f5f6;color:#617780;font-size:20px
+}
+.shopping-offline-product-dialog label{display:grid;gap:7px}
+.shopping-offline-product-dialog label>span{font-size:12px;font-weight:700;color:#526a75}
+.shopping-offline-product-dialog input,
+.shopping-offline-product-dialog select{
+  width:100%;height:48px;border:1px solid #d5e2e6;border-radius:9px;background:#fff;
+  color:#173044;padding:0 12px;font-size:16px
+}
+.shopping-offline-dialog-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.shopping-offline-dialog-note{
+  padding:11px 12px;border-radius:9px;background:#fff8e9;border:1px solid #f0dfb9;
+  color:#79622f;font-size:11px;line-height:1.5
+}
+.shopping-offline-dialog-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:2px}
+.shopping-offline-dialog-actions button{
+  min-height:44px;padding:0 16px;border-radius:9px;font-size:13px;font-weight:800
+}
+.shopping-offline-dialog-actions button:first-child{border:1px solid #d8e2e6;background:#fff;color:#5d747e}
+.shopping-offline-dialog-actions button:last-child{border:0;background:#0f8e75;color:#fff}
+
+/* Sidebar vira drawer completo mais cedo para tablets e celulares. */
+@media(max-width:900px){
+  .shell,.shell.sidebar-collapsed,html.sidebar-collapsed .shell{display:block!important}
+  .sidebar.ref-sidebar{
+    display:flex!important;
+    position:fixed!important;
+    left:0!important;top:0!important;bottom:0!important;
+    width:min(320px,88vw)!important;
+    height:100dvh!important;
+    padding:20px 16px 16px!important;
+    transform:translateX(-105%)!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    z-index:60!important;
+    box-shadow:20px 0 60px rgba(4,18,29,.28)
+  }
+  html.sidebar-mobile-open .sidebar.ref-sidebar{transform:translateX(0)!important}
+  .sidebar-toggle.ref-collapse{display:none!important}
+  .mobile-menu-toggle{display:grid!important}
+  .sidebar-overlay{display:block!important;z-index:55!important}
+  html.sidebar-mobile-open .sidebar-overlay{opacity:1!important;visibility:visible!important}
+  .ref-brand{justify-content:flex-start!important}
+  .ref-brand-copy{display:grid!important}
+  .ref-nav .nav-item{
+    width:100%!important;
+    min-height:48px!important;
+    margin:0!important;
+    padding:0 12px!important;
+    justify-content:flex-start!important;
+    gap:12px!important
+  }
+  .ref-nav .nav-item-label{display:inline!important;font-size:13px!important;opacity:1!important}
+  .ref-nav .nav-icon{width:22px!important;height:22px!important;flex:0 0 22px!important}
+  .ref-sidebar-user{grid-template-columns:38px minmax(0,1fr)!important;justify-items:stretch!important}
+  .ref-sidebar-user .sidebar-user-copy{display:grid!important}
+  .ref-sidebar .modern-logout{
+    width:100%!important;justify-content:flex-start!important;padding:0 11px!important;margin:0!important
+  }
+  .ref-sidebar .modern-logout .nav-item-label{display:inline!important;font-size:13px!important}
+}
+
+/* Compra mobile com tipografia legível e alvos de toque maiores. */
+@media(max-width:760px){
+  .shopping-mode-header{min-height:72px!important}
+  .shopping-mode-header small{font-size:9px!important;letter-spacing:.11em!important}
+  .shopping-mode-header h1{font-size:20px!important;max-width:56vw!important}
+  .shopping-mode-back{width:40px!important;height:40px!important;font-size:20px!important}
+  .shopping-connection-status{min-height:30px!important;font-size:10px!important;padding:6px 9px!important}
+  .shopping-live-summary span{font-size:11px!important}
+  .shopping-live-summary strong{font-size:19px!important}
+  .shopping-live-summary .actual strong{font-size:22px!important}
+  .shopping-offline-banner strong,.shopping-pending-sync-banner strong{font-size:12px!important}
+  .shopping-offline-banner span,.shopping-pending-sync-banner span{font-size:11px!important;line-height:1.45!important}
+  .shopping-use-card .eyebrow{font-size:9px!important}
+  .shopping-use-card h2{font-size:18px!important}
+  .shopping-use-card header p{font-size:11px!important;line-height:1.4!important}
+  .shopping-use-card>header>strong{font-size:10px!important}
+  .shopping-live-row{padding:15px 13px!important}
+  .shopping-live-check,.shopping-live-check>span{width:36px!important;height:36px!important}
+  .shopping-live-product strong{font-size:15px!important;line-height:1.25!important}
+  .shopping-live-product>span{font-size:11px!important;line-height:1.45!important}
+  .shopping-stock-tag{font-size:9px!important;min-height:21px!important}
+  .shopping-live-estimated small{font-size:10px!important}
+  .shopping-live-estimated strong{font-size:13px!important}
+  .shopping-purchase-fields label>span,.shopping-line-total-box>span{font-size:11px!important}
+  .shopping-purchase-fields input,.shopping-purchase-fields select{font-size:16px!important}
+  .shopping-destination-field select{height:48px!important;font-size:16px!important}
+  .shopping-line-total-box>strong{font-size:17px!important}
+  .shopping-sync-lock{font-size:10px!important;padding:6px 9px!important}
+  .shopping-bought-section summary{font-size:12px!important}
+  .shopping-bought-section article>div strong{font-size:12px!important}
+  .shopping-bought-section article>div small{font-size:10px!important;line-height:1.4!important}
+  .shopping-bought-section article>strong{font-size:12px!important}
+  .shopping-offline-info strong{font-size:12px!important}
+  .shopping-offline-info p{font-size:10px!important}
+  .shopping-mode-footer span{font-size:10px!important}
+  .shopping-mode-footer strong{font-size:19px!important}
+  .shopping-mode-footer button{font-size:13px!important;font-weight:800!important}
+}
+
+@media(max-width:480px){
+  .shopping-mode-header h1{font-size:18px!important;max-width:58vw!important}
+  .shopping-live-list{gap:11px!important}
+  .shopping-live-row{grid-template-columns:36px minmax(0,1fr)!important;gap:10px!important}
+  .shopping-live-product-title{align-items:flex-start;flex-direction:column;gap:5px}
+  .shopping-purchase-fields{grid-template-columns:1fr!important;gap:11px!important}
+  .shopping-quantity-field,.shopping-store-field,.shopping-destination-field,.shopping-line-total-box{grid-column:1!important}
+  .shopping-quantity-control{height:52px!important;grid-template-columns:52px 1fr 52px!important}
+  .shopping-quantity-control input{height:50px!important}
+  .shopping-quantity-control button{font-size:22px!important}
+  .shopping-purchase-fields>label:not(.shopping-quantity-field) input,
+  .shopping-destination-field select{height:50px!important}
+  .shopping-offline-head-actions>button{min-height:36px;font-size:11px}
+  .shopping-mode-footer{min-height:86px!important}
+  .shopping-mode-footer button{height:52px!important;min-width:145px!important}
+  .shopping-offline-dialog-grid{grid-template-columns:1fr}
+  .shopping-offline-product-dialog form{padding:17px}
+}
+
+@media(max-width:360px){
+  .shopping-mode-header h1{font-size:17px!important;max-width:62vw!important}
+  .shopping-mode-footer button{min-width:132px!important;font-size:12px!important}
+}
