@@ -194,6 +194,10 @@ function inventory_record_purchase_items(
     );
 
     foreach ($shoppingRows as $row) {
+        if (array_key_exists('track_inventory', $row) && !$row['track_inventory']) {
+            continue;
+        }
+
         $shoppingItemId = (int) ($row['id'] ?? 0);
         $quantity = (float) ($row['purchased_quantity'] ?? $row['quantity'] ?? 0);
         $name = trim((string) ($row['name'] ?? ''));
