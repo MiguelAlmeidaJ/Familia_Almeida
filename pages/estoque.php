@@ -5,15 +5,42 @@ declare(strict_types=1);
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/layout.php';
 require_once __DIR__ . '/../includes/inventory.php';
+require_once __DIR__ . '/../includes/shopping.php';
 
 $user = require_auth();
 $pdo = db();
 $csrf = csrf_token();
 $flash = pull_flash();
 $schemaReady = inventory_schema_ready($pdo);
+$shoppingReady = shopping_schema_ready($pdo);
+$currentMarketMonth = date('Y-m');
 
 $items = $schemaReady ? inventory_items_with_balance($pdo) : [];
 $recentMovements = $schemaReady ? inventory_recent_movements($pdo, 18) : [];
+
+$currentMarketList = $shoppingReady
+    ? shopping_get_list($pdo, 'market', $currentMarketMonth, (int) $user['id'], false)
+    : null;
+$currentMarketItems = $currentMarketList ? shopping_items($pdo, (int) $currentMarketList['id']) : [];
+
+$pendingMarketNames = [];
+foreach ($currentMarketItems as $marketItem) {
+    if (!$marketItem['purchased']) {
+        $pendingMarketNames[strtolower(trim((string) $marketItem['name']))] = true;
+    }
+}
+
+$restockItems = array_values(array_filter($items, 'inventory_needs_restock'));
+$restockAlreadyListed = 0;
+foreach ($restockItems as $restockItem) {
+    if (isset($pendingMarketNames[strtolower(trim((string) $restockItem['name']))])) {
+        $restockAlreadyListed++;
+    }
+}
+$restockMissing = max(0, count($restockItems) - $restockAlreadyListed);
+
+$monthNames = [1 => 'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+$currentMarketLabel = $monthNames[(int) date('n')] . ' de ' . date('Y');
 
 $totalProducts = count($items);
 $lowStock = 0;
@@ -116,6 +143,41 @@ function inventory_status(array $item): array
                 </article>
             </section>
 
+            <?php if ($schemaReady && $shoppingReady && $restockItems): ?>
+                <section class="inventory-restock-card">
+                    <div class="inventory-restock-icon">🛒</div>
+
+                    <div class="inventory-restock-copy">
+                        <p class="eyebrow">REPOSIÇÃO INTELIGENTE</p>
+                        <h2><?= count($restockItems) ?> produto(s) pedindo reposição</h2>
+                        <p>
+                            O sistema calcula quanto comprar para voltar ao estoque mínimo.
+                            <?= $restockAlreadyListed > 0 ? $restockAlreadyListed . ' já está(ão) na lista de ' . e($currentMarketLabel) . '.' : '' ?>
+                        </p>
+                    </div>
+
+                    <div class="inventory-restock-actions">
+                        <?php if ($restockMissing > 0): ?>
+                            <form method="post" action="/acao">
+                                <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                                <input type="hidden" name="return_to" value="/estoque">
+                                <input type="hidden" name="month" value="<?= e($currentMarketMonth) ?>">
+                                <input type="hidden" name="action" value="add_all_inventory_to_market">
+                                <button class="inventory-restock-all-button" type="submit">
+                                    ＋ Adicionar <?= $restockMissing ?> à lista
+                                </button>
+                            </form>
+                        <?php else: ?>
+                            <span class="inventory-restock-complete">Todos já estão na lista ✓</span>
+                        <?php endif; ?>
+
+                        <a class="inventory-open-market-list" href="/compras?month=<?= e($currentMarketMonth) ?>&tab=mercado">
+                            Abrir lista de mercado →
+                        </a>
+                    </div>
+                </section>
+            <?php endif; ?>
+
             <section class="card inventory-list-card">
                 <header class="inventory-card-head">
                     <div>
@@ -141,7 +203,12 @@ function inventory_status(array $item): array
                 <div class="inventory-list" id="inventory-list">
                     <?php if ($items): ?>
                         <?php foreach ($items as $item): ?>
-                            <?php [$statusClass, $statusLabel] = inventory_status($item); ?>
+                            <?php
+                            [$statusClass, $statusLabel] = inventory_status($item);
+                            $needsRestock = inventory_needs_restock($item);
+                            $suggestedRestock = inventory_restock_quantity($item);
+                            $alreadyOnMarketList = isset($pendingMarketNames[strtolower(trim((string) $item['name']))]);
+                            ?>
                             <article
                                 class="inventory-row"
                                 data-inventory-row
@@ -157,6 +224,11 @@ function inventory_status(array $item): array
                                                 • atualizado <?= e(date('d/m', strtotime($item['last_movement_at']))) ?>
                                             <?php endif; ?>
                                         </span>
+                                        <?php if ($needsRestock): ?>
+                                            <span class="inventory-restock-hint">
+                                                Sugestão: comprar <?= e(inventory_quantity_label($suggestedRestock, (string) $item['unit'])) ?>
+                                            </span>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
 
@@ -199,6 +271,29 @@ function inventory_status(array $item): array
                                             "exit"
                                         )'
                                     >− Saída</button>
+
+                                    <?php if ($needsRestock && $shoppingReady): ?>
+                                        <?php if ($alreadyOnMarketList): ?>
+                                            <a
+                                                class="inventory-market-badge"
+                                                href="/compras?month=<?= e($currentMarketMonth) ?>&tab=mercado"
+                                                title="Produto já está na lista de mercado"
+                                            >Na lista ✓</a>
+                                        <?php else: ?>
+                                            <form method="post" action="/acao">
+                                                <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                                                <input type="hidden" name="return_to" value="/estoque">
+                                                <input type="hidden" name="month" value="<?= e($currentMarketMonth) ?>">
+                                                <input type="hidden" name="action" value="add_inventory_to_market">
+                                                <input type="hidden" name="inventory_item_id" value="<?= (int) $item['id'] ?>">
+                                                <button
+                                                    class="inventory-add-list-button"
+                                                    type="submit"
+                                                    title="Adicionar à lista de mercado"
+                                                >＋ Lista</button>
+                                            </form>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
 
                                     <button
                                         class="fixed-icon-action"
