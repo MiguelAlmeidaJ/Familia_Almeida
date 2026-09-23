@@ -114,13 +114,13 @@ Os dois usuários usam a mesma base financeira. Cada lançamento registra quem o
 - histórico mensal;
 - identificação do usuário que criou cada lançamento;
 - notas e comprovantes vinculados aos gastos;
-- resumo de gastos por dia e quantidade de notas anexadas;\n- listas mensais de mercado com reaproveitamento do mês anterior;\n- lista permanente de móveis por prioridade;\n- modo compra com calculadora e armazenamento offline;\n- sincronização da compra com os gastos quando a conexão retorna.
+- resumo de gastos por dia e quantidade de notas anexadas;\n- listas mensais de mercado com reaproveitamento do mês anterior;\n- lista permanente de móveis por prioridade;\n- modo compra com calculadora e armazenamento offline;\n- sincronização da compra com os gastos quando a conexão retorna;\n- estoque doméstico integrado às compras de mercado;\n- entradas e saídas manuais com histórico e alerta de reposição.
 
 
 ## Rotas do sistema
 
 - `/` — visão geral
-- `/movimentacoes` — lançamentos e histórico\n- `/compras` — listas de mercado e móveis\n- `/compras/mercado` — modo compra com suporte offline
+- `/movimentacoes` — lançamentos e histórico\n- `/compras` — listas de mercado e móveis\n- `/compras/mercado` — modo compra com suporte offline\n- `/estoque` — saldo atual, entradas, saídas e histórico do estoque doméstico
 - `/contas` — contas fixas
 - `/metas` — metas de gastos e investimento
 - `/dividas` — dívidas e pagamentos
@@ -160,3 +160,17 @@ Fluxo:
 6. a sincronização cria um lançamento único na categoria `Mercado` e marca os itens como comprados.
 
 Quando o navegador não suporta Background Sync, a sincronização acontece ao manter a página aberta durante a reconexão ou na próxima vez que o modo compra for aberto.
+
+
+## Estoque doméstico
+
+A página `/estoque` calcula o saldo a partir do histórico de movimentações. Não existe um campo de quantidade que possa ficar dessincronizado.
+
+Quando uma compra de mercado é finalizada:
+- o gasto é criado em Lançamentos;
+- cada produto comprado gera uma entrada no Estoque;
+- sincronizações repetidas não duplicam a entrada, pois cada item de compra é vinculado uma única vez.
+
+Também é possível criar produtos manualmente, definir unidade e estoque mínimo, e registrar entradas/saídas. A saída não pode ultrapassar o saldo disponível.
+
+A migration `20260923_006_home_inventory.php` também importa compras de mercado já concluídas anteriormente.
