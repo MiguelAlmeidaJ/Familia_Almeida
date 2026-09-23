@@ -66,7 +66,10 @@
                         <h2>Produtos pendentes</h2>
                         <p>Marque o que colocou no carrinho e informe a quantidade e o preço reais.</p>
                     </div>
-                    <strong id="offline-item-count">0</strong>
+                    <div class="shopping-offline-head-actions">
+                        <button type="button" id="offline-add-product">＋ Produto</button>
+                        <strong id="offline-item-count">0</strong>
+                    </div>
                 </header>
 
                 <div class="shopping-live-list" id="shopping-live-list"></div>
@@ -98,6 +101,53 @@
         <button type="button" id="shopping-finalize-button" disabled>Finalizar compra</button>
     </footer>
 </div>
+
+<dialog id="offline-product-dialog" class="shopping-offline-product-dialog">
+    <form method="dialog" id="offline-product-form">
+        <div class="shopping-offline-dialog-head">
+            <div>
+                <small>PRODUTO EXTRA</small>
+                <h2>Adicionar durante a compra</h2>
+                <p>Ele será salvo neste aparelho e enviado ao sistema quando a compra for sincronizada.</p>
+            </div>
+            <button type="button" id="offline-product-close" aria-label="Fechar">×</button>
+        </div>
+
+        <label>
+            <span>Nome do produto</span>
+            <input type="text" id="offline-product-name" maxlength="160" placeholder="Ex.: Bombom" required>
+        </label>
+
+        <div class="shopping-offline-dialog-grid">
+            <label>
+                <span>Quantidade</span>
+                <input type="number" id="offline-product-quantity" min="0.01" step="0.01" inputmode="decimal" value="1" required>
+            </label>
+
+            <label>
+                <span>Preço aproximado / un.</span>
+                <input type="number" id="offline-product-estimated" min="0" step="0.01" inputmode="decimal" placeholder="Opcional">
+            </label>
+        </div>
+
+        <label>
+            <span>Destino</span>
+            <select id="offline-product-track">
+                <option value="1">Vai para o estoque da casa</option>
+                <option value="0">Consumo rápido — não entra no estoque</option>
+            </select>
+        </label>
+
+        <div class="shopping-offline-dialog-note">
+            Use “Consumo rápido” para bombom, lanche, bebida consumida na hora e itens que não precisam ficar no estoque.
+        </div>
+
+        <div class="shopping-offline-dialog-actions">
+            <button type="button" id="offline-product-cancel">Cancelar</button>
+            <button type="submit">Adicionar à lista</button>
+        </div>
+    </form>
+</dialog>
 
 <script src="/assets/shopping-offline.js"></script>
 </body>
