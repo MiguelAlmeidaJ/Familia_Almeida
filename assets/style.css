@@ -1974,3 +1974,14 @@ html.sidebar-collapsed .ref-sidebar .modern-logout{justify-content:center;width:
     justify-content:center
   }
 }
+
+
+.shopping-offline-back{background:transparent}
+.shopping-offline-open-link{
+  display:inline-flex;
+  margin-top:4px;
+  color:#1a7e69;
+  font-size:7px;
+  font-weight:800
+}
+.shopping-offline-open-link:hover{text-decoration:underline}
