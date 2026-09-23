@@ -1298,3 +1298,98 @@ html.sidebar-collapsed .ref-sidebar .modern-logout{justify-content:center;width:
   .investment-history-row{grid-template-columns:50px 1fr}
   .investment-history-row>strong{grid-column:2;text-align:left}
 }
+
+
+/* =========================================================
+   LANÇAMENTOS + NOTAS / COMPROVANTES
+   ========================================================= */
+.movements-reference-page{max-width:1220px}
+.movements-reference-heading{margin-bottom:20px}
+.movements-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--ref-line);border-radius:12px;overflow:hidden;background:#fff;margin-bottom:16px}
+.movements-summary-grid>article{min-height:100px;padding:19px 21px;display:flex;flex-direction:column;justify-content:center;border-right:1px solid #e9eef1}
+.movements-summary-grid>article:last-child{border-right:0}
+.movements-summary-grid span{font-size:8px;color:#7f9099}
+.movements-summary-grid strong{font-size:20px;color:#142a3c;margin-top:8px;letter-spacing:-.03em}
+.movements-summary-grid small{font-size:7px;color:#95a2aa;margin-top:6px}
+.movements-summary-grid .receipt-stat strong{color:#0f8e75}
+.movements-main-grid{display:grid;grid-template-columns:minmax(300px,.78fr) minmax(0,1.22fr);gap:14px;margin-bottom:14px}
+.movement-entry-card,.daily-spending-card,.movement-history-card{padding:0;border:1px solid var(--ref-line);border-radius:12px;box-shadow:none;overflow:hidden}
+.movement-card-heading{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;padding:20px 20px 13px}
+.movement-card-heading .eyebrow,.movement-history-head .eyebrow{font-size:7px;color:#98752b;letter-spacing:.16em;margin-bottom:5px}
+.movement-card-heading h2,.movement-history-head h2{font-size:14px;color:#173044;margin:0}
+.movement-card-heading p{font-size:8px;color:#8797a0;margin:5px 0 0}
+.movement-entry-form{padding:0 20px 20px;display:grid;gap:12px}
+.movement-entry-form label{display:grid;gap:6px;font-size:9px;font-weight:600;color:#607782}
+.movement-entry-form input,.movement-entry-form select{width:100%;height:42px;padding:0 11px;border:1px solid #d9e3e7;border-radius:8px;background:#fff;color:#203747;font:inherit}
+.movement-entry-form input:focus,.movement-entry-form select:focus{outline:none;border-color:#74c4b2;box-shadow:0 0 0 3px rgba(15,142,117,.09)}
+.movement-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.receipt-upload-field{border:1px dashed #cfdde1;border-radius:9px;background:#f9fbfb;padding:11px}
+.receipt-upload-field[hidden]{display:none!important}
+.receipt-upload-field label{font-size:9px}
+.receipt-upload-field label>span{font-size:7px;color:#9ba7ad;font-weight:500}
+.receipt-upload-field input[type=file]{height:auto;border:0;padding:6px 0;background:transparent;font-size:8px}
+.receipt-upload-field>small{font-size:7px;color:#8b9aa3;line-height:1.5}
+.movement-save-button{width:100%;height:39px;border:0;font-size:9px}
+.largest-day-badge{padding:5px 8px;border-radius:99px;background:#eef5f3;color:#267c69;font-size:7px;white-space:nowrap}
+.daily-spending-list{padding:0 20px 16px}
+.daily-spending-row{display:grid;grid-template-columns:42px 145px minmax(0,1fr);gap:11px;align-items:center;min-height:54px;border-top:1px solid #edf1f3}
+.daily-spending-date{width:36px;height:36px;border-radius:9px;background:#f1f5f6;display:grid;place-content:center;text-align:center}
+.daily-spending-date strong{font-size:12px;color:#405865;line-height:1}
+.daily-spending-date span{font-size:5px;color:#8b9ca5;margin-top:2px}
+.daily-spending-copy{display:grid;gap:2px}
+.daily-spending-copy strong{font-size:10px;color:#173044}
+.daily-spending-copy span{font-size:7px;color:#8a9aa3}
+.daily-spending-bar{height:5px;background:#edf1f3;border-radius:99px;overflow:hidden}
+.daily-spending-bar span{display:block;height:100%;border-radius:99px;background:#278f79}
+.movements-empty-state{min-height:180px;display:grid;place-content:center;justify-items:center;text-align:center;padding:25px}
+.movements-empty-state>span{width:40px;height:40px;border-radius:11px;background:#edf5f2;color:#16866f;display:grid;place-items:center;margin-bottom:8px}
+.movements-empty-state strong{font-size:10px;color:#405864}
+.movements-empty-state p{font-size:7px;color:#8a9aa3;max-width:280px;line-height:1.5;margin:4px 0 0}
+.movement-history-card{margin-bottom:14px}
+.movement-history-head{padding:19px 20px 13px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.movement-history-head>span{font-size:8px;color:#81939d}
+.movement-history-list{padding:0 20px 8px}
+.movement-history-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto auto;gap:11px;align-items:center;min-height:68px;border-top:1px solid #edf1f3}
+.movement-history-icon{width:31px;height:31px;border-radius:50%;background:#f7eeeb;color:#b46656;display:grid;place-items:center;font-size:9px}
+.movement-history-icon.income{background:#e7f4ef;color:#18866f}
+.movement-history-icon.investment{background:#efeafb;color:#7557aa}
+.movement-history-copy{display:grid;gap:3px;min-width:0}
+.movement-history-copy>strong{font-size:9px;color:#183040;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.movement-history-copy>span{font-size:7px;color:#8898a1}
+.movement-history-value{font-size:9px;font-weight:800;white-space:nowrap}
+.movement-history-value.positive{color:#18866f}
+.movement-history-value.negative{color:#1c303e}
+.movement-history-actions{display:flex;align-items:center;justify-content:flex-end;gap:5px;min-width:110px}
+.movement-history-actions form{margin:0}
+.receipt-attach-button,.movement-delete-button{min-height:27px;border-radius:6px;padding:0 7px;font-size:7px;font-weight:700}
+.receipt-attach-button{border:1px solid #cfe2dc;background:#f1f8f6;color:#167d69}
+.movement-delete-button{border:0;background:transparent;color:#8798a1}
+.movement-delete-button:hover{color:#bd5b50;background:#fff3f1}
+.receipt-chip-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.receipt-chip{display:inline-flex;align-items:center;gap:2px;min-height:22px;border-radius:99px;background:#edf7f4;border:1px solid #d7eae5;padding-left:7px;color:#167d69}
+.receipt-chip>a{font-size:7px;color:#167d69}
+.receipt-chip form{margin:0}
+.receipt-chip button{width:20px;height:20px;border:0;background:transparent;color:#71978e;font-size:11px;display:grid;place-items:center}
+.receipt-chip button:hover{color:#bd5b50}
+.receipt-dialog-help{padding:9px 10px;border-radius:7px;background:#f7f9fa;border:1px solid #e4ecef;color:#788b95;font-size:7px}
+.movements-page-footer{margin-top:4px}
+@media(max-width:950px){.movements-main-grid{grid-template-columns:1fr}}
+@media(max-width:760px){
+  .movements-summary-grid{grid-template-columns:1fr 1fr}
+  .movements-summary-grid>article:nth-child(2){border-right:0}
+  .movements-summary-grid>article{border-bottom:1px solid #e9eef1}
+  .movements-summary-grid>article:nth-last-child(-n+2){border-bottom:0}
+  .movement-history-row{grid-template-columns:32px minmax(0,1fr) auto}
+  .movement-history-actions{grid-column:2/4;justify-content:flex-start;padding-bottom:9px}
+}
+@media(max-width:560px){
+  .movements-summary-grid{grid-template-columns:1fr}
+  .movements-summary-grid>article{border-right:0;border-bottom:1px solid #e9eef1}
+  .movements-summary-grid>article:last-child{border-bottom:0}
+  .movement-form-grid{grid-template-columns:1fr}
+  .daily-spending-row{grid-template-columns:38px 1fr}
+  .daily-spending-bar{grid-column:2}
+  .movement-history-row{grid-template-columns:30px 1fr}
+  .movement-history-value{grid-column:2}
+  .movement-history-actions{grid-column:2;flex-wrap:wrap}
+}
