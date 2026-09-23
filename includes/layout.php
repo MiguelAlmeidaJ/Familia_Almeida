@@ -30,7 +30,7 @@ function render_sidebar(string $active, string $csrf): void
     $items = [
         ['key' => 'dashboard', 'href' => '/', 'label' => 'Visão geral'],
         ['key' => 'movimentacoes', 'href' => '/movimentacoes', 'label' => 'Lançamentos'],
-        ['key' => 'contas', 'href' => '/contas', 'label' => 'Contas recorrentes'],
+        ['key' => 'contas', 'href' => '/contas', 'label' => 'Contas fixas'],
         ['key' => 'metas', 'href' => '/metas', 'label' => 'Metas de gastos'],
         ['key' => 'dividas', 'href' => '/dividas', 'label' => 'Dívidas'],
         ['key' => 'investimentos', 'href' => '/metas?section=investment#investimento', 'label' => 'Investimentos'],
