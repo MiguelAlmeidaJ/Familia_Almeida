@@ -105,6 +105,7 @@
         name: String(item.name || ''),
         quantity: Number(item.quantity || 0),
         purchased_quantity: Number(item.purchased_quantity || item.quantity || 0),
+        track_inventory: item.track_inventory !== false,
         estimated_price: Number(item.estimated_price || 0),
         selected: false,
         purchased_price: item.purchased_price || '',
@@ -146,6 +147,7 @@
           ...serverItem,
           selected: Boolean(local.selected),
           purchased_quantity: Number(local.purchased_quantity || serverItem.quantity || 0),
+          track_inventory: local.track_inventory !== false,
           purchased_price: local.purchased_price ?? '',
           store_name: local.store_name ?? '',
           pending_sync: Boolean(local.pending_sync),
@@ -176,6 +178,7 @@
         name: row.querySelector('.shopping-live-product strong')?.textContent?.trim() || '',
         quantity: Number(row.dataset.quantity || 0),
         purchased_quantity: Number(row.dataset.quantity || 0),
+        track_inventory: true,
         estimated_price: Number(row.dataset.estimatedPrice || 0),
         selected: false,
         purchased_price: '',
@@ -193,6 +196,7 @@
     const quantity = row.querySelector('[data-field="purchased_quantity"]');
     const price = row.querySelector('[data-field="purchased_price"]');
     const store = row.querySelector('[data-field="store_name"]');
+    const destination = row.querySelector('[data-field="track_inventory"]');
     const fields = row.querySelector('[data-purchase-fields]');
     const lock = row.querySelector('[data-sync-lock]');
 
@@ -200,6 +204,7 @@
     quantity.value = Number(item.purchased_quantity || item.quantity || 0);
     price.value = item.purchased_price || '';
     store.value = item.store_name || '';
+    if (destination) destination.value = item.track_inventory === false ? '0' : '1';
 
     fields.hidden = !checkbox.checked;
     lock.hidden = !item.pending_sync;
@@ -208,6 +213,7 @@
     quantity.disabled = Boolean(item.pending_sync);
     price.disabled = Boolean(item.pending_sync);
     store.disabled = Boolean(item.pending_sync);
+    if (destination) destination.disabled = Boolean(item.pending_sync);
     row.querySelectorAll('[data-qty-action]').forEach((button) => {
       button.disabled = Boolean(item.pending_sync);
     });
@@ -263,6 +269,7 @@
       const quantity = row.querySelector('[data-field="purchased_quantity"]');
       const price = row.querySelector('[data-field="purchased_price"]');
       const store = row.querySelector('[data-field="store_name"]');
+      const destination = row.querySelector('[data-field="track_inventory"]');
       const fields = row.querySelector('[data-purchase-fields]');
 
       checkbox.addEventListener('change', async () => {
@@ -320,6 +327,18 @@
         item.store_name = store.value;
         await saveState();
       });
+
+      destination?.addEventListener('change', async () => {
+        const item = rowState(row);
+        item.track_inventory = destination.value !== '0';
+        const badge = row.querySelector('.shopping-stock-tag');
+        if (badge) {
+          badge.textContent = item.track_inventory ? 'Estoque' : 'Consumo rápido';
+          badge.classList.toggle('stock', item.track_inventory);
+          badge.classList.toggle('quick', !item.track_inventory);
+        }
+        await saveState();
+      });
     });
   }
 
@@ -353,6 +372,7 @@
       items.push({
         id: Number(row.dataset.itemId),
         purchased_quantity: Number(item.purchased_quantity || row.dataset.quantity || 0),
+        track_inventory: item.track_inventory !== false,
         purchased_price: Number(item.purchased_price || 0),
         store_name: String(item.store_name || '').trim()
       });
@@ -420,6 +440,7 @@
       item.pending_sync = true;
       item.pending_purchase_id = payload.client_purchase_id;
       item.purchased_quantity = queuedItem.purchased_quantity;
+      item.track_inventory = queuedItem.track_inventory !== false;
       item.purchased_price = queuedItem.purchased_price;
       item.store_name = queuedItem.store_name;
     });
