@@ -57,6 +57,12 @@ function shopping_purchase_quantity_ready(PDO $pdo): bool
         && shopping_column_exists($pdo, 'shopping_items', 'purchased_quantity');
 }
 
+function shopping_inventory_tracking_ready(PDO $pdo): bool
+{
+    return shopping_schema_ready($pdo)
+        && shopping_column_exists($pdo, 'shopping_items', 'track_inventory');
+}
+
 function shopping_get_list(PDO $pdo, string $type, ?string $month, int $userId, bool $create = true): ?array
 {
     if (!shopping_schema_ready($pdo)) {
@@ -106,10 +112,14 @@ function shopping_items(PDO $pdo, int $listId): array
     $purchasedQuantitySelect = shopping_purchase_quantity_ready($pdo)
         ? 'purchased_quantity'
         : 'CASE WHEN purchased = 1 THEN quantity ELSE NULL END AS purchased_quantity';
+    $trackInventorySelect = shopping_inventory_tracking_ready($pdo)
+        ? 'track_inventory'
+        : '1 AS track_inventory';
 
     $stmt = $pdo->prepare(
         'SELECT id, list_id, purchase_id, name, category, priority, quantity,
                 ' . $purchasedQuantitySelect . ',
+                ' . $trackInventorySelect . ',
                 estimated_price, purchased_price, store_name, product_url,
                 purchased, purchased_at, created_at, updated_at
          FROM shopping_items
@@ -127,6 +137,7 @@ function shopping_items(PDO $pdo, int $listId): array
         $row['purchase_id'] = $row['purchase_id'] !== null ? (int) $row['purchase_id'] : null;
         $row['quantity'] = (float) $row['quantity'];
         $row['purchased_quantity'] = $row['purchased_quantity'] !== null ? (float) $row['purchased_quantity'] : null;
+        $row['track_inventory'] = (bool) $row['track_inventory'];
         $row['estimated_price'] = $row['estimated_price'] !== null ? (float) $row['estimated_price'] : null;
         $row['purchased_price'] = $row['purchased_price'] !== null ? (float) $row['purchased_price'] : null;
         $row['purchased'] = (bool) $row['purchased'];
@@ -254,7 +265,8 @@ function shopping_add_market_item_if_missing(
     int $listId,
     string $name,
     float $quantity,
-    ?float $estimatedPrice = null
+    ?float $estimatedPrice = null,
+    bool $trackInventory = true
 ): bool {
     $name = trim($name);
 
@@ -266,17 +278,31 @@ function shopping_add_market_item_if_missing(
         return false;
     }
 
-    $stmt = $pdo->prepare(
-        'INSERT INTO shopping_items
-            (list_id, name, quantity, estimated_price)
-         VALUES (?, ?, ?, ?)'
-    );
-    $stmt->execute([
+    $supportsTracking = shopping_inventory_tracking_ready($pdo);
+    $stmt = $supportsTracking
+        ? $pdo->prepare(
+            'INSERT INTO shopping_items
+                (list_id, name, quantity, estimated_price, track_inventory)
+             VALUES (?, ?, ?, ?, ?)'
+        )
+        : $pdo->prepare(
+            'INSERT INTO shopping_items
+                (list_id, name, quantity, estimated_price)
+             VALUES (?, ?, ?, ?)'
+        );
+
+    $params = [
         $listId,
         $name,
         $quantity,
         $estimatedPrice !== null && $estimatedPrice > 0 ? $estimatedPrice : null,
-    ]);
+    ];
+
+    if ($supportsTracking) {
+        $params[] = $trackInventory ? 1 : 0;
+    }
+
+    $stmt->execute($params);
 
     return true;
 }
