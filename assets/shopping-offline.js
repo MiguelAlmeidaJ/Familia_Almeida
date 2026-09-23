@@ -35,6 +35,13 @@
   const pendingBanner = document.getElementById('shopping-pending-sync-banner');
   const pendingTitle = document.getElementById('pending-sync-title');
   const pendingCopy = document.getElementById('pending-sync-copy');
+  const addProductButton = document.getElementById('offline-add-product');
+  const productDialog = document.getElementById('offline-product-dialog');
+  const productForm = document.getElementById('offline-product-form');
+  const productName = document.getElementById('offline-product-name');
+  const productQuantity = document.getElementById('offline-product-quantity');
+  const productEstimated = document.getElementById('offline-product-estimated');
+  const productTrack = document.getElementById('offline-product-track');
 
   let dbPromise;
   let state = null;
@@ -166,8 +173,13 @@
     checkLabel.append(checkbox, checkVisual);
 
     const product = createEl('div', 'shopping-live-product');
-    product.append(
+    const title = createEl('div', 'shopping-live-product-title');
+    title.append(
       createEl('strong', '', item.name || 'Produto'),
+      createEl('span', 'shopping-stock-tag ' + (item.track_inventory === false ? 'quick' : 'stock'), item.track_inventory === false ? 'Consumo rápido' : 'Estoque')
+    );
+    product.append(
+      title,
       createEl(
         'span',
         '',
@@ -234,6 +246,19 @@
     storeInput.value = item.store_name || '';
     storeLabel.append(storeInput);
 
+    const destinationLabel = createEl('label', 'shopping-destination-field');
+    destinationLabel.append(createEl('span', '', 'Destino'));
+    const destinationSelect = document.createElement('select');
+    const stockOption = document.createElement('option');
+    stockOption.value = '1';
+    stockOption.textContent = 'Vai para o estoque';
+    const quickOption = document.createElement('option');
+    quickOption.value = '0';
+    quickOption.textContent = 'Consumo rápido';
+    destinationSelect.append(stockOption, quickOption);
+    destinationSelect.value = item.track_inventory === false ? '0' : '1';
+    destinationLabel.append(destinationSelect);
+
     const lineTotalWrap = createEl('div', 'shopping-line-total-box');
     lineTotalWrap.append(createEl('span', '', 'Total deste produto'));
     const lineTotal = createEl(
@@ -243,7 +268,7 @@
     );
     lineTotalWrap.append(lineTotal);
 
-    fields.append(quantityLabel, priceLabel, storeLabel, lineTotalWrap);
+    fields.append(quantityLabel, priceLabel, storeLabel, destinationLabel, lineTotalWrap);
     row.append(checkLabel, product, estimated, fields);
 
     row.classList.toggle('selected', Boolean(item.selected));
@@ -303,6 +328,15 @@
       await saveState();
     });
 
+    destinationSelect.addEventListener('change', async () => {
+      item.track_inventory = destinationSelect.value !== '0';
+      const badge = title.querySelector('.shopping-stock-tag');
+      badge.textContent = item.track_inventory ? 'Estoque' : 'Consumo rápido';
+      badge.classList.toggle('stock', item.track_inventory);
+      badge.classList.toggle('quick', !item.track_inventory);
+      await saveState();
+    });
+
     return row;
   }
 
@@ -322,8 +356,8 @@
           'small',
           '',
           item.pending_sync
-            ? 'Aguardando sincronização • qtd. ' + quantityText(item.purchased_quantity || item.quantity) + ' • ' + (item.store_name || 'mercado não informado')
-            : (item.store_name || 'Mercado não informado') + ' • qtd. ' + quantityText(item.purchased_quantity || item.quantity) + ' • ' + money.format(Number(item.purchased_price || 0)) + '/un.'
+            ? 'Aguardando sincronização • ' + (item.track_inventory === false ? 'consumo rápido' : 'estoque') + ' • qtd. ' + quantityText(item.purchased_quantity || item.quantity) + ' • ' + (item.store_name || 'mercado não informado')
+            : (item.store_name || 'Mercado não informado') + ' • ' + (item.track_inventory === false ? 'consumo rápido' : 'estoque') + ' • qtd. ' + quantityText(item.purchased_quantity || item.quantity) + ' • ' + money.format(Number(item.purchased_price || 0)) + '/un.'
         )
       );
 
@@ -429,12 +463,23 @@
       list_id: state.listId,
       month: state.month,
       purchase_date: localDate(),
-      items: selected.map((item) => ({
-        id: Number(item.id),
-        purchased_quantity: Number(item.purchased_quantity || item.quantity || 0),
-        purchased_price: Number(item.purchased_price || 0),
-        store_name: String(item.store_name || '').trim()
-      })),
+      items: selected.map((item) => {
+        const numericId = Number(item.id);
+        const isLocal = item.local_only || !Number.isFinite(numericId) || numericId <= 0;
+
+        return {
+          id: isLocal ? null : numericId,
+          state_key: String(item.id),
+          client_item_id: isLocal ? String(item.id) : '',
+          name: String(item.name || ''),
+          planned_quantity: Number(item.quantity || item.purchased_quantity || 1),
+          estimated_price: Number(item.estimated_price || 0),
+          purchased_quantity: Number(item.purchased_quantity || item.quantity || 0),
+          purchased_price: Number(item.purchased_price || 0),
+          store_name: String(item.store_name || '').trim(),
+          track_inventory: item.track_inventory !== false
+        };
+      }),
       csrf_token: state.csrfToken || '',
       created_at: Date.now()
     };
@@ -444,12 +489,14 @@
     await idbPut(OUTBOX_STORE, payload);
 
     payload.items.forEach((queued) => {
-      const item = state.items[String(queued.id)];
+      const stateKey = String(queued.state_key || queued.client_item_id || queued.id);
+      const item = state.items[stateKey];
       if (!item) return;
       item.selected = false;
       item.pending_sync = true;
       item.pending_purchase_id = payload.client_purchase_id;
       item.purchased_quantity = queued.purchased_quantity;
+      item.track_inventory = queued.track_inventory !== false;
       item.purchased_price = queued.purchased_price;
       item.store_name = queued.store_name;
     });
@@ -492,13 +539,15 @@
 
   function markPayloadPurchased(payload) {
     payload.items.forEach((synced) => {
-      const item = state.items[String(synced.id)];
+      const stateKey = String(synced.state_key || synced.client_item_id || synced.id);
+      const item = state.items[stateKey];
       if (!item) return;
       item.selected = false;
       item.pending_sync = false;
       item.pending_purchase_id = null;
       item.purchased = true;
       item.purchased_quantity = synced.purchased_quantity;
+      item.track_inventory = synced.track_inventory !== false;
       item.purchased_price = synced.purchased_price;
       item.store_name = synced.store_name;
     });
@@ -639,6 +688,58 @@
     }
   }
 
+  async function addOfflineProduct(event) {
+    event.preventDefault();
+
+    if (!state) return;
+
+    const name = String(productName?.value || '').trim();
+    const quantity = Number(productQuantity?.value || 0);
+    const estimated = Number(productEstimated?.value || 0);
+
+    if (!name || !(quantity > 0)) {
+      alert('Informe o nome e uma quantidade válida.');
+      return;
+    }
+
+    const id = 'local-' + uuid();
+    state.items[id] = {
+      id,
+      local_only: true,
+      name,
+      quantity,
+      purchased_quantity: quantity,
+      estimated_price: estimated > 0 ? estimated : 0,
+      track_inventory: productTrack?.value !== '0',
+      selected: false,
+      purchased_price: '',
+      store_name: '',
+      purchased: false,
+      pending_sync: false,
+      pending_purchase_id: null
+    };
+
+    await saveState();
+    productForm?.reset();
+    if (productQuantity) productQuantity.value = '1';
+    if (productTrack) productTrack.value = '1';
+    productDialog?.close();
+    render();
+
+    requestAnimationFrame(() => {
+      const row = listNode.querySelector('[data-item-id="' + CSS.escape(id) + '"]');
+      row?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
+
+  function openProductDialog() {
+    productForm?.reset();
+    if (productQuantity) productQuantity.value = '1';
+    if (productTrack) productTrack.value = '1';
+    productDialog?.showModal();
+    requestAnimationFrame(() => productName?.focus());
+  }
+
   async function init() {
     try {
       state = await findSavedState();
@@ -653,6 +754,15 @@
       updateSyncUi();
       return;
     }
+
+    Object.values(state.items || {}).forEach((item) => {
+      if (!Object.prototype.hasOwnProperty.call(item, 'track_inventory')) {
+        item.track_inventory = true;
+      }
+      if (!(Number(item.purchased_quantity) > 0)) {
+        item.purchased_quantity = Number(item.quantity || 1);
+      }
+    });
 
     localStorage.setItem(ACTIVE_KEY, state.key);
     await reconcileBackgroundSync();
@@ -676,6 +786,11 @@
       window.location.href = '/compras';
     }
   });
+
+  addProductButton?.addEventListener('click', openProductDialog);
+  productForm?.addEventListener('submit', addOfflineProduct);
+  document.getElementById('offline-product-close')?.addEventListener('click', () => productDialog?.close());
+  document.getElementById('offline-product-cancel')?.addEventListener('click', () => productDialog?.close());
 
   finalizeButton?.addEventListener('click', finalize);
 
