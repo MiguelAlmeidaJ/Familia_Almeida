@@ -6,6 +6,7 @@
   const DB_VERSION = 1;
   const STATE_STORE = 'states';
   const OUTBOX_STORE = 'outbox';
+  const ACTIVE_KEY = 'familia-almeida-active-shopping-state';
   const stateKey = 'market:' + String(config.listId);
 
   const money = new Intl.NumberFormat('pt-BR', {
@@ -100,6 +101,10 @@
 
     (config.items || []).forEach((item) => {
       items[String(item.id)] = {
+        id: Number(item.id),
+        name: String(item.name || ''),
+        quantity: Number(item.quantity || 0),
+        estimated_price: Number(item.estimated_price || 0),
         selected: false,
         purchased_price: item.purchased_price || '',
         store_name: item.store_name || '',
@@ -112,6 +117,8 @@
       key: stateKey,
       listId: config.listId,
       month: config.month,
+      csrfToken: config.csrfToken || '',
+      syncUrl: config.syncUrl || '/api/compras/sincronizar',
       updatedAt: Date.now(),
       items
     };
@@ -143,12 +150,16 @@
       }
     });
 
+    server.csrfToken = config.csrfToken || localState.csrfToken || '';
+    server.syncUrl = config.syncUrl || localState.syncUrl || '/api/compras/sincronizar';
+
     return server;
   }
 
   async function saveState() {
     state.updatedAt = Date.now();
     try {
+      localStorage.setItem(ACTIVE_KEY, state.key);
       await idbPut(STATE_STORE, state);
     } catch (_) {}
   }
@@ -157,6 +168,10 @@
     const id = String(row.dataset.itemId);
     if (!state.items[id]) {
       state.items[id] = {
+        id: Number(id),
+        name: row.querySelector('.shopping-live-product strong')?.textContent?.trim() || '',
+        quantity: Number(row.dataset.quantity || 0),
+        estimated_price: Number(row.dataset.estimatedPrice || 0),
         selected: false,
         purchased_price: '',
         store_name: '',
@@ -460,13 +475,8 @@
     if (!('serviceWorker' in navigator)) return;
 
     try {
-      const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-      const ready = await navigator.serviceWorker.ready;
-      const worker = ready.active || registration.active || registration.waiting;
-      worker?.postMessage({
-        type: 'CACHE_SHOPPING_PAGE',
-        url: window.location.href
-      });
+      await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      await navigator.serviceWorker.ready;
     } catch (_) {}
   }
 
