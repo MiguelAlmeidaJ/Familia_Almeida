@@ -1,17 +1,17 @@
-const CACHE_NAME = 'familia-almeida-shopping-v4';
+const CACHE_NAME = 'familia-almeida-shopping-v5';
 const OFFLINE_SHOPPING_PAGE = '/compras-offline.html';
-const STATIC_ASSETS = [
-  OFFLINE_SHOPPING_PAGE,
+const STATIC_PATHS = new Set([
+  '/compras-offline.html',
   '/assets/style.css',
   '/assets/shopping.js',
   '/assets/shopping-offline.js',
   '/manifest.webmanifest'
-];
+]);
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .then((cache) => cache.addAll(Array.from(STATIC_PATHS)))
       .then(() => self.skipWaiting())
   );
 });
@@ -28,51 +28,59 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+async function networkFirst(request, fallbackRequest = request) {
+  try {
+    const response = await fetch(request, { cache: 'no-store' });
+
+    if (response && response.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      await cache.put(fallbackRequest, response.clone());
+    }
+
+    return response;
+  } catch (_) {
+    const cached = await caches.match(fallbackRequest);
+    if (cached) return cached;
+    throw _;
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
 
-  // A rota pública/offline nunca depende da sessão PHP.
+  // A página offline continua pública e sem autenticação.
+  // Com internet, busca a versão nova primeiro; sem internet, usa o cache.
   if (request.mode === 'navigate' && (url.pathname === '/compras/offline' || url.pathname === '/compras-offline.html')) {
     event.respondWith(
-      caches.match(OFFLINE_SHOPPING_PAGE).then((cached) => {
-        if (cached) return cached;
-        return fetch(OFFLINE_SHOPPING_PAGE).catch(() => new Response(
+      networkFirst(new Request(OFFLINE_SHOPPING_PAGE, { credentials: 'same-origin' }), OFFLINE_SHOPPING_PAGE)
+        .catch(() => new Response(
           '<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font-family:system-ui;padding:32px"><h2>Lista offline indisponível</h2><p>Abra a lista com internet uma vez para preparar este aparelho.</p></body></html>',
           { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
-        ));
-      })
+        ))
     );
     return;
   }
 
-  // A tela autenticada continua sendo usada para atualizar o snapshot.
-  // Sem internet, ela cai diretamente na página pública offline.
+  // A tela autenticada atualiza o snapshot. Se a conexão cair,
+  // abre a página offline pública.
   if (request.mode === 'navigate' && url.pathname === '/compras/mercado') {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-store' })
         .catch(() => caches.match(OFFLINE_SHOPPING_PAGE))
         .then((response) => response || caches.match(OFFLINE_SHOPPING_PAGE))
     );
     return;
   }
 
-  if (STATIC_ASSETS.includes(url.pathname)) {
+  // Arquivos do modo compra usam network-first para evitar JS/CSS antigo
+  // preso no celular após uma atualização.
+  if (STATIC_PATHS.has(url.pathname)) {
     event.respondWith(
-      caches.match(request).then((cached) => {
-        const network = fetch(request)
-          .then((response) => {
-            if (response.ok) {
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
-            }
-            return response;
-          })
-          .catch(() => cached);
-
-        return cached || network;
-      })
+      networkFirst(request, request)
+        .catch(() => caches.match(request))
     );
   }
 });
@@ -142,7 +150,7 @@ self.addEventListener('sync', (event) => {
           await deleteOutbox(payload.client_purchase_id);
         }
       } catch (_) {
-        // Mantém a compra na fila. Nenhuma autenticação é solicitada offline.
+        // Mantém a compra na fila para a próxima oportunidade de sincronização.
       }
     }
   })());
