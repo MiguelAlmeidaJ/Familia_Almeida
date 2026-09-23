@@ -124,6 +124,104 @@ try {
 
             flash('success', 'Nota removida.');
             break;
+        case 'add_inventory_to_market':
+            if (!inventory_schema_ready($pdo) || !shopping_schema_ready($pdo)) {
+                throw new RuntimeException('Estoque ou Lista de compras ainda possui migration pendente.');
+            }
+
+            $inventoryItemId = (int) ($_POST['inventory_item_id'] ?? 0);
+            if ($inventoryItemId <= 0) {
+                throw new RuntimeException('Produto de estoque inválido.');
+            }
+
+            $inventoryItem = null;
+            foreach (inventory_items_with_balance($pdo) as $candidate) {
+                if ((int) $candidate['id'] === $inventoryItemId) {
+                    $inventoryItem = $candidate;
+                    break;
+                }
+            }
+
+            if (!$inventoryItem) {
+                throw new RuntimeException('Produto não encontrado no estoque.');
+            }
+
+            if (!inventory_needs_restock($inventoryItem)) {
+                throw new RuntimeException('Este produto ainda está com estoque suficiente.');
+            }
+
+            $marketList = shopping_get_list($pdo, 'market', $month, (int) $user['id'], true);
+            if (!$marketList) {
+                throw new RuntimeException('Não foi possível preparar a lista de mercado deste mês.');
+            }
+
+            $suggestedQuantity = inventory_restock_quantity($inventoryItem);
+            $lastPrice = shopping_latest_market_price($pdo, (string) $inventoryItem['name']);
+
+            $added = shopping_add_market_item_if_missing(
+                $pdo,
+                (int) $marketList['id'],
+                (string) $inventoryItem['name'],
+                $suggestedQuantity,
+                $lastPrice
+            );
+
+            flash(
+                'success',
+                $added
+                    ? 'Produto adicionado à lista de mercado com quantidade sugerida de ' .
+                      inventory_quantity_label($suggestedQuantity, (string) $inventoryItem['unit']) . '.'
+                    : 'Este produto já está pendente na lista de mercado deste mês.'
+            );
+            break;
+
+        case 'add_all_inventory_to_market':
+            if (!inventory_schema_ready($pdo) || !shopping_schema_ready($pdo)) {
+                throw new RuntimeException('Estoque ou Lista de compras ainda possui migration pendente.');
+            }
+
+            $marketList = shopping_get_list($pdo, 'market', $month, (int) $user['id'], true);
+            if (!$marketList) {
+                throw new RuntimeException('Não foi possível preparar a lista de mercado deste mês.');
+            }
+
+            $addedCount = 0;
+            $skippedCount = 0;
+
+            foreach (inventory_items_with_balance($pdo) as $inventoryItem) {
+                if (!inventory_needs_restock($inventoryItem)) {
+                    continue;
+                }
+
+                $suggestedQuantity = inventory_restock_quantity($inventoryItem);
+                $lastPrice = shopping_latest_market_price($pdo, (string) $inventoryItem['name']);
+
+                if (shopping_add_market_item_if_missing(
+                    $pdo,
+                    (int) $marketList['id'],
+                    (string) $inventoryItem['name'],
+                    $suggestedQuantity,
+                    $lastPrice
+                )) {
+                    $addedCount++;
+                } else {
+                    $skippedCount++;
+                }
+            }
+
+            if ($addedCount === 0 && $skippedCount === 0) {
+                flash('success', 'Nenhum produto precisa de reposição agora.');
+            } elseif ($addedCount === 0) {
+                flash('success', 'Todos os produtos para reposição já estão na lista de mercado.');
+            } else {
+                $message = $addedCount . ' produto(s) adicionado(s) à lista de mercado.';
+                if ($skippedCount > 0) {
+                    $message .= ' ' . $skippedCount . ' já estava(m) na lista.';
+                }
+                flash('success', $message);
+            }
+            break;
+
         case 'add_inventory_item':
             if (!inventory_schema_ready($pdo)) {
                 throw new RuntimeException('Execute a migration do estoque em Configurações > Manutenção.');
