@@ -1,4 +1,4 @@
-const CACHE_NAME = 'familia-almeida-shopping-v2';
+const CACHE_NAME = 'familia-almeida-shopping-v3';
 const OFFLINE_SHOPPING_PAGE = '/compras-offline.html';
 const STATIC_ASSETS = [
   OFFLINE_SHOPPING_PAGE,
