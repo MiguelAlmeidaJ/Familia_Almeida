@@ -9,6 +9,7 @@ require_once __DIR__ . '/../includes/layout.php';
 $user = require_auth();
 $month = valid_month($_GET['month'] ?? null);
 $pdo = db();
+$recurringSchemaReady = recurring_bills_schema_ready($pdo);
 $allBills = fixed_bills_data($pdo, $month, true);
 
 $currentBills = array_values(array_filter($allBills, fn(array $bill) => $bill['applicable']));
@@ -86,6 +87,13 @@ function recurring_bill_subtitle(array $bill, string $monthLabel): string
 
 <?php if ($flash): ?>
 <div class="alert <?= $flash['type'] === 'success' ? 'success' : '' ?>"><?= e($flash['message']) ?></div>
+<?php endif; ?>
+
+<?php if (!$recurringSchemaReady): ?>
+<div class="alert migration-alert">
+O banco ainda está no formato anterior. Execute as migrations antes de cadastrar ou editar recorrências.
+<a href="/configuracoes/manutencao">Ir para Manutenção →</a>
+</div>
 <?php endif; ?>
 
 <div class="recurring-explainer">
