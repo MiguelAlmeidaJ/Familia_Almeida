@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/shopping.php';
+require_once __DIR__ . '/includes/inventory.php';
 
 $user = require_auth();
 
@@ -182,6 +183,17 @@ try {
             $listId,
         ]);
     }
+
+    // Se o módulo de estoque já estiver instalado, cada item comprado
+    // entra automaticamente no estoque. A chave do item de compra
+    // impede que uma sincronização repetida duplique a entrada.
+    inventory_record_purchase_items(
+        $pdo,
+        $purchaseId,
+        $rows,
+        (int) $user['id'],
+        $purchaseDate
+    );
 
     $pdo->commit();
 
