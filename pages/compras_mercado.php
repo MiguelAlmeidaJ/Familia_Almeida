@@ -217,8 +217,9 @@ $offlinePayload = [
             <section class="shopping-offline-info">
                 <span>☁</span>
                 <div>
-                    <strong>Preparada para funcionar sem internet</strong>
-                    <p>Depois de abrir esta tela online uma vez, a lista fica disponível neste aparelho. Compras offline são sincronizadas quando a conexão voltar.</p>
+                    <strong>Preparada para funcionar sem internet e sem login</strong>
+                    <p>Depois de abrir esta tela online uma vez, a lista fica salva neste aparelho. A versão offline não depende da sessão do sistema.</p>
+                    <a class="shopping-offline-open-link" href="/compras/offline">Abrir versão offline →</a>
                 </div>
             </section>
         </main>
