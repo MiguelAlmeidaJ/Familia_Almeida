@@ -40,7 +40,7 @@ $mime = (string) $receipt['mime_type'];
 
 header('Content-Type: ' . $mime);
 header('Content-Length: ' . filesize($file));
-header('Content-Disposition: inline; filename="' . $original . '"; filename*=UTF-8\'\'' . rawurlencode($original));
+header("Content-Disposition: inline; filename=\"" . $original . "\"; filename*=UTF-8''" . rawurlencode($original));
 header('Cache-Control: private, max-age=300');
 header('X-Content-Type-Options: nosniff');
 
