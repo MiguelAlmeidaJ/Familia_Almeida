@@ -1,10 +1,10 @@
 {
   "name": "Família Almeida — Lista de Compras",
   "short_name": "Compras Almeida",
-  "start_url": "/compras/mercado",
+  "start_url": "/compras/offline",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f4f7f8",
   "theme_color": "#10343c",
-  "description": "Lista de compras da Família Almeida com modo offline."
+  "description": "Lista de compras da Família Almeida com modo offline sem autenticação."
 }
