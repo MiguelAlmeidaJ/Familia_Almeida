@@ -109,7 +109,8 @@
         purchased_price: item.purchased_price || '',
         store_name: item.store_name || '',
         purchased: Boolean(item.purchased),
-        pending_sync: false
+        pending_sync: false,
+        pending_purchase_id: null
       };
     });
 
@@ -145,7 +146,8 @@
           selected: Boolean(local.selected),
           purchased_price: local.purchased_price ?? '',
           store_name: local.store_name ?? '',
-          pending_sync: Boolean(local.pending_sync)
+          pending_sync: Boolean(local.pending_sync),
+          pending_purchase_id: local.pending_purchase_id || null
         };
       }
     });
@@ -366,6 +368,7 @@
       if (!item) return;
       item.selected = true;
       item.pending_sync = true;
+      item.pending_purchase_id = payload.client_purchase_id;
       item.purchased_price = queuedItem.purchased_price;
       item.store_name = queuedItem.store_name;
     });
