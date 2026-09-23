@@ -137,6 +137,7 @@ CREATE TABLE IF NOT EXISTS shopping_items (
     category VARCHAR(100) NULL,
     priority ENUM('high','medium','low') NULL,
     quantity DECIMAL(10,2) NOT NULL DEFAULT 1,
+    purchased_quantity DECIMAL(10,2) NULL,
     estimated_price DECIMAL(12,2) NULL,
     purchased_price DECIMAL(12,2) NULL,
     store_name VARCHAR(160) NULL,
