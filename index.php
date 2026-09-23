@@ -11,6 +11,7 @@ $pdo = db();
 $month = valid_month($_GET['month'] ?? null);
 $data = dashboard_data($pdo, $month);
 $analytics = dashboard_analytics($pdo, $month);
+$recurringSchemaReady = recurring_bills_schema_ready($pdo);
 $flash = pull_flash();
 $csrf = csrf_token();
 
@@ -205,6 +206,13 @@ $nextBills = array_slice($pendingBills, 0, 5);
 
             <?php if ($flash): ?>
                 <div class="alert <?= $flash['type'] === 'success' ? 'success' : '' ?>"><?= e($flash['message']) ?></div>
+            <?php endif; ?>
+
+            <?php if (!$recurringSchemaReady): ?>
+                <div class="alert migration-alert">
+                    Há uma atualização de banco pendente para Contas recorrentes.
+                    <a href="/configuracoes/manutencao">Abrir Manutenção e executar migrations →</a>
+                </div>
             <?php endif; ?>
 
             <section class="dashboard-kpis">
