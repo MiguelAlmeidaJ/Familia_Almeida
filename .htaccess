@@ -30,6 +30,8 @@ DirectoryIndex index.php
     RewriteRule ^compras/offline/?$ compras-offline.html [L]
     RewriteRule ^api/compras/sincronizar/?$ shopping_sync.php [L,QSA]
     RewriteRule ^contas/?$ pages/contas.php [L,QSA]
+    RewriteRule ^cartoes/?$ pages/cartoes.php [L,QSA]
+    RewriteRule ^cartoes/acao/?$ credit_card_action.php [L,QSA]
     RewriteRule ^metas/?$ pages/metas.php [L,QSA]
     RewriteRule ^dividas/?$ pages/dividas.php [L,QSA]
     RewriteRule ^configuracoes/?$ pages/configuracoes.php [L,QSA]
