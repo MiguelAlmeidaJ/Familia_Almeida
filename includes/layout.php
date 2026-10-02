@@ -10,6 +10,7 @@ function nav_icon(string $name): string
         'dashboard' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg>',
         'movimentacoes' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="M7 9h10M7 13h6"/></svg>',
         'contas' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>',
+        'cartoes' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>',
         'metas' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="m15 9 4-4"/></svg>',
         'dividas' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="16" height="10" rx="2"/><path d="M4 11h16"/></svg>',
         'compras' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16l-1.5 12h-13z"/><path d="M8 7a4 4 0 0 1 8 0M8 11v4M16 11v4"/></svg>',
@@ -35,6 +36,7 @@ function render_sidebar(string $active, string $csrf): void
         ['key' => 'compras', 'href' => '/compras', 'label' => 'Compras'],
         ['key' => 'estoque', 'href' => '/estoque', 'label' => 'Estoque'],
         ['key' => 'contas', 'href' => '/contas', 'label' => 'Contas fixas'],
+        ['key' => 'cartoes', 'href' => '/cartoes', 'label' => 'Cartões de crédito'],
         ['key' => 'metas', 'href' => '/metas', 'label' => 'Metas financeiras'],
         ['key' => 'dividas', 'href' => '/dividas', 'label' => 'Dívidas'],
     ];
