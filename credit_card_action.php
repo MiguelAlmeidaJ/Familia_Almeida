@@ -17,6 +17,8 @@ verify_csrf();
 $pdo = db();
 $month = valid_month($_POST['month'] ?? null);
 $redirect = '/cartoes?month=' . rawurlencode($month);
+$postCardId = (int) ($_POST['card_id'] ?? 0);
+if ($postCardId > 0) $redirect .= '&card=' . $postCardId;
 
 try {
     if (!credit_cards_schema_ready($pdo)) {
