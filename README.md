@@ -1,176 +1,36 @@
-# Família Almeida — Finanças
+# Família Almeida — Fluxo mensal
 
-Sistema de gestão financeira familiar feito para hospedagem PHP compartilhada.
+Aplicação familiar em PHP 8.1+ e MySQL/MariaDB, sem framework, para planejar **quanto entra, quanto sai e para onde destinar o restante**.
 
-## Stack
+## Visão geral
 
-- PHP 8.1+
-- MySQL 5.7+ ou MariaDB 10.4+
-- PDO MySQL
-- HTML/CSS/JavaScript sem framework
-- Sessão PHP com cookie HTTP-only
-- Senhas com `password_hash()` / `password_verify()`
+O painel principal mostra, por mês:
+- receitas recorrentes previstas (ex.: salários), sem precisar marcar como recebidas;
+- contas recorrentes previstas, independentemente de pagamento;
+- dinheiro disponível após essas contas;
+- envelopes por categoria (Mercado, Farmácia, Lazer, Pet e categorias livres);
+- total já gasto em cada categoria e valor ainda sem destino;
+- gastos registrados e saldo projetado.
 
-Não usa Node.js, Next.js, Docker ou Vercel.
+**Cálculo:** disponível após contas = receitas previstas − contas previstas. Livre para distribuir = disponível após contas − total dos envelopes. O lançamento de um gasto na categoria consome seu envelope; não é subtraído novamente do valor livre para distribuir. A previsão do fim do mês considera contas previstas e gastos avulsos já registrados.
 
-## Estrutura
+Os envelopes são configurados **por mês**; receitas recorrentes e contas fixas continuam aparecendo nos meses seguintes. O acompanhamento é de **planejamento**, não um extrato/saldo bancário nem conciliação de pagamentos.
 
-- `index.php` — dashboard financeiro
-- `login.php` / `logout.php` — autenticação
-- `action.php` — gravações e atualizações no MySQL
-- `install.php` — instalação inicial via navegador
-- `schema.sql` — estrutura do banco
-- `includes/` — conexão, autenticação e consultas
-- `assets/style.css` — identidade visual
-- `config.example.php` — modelo de configuração
-- `config.php` — configuração real da hospedagem, ignorada pelo Git
+## Migração de instalação existente
 
-## Instalação em hospedagem compartilhada
+1. Faça backup do banco.
+2. Publique o código PHP atualizado.
+3. Em **Configurações → Manutenção**, execute a migration `20261020_009_monthly_budget.php`.
+4. Volte ao painel e cadastre os ganhos recorrentes e a distribuição do mês.
 
-### 1. Criar o banco no painel da hospedagem
+A migração não apaga tabelas antigas nem o histórico de compras, estoque e metas. Essas áreas saíram do menu principal, mas permanecem no código/banco por segurança até uma limpeza posterior.
 
-No cPanel/Plesk ou painel equivalente:
+## Configuração
 
-1. Crie um banco MySQL.
-2. Crie um usuário MySQL.
-3. Vincule o usuário ao banco com todos os privilégios.
-4. Anote host, nome do banco, usuário e senha.
+Use `config.example.php` como base para o `config.php` local, que não deve ir ao Git. A aplicação usa autenticação com sessão e proteção CSRF.
 
-Em muitas hospedagens o host é `localhost`, mas confirme no painel.
+As contas existentes são reaproveitadas da tabela `fixed_bills`, com suporte a parcelas e valores específicos por mês; esses valores podem ser ajustados na tela de contas. Os lançamentos continuam em `/movimentacoes`. Históricos de receitas não são automaticamente transformados em previsão recorrente: cadastre os ganhos mensais no novo painel.
 
-### 2. Enviar os arquivos
+## Observações
 
-Envie o conteúdo deste repositório para a pasta desejada, por exemplo:
-
-`public_html/financas/`
-
-### 3. Criar config.php
-
-Copie `config.example.php` para `config.php` e preencha:
-
-```php
-<?php
-
-return [
-    'db' => [
-        'host' => 'localhost',
-        'port' => 3306,
-        'name' => 'NOME_DO_BANCO',
-        'user' => 'USUARIO_DO_BANCO',
-        'pass' => 'SENHA_DO_BANCO',
-        'charset' => 'utf8mb4',
-    ],
-    'app' => [
-        'name' => 'Família Almeida Finanças',
-        'install_key' => 'UMA-CHAVE-GRANDE-E-ALEATORIA',
-    ],
-];
-```
-
-Nunca envie `config.php` para o GitHub.
-
-### 4. Rodar o instalador pelo navegador
-
-Acesse:
-
-`https://seu-dominio.com/instalar?key=SUA_INSTALL_KEY`
-
-Informe os dados de acesso de Miguel e Gabi. O instalador:
-
-- cria todas as tabelas;
-- cria/atualiza os dois usuários;
-- aplica `password_hash()` às senhas;
-- cadastra Dízimo, Luz, Água, Gás, Internet e Aluguel;
-- cadastra Mercado, Farmácia, Pet e Lazer;
-- marca a instalação como concluída.
-
-Depois de instalar, remova ou renomeie `install.php` no servidor. Mesmo que ele permaneça, o sistema detecta que a instalação já foi concluída e não executa novamente.
-
-### 5. Entrar
-
-Acesse:
-
-`https://seu-dominio.com/login`
-
-Os dois usuários usam a mesma base financeira. Cada lançamento registra quem o criou.
-
-## Segurança
-
-- credenciais reais não ficam no repositório;
-- `config.php` está no `.gitignore`;
-- queries usam PDO Prepared Statements;
-- alterações usam token CSRF;
-- login regenera o ID da sessão;
-- senhas não são armazenadas em texto puro;
-- `.htaccess` bloqueia acesso web aos arquivos de configuração e ao schema.
-
-## Recursos
-
-- entradas, gastos e investimentos;
-- contas fixas mensais e status de pagamento;
-- metas de gasto por categoria;
-- meta mensal de investimento;
-- dívidas e pagamentos;
-- histórico mensal;
-- identificação do usuário que criou cada lançamento;
-- notas e comprovantes vinculados aos gastos;
-- resumo de gastos por dia e quantidade de notas anexadas;\n- listas mensais de mercado com reaproveitamento do mês anterior;\n- lista permanente de móveis por prioridade;\n- modo compra com calculadora e armazenamento offline;\n- sincronização da compra com os gastos quando a conexão retorna;\n- estoque doméstico integrado às compras de mercado;\n- entradas e saídas manuais com histórico e alerta de reposição.
-
-
-## Rotas do sistema
-
-- `/` — visão geral
-- `/movimentacoes` — lançamentos e histórico\n- `/compras` — listas de mercado e móveis\n- `/compras/mercado` — modo compra com suporte offline\n- `/estoque` — saldo atual, entradas, saídas e histórico do estoque doméstico
-- `/contas` — contas fixas
-- `/metas` — metas de gastos e investimento
-- `/dividas` — dívidas e pagamentos
-- `/configuracoes` — configurações
-- `/configuracoes/manutencao` — diagnóstico, migrations e otimização
-
-## Migrations pelo navegador
-
-A página `/configuracoes/manutencao` cria e utiliza a tabela `schema_migrations`.
-Novas migrations devem ser adicionadas em `database/migrations/` como arquivos PHP que retornem `description` e uma função `up(PDO $pdo)`.
-A página mostra quais migrations estão pendentes e permite executá-las em ordem, sem repetir as que já foram registradas.
-
-
-## Notas e comprovantes
-
-Os anexos ficam em `storage/receipts/`, bloqueados para acesso web direto. Eles são abertos somente pela rota autenticada `/comprovante?id=...`.
-
-Regras:
-- até 5 arquivos por gasto;
-- até 8 MB por arquivo;
-- JPG, PNG, WEBP, HEIC/HEIF ou PDF;
-- nomes físicos aleatórios, sem expor o nome original no caminho.
-
-Depois de atualizar uma instalação existente, execute a migration de comprovantes em `/configuracoes/manutencao`.
-
-
-## Lista de compras offline
-
-O modo `/compras/mercado` registra um Service Worker e salva o estado da compra no IndexedDB do navegador.
-
-Fluxo:
-1. abra o modo compra com internet ao menos uma vez;
-2. no mercado, os produtos podem ser marcados mesmo sem conexão;
-3. preço comprado e mercado são gravados localmente a cada alteração;
-4. ao finalizar offline, a compra entra em uma fila local;
-5. quando a conexão retorna, o sistema tenta sincronizar automaticamente;
-6. a sincronização cria um lançamento único na categoria `Mercado` e marca os itens como comprados.
-
-Quando o navegador não suporta Background Sync, a sincronização acontece ao manter a página aberta durante a reconexão ou na próxima vez que o modo compra for aberto.
-
-
-## Estoque doméstico
-
-A página `/estoque` calcula o saldo a partir do histórico de movimentações. Não existe um campo de quantidade que possa ficar dessincronizado.
-
-Quando uma compra de mercado é finalizada:
-- o gasto é criado em Lançamentos;
-- cada produto comprado gera uma entrada no Estoque;
-- sincronizações repetidas não duplicam a entrada, pois cada item de compra é vinculado uma única vez.
-
-Também é possível criar produtos manualmente, definir unidade e estoque mínimo, e registrar entradas/saídas. A saída não pode ultrapassar o saldo disponível.
-
-A migration `20260923_006_home_inventory.php` também importa compras de mercado já concluídas anteriormente.
+Receitas extraordinárias lançadas apenas no histórico não aumentam automaticamente a receita recorrente prevista. Gastos de contas vinculados ao sistema de pagamentos não são descontados novamente da projeção. Para garantir uma previsão correta, classifique gastos avulsos em categorias diferentes de “Contas recorrentes” e “Contas fixas”.
