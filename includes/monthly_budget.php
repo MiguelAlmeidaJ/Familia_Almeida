@@ -16,12 +16,13 @@ function monthly_budget_data(PDO $pdo, string $month): array {
     $missingBills = count(array_filter($bills, static fn($b) => $b['needs_amount']));
     $stmt = $pdo->prepare("SELECT category, COALESCE(SUM(amount),0) spent
       FROM transactions WHERE type='expense' AND bill_payment_id IS NULL
+      AND LOWER(category) NOT IN ('contas recorrentes','contas fixas')
       AND occurred_on >= ? AND occurred_on < ?
       GROUP BY category");
     $stmt->execute([$start,$end]);
     $spent = [];
     foreach ($stmt->fetchAll() as $r) {
-        $spent[mb_strtolower(trim((string)$r['category']), 'UTF-8')] = (float)$r['spent'];
+        $spent[strtolower(trim((string)$r['category']))] = (float)$r['spent'];
     }
     $stmt = $pdo->prepare('SELECT category, amount FROM monthly_allocations WHERE month = ? ORDER BY category');
     $stmt->execute([$month]);
