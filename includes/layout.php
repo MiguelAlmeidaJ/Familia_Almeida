@@ -31,14 +31,9 @@ function nav_icon(string $name): string
 function render_sidebar(string $active, string $csrf): void
 {
     $items = [
-        ['key' => 'dashboard', 'href' => '/', 'label' => 'Visão geral'],
-        ['key' => 'movimentacoes', 'href' => '/movimentacoes', 'label' => 'Lançamentos'],
-        ['key' => 'compras', 'href' => '/compras', 'label' => 'Compras'],
-        ['key' => 'estoque', 'href' => '/estoque', 'label' => 'Estoque'],
-        ['key' => 'contas', 'href' => '/contas', 'label' => 'Contas fixas'],
-        ['key' => 'cartoes', 'href' => '/cartoes', 'label' => 'Cartões de crédito'],
-        ['key' => 'metas', 'href' => '/metas', 'label' => 'Metas financeiras'],
-        ['key' => 'dividas', 'href' => '/dividas', 'label' => 'Dívidas'],
+        ['key' => 'dashboard', 'href' => '/', 'label' => 'Fluxo mensal'],
+        ['key' => 'movimentacoes', 'href' => '/movimentacoes', 'label' => 'Ganhos e gastos'],
+        ['key' => 'contas', 'href' => '/contas', 'label' => 'Contas previstas'],
     ];
 
     $user = function_exists('current_user') ? current_user() : null;
