@@ -10,7 +10,7 @@ require_once __DIR__ . '/../includes/categories.php';
 
 $user = require_auth();
 $pdo = db();
-$month = valid_month($_GET['month'] ?? null);
+$month = selected_month();
 $data = dashboard_data($pdo, $month);
 $csrf = csrf_token();
 $flash = pull_flash();
@@ -85,12 +85,7 @@ $averageDay = $expenseDays > 0 ? ((float) $data['totals']['expense'] / $expenseD
             <p>Registre as compras e guarde as notas para saber exatamente quanto foi gasto em cada dia.</p>
         </div>
 
-        <div class="ref-month-picker">
-            <a href="?month=<?= e($prevMonth) ?>" aria-label="Mês anterior">‹</a>
-            <span><?= e($monthLabel) ?></span>
-            <span class="ref-calendar">▣</span>
-            <a href="?month=<?= e($nextMonth) ?>" aria-label="Próximo mês">›</a>
-        </div>
+        
     </section>
 
     <?php if ($flash): ?>
