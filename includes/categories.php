@@ -16,7 +16,7 @@ function category_normalize(string $value):string {
 }
 function category_ensure(PDO $pdo,string $value,string $type):string {
  $name=category_normalize($value);
- if(!in_array($type,['income','expense'],true) || $name==='' || mb_strlen($name,'UTF-8')>100) throw new RuntimeException('Categoria inválida.');
+ if(!in_array($type,['income','expense'],true) || $name==='' || strlen($name)>100) throw new RuntimeException('Categoria inválida.');
  if(!categories_ready($pdo)) return $name;
  $stmt=$pdo->prepare('SELECT id,name FROM categories WHERE type=? AND LOWER(name)=LOWER(?) LIMIT 1');
  $stmt->execute([$type,$name]);
