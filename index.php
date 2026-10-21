@@ -3,106 +3,111 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/monthly_budget.php';
 require_once __DIR__ . '/includes/layout.php';
-$user=require_auth();$pdo=db();$month=selected_month();
-$ready=monthly_budget_ready($pdo);$data=$ready?monthly_budget_data($pdo,$month):null;
-$flash=pull_flash();$csrf=csrf_token();
-$date=new DateTimeImmutable($month.'-01');
-$previous=$date->modify('-1 month')->format('Y-m');
-$next=$date->modify('+1 month')->format('Y-m');
-$months=[1=>'janeiro',2=>'fevereiro',3=>'março',4=>'abril',5=>'maio',6=>'junho',7=>'julho',8=>'agosto',9=>'setembro',10=>'outubro',11=>'novembro',12=>'dezembro'];
-$label=ucfirst($months[(int)$date->format('n')]).' de '.$date->format('Y');
-function budget_percent(float $used,float $limit):float{return $limit>0?min(100,max(0,$used/$limit*100)):0;}
+
+$user = require_auth();
+$pdo = db();
+$month = selected_month();
+$ready = monthly_budget_ready($pdo);
+$data = $ready ? monthly_budget_data($pdo, $month) : null;
+$flash = pull_flash();
+$csrf = csrf_token();
+$date = new DateTimeImmutable($month . '-01');
+$monthNames = [1=>'Janeiro',2=>'Fevereiro',3=>'Março',4=>'Abril',5=>'Maio',6=>'Junho',7=>'Julho',8=>'Agosto',9=>'Setembro',10=>'Outubro',11=>'Novembro',12=>'Dezembro'];
+$label = $monthNames[(int)$date->format('n')] . ' de ' . $date->format('Y');
+if ($ready) {
+    $stmt = $pdo->prepare("SELECT description,category,type,amount,occurred_on
+      FROM transactions WHERE type IN ('income','expense') AND occurred_on >= ? AND occurred_on < ?
+      ORDER BY occurred_on DESC,id DESC LIMIT 6");
+    $stmt->execute([$month.'-01',$date->modify('+1 month')->format('Y-m-d')]);
+    $recent = $stmt->fetchAll();
+    $rankedBills = array_values(array_filter($data['bills'],static fn($b) => !$b['needs_amount'] && (float)$b['amount']>0));
+    usort($rankedBills,static fn($a,$b) => (float)$b['amount'] <=> (float)$a['amount']);
+}
 ?>
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fluxo mensal • Família Almeida</title><link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/budget-dashboard.css">
-<style>
-.budget-wrap{max-width:1230px;margin:auto;padding:28px 24px 70px}
-.budget-title{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:25px}
-.budget-title h1{font-size:clamp(26px,3vw,40px);margin:4px 0}.budget-title p{color:#64748b;margin:0}
-.budget-month{display:flex;align-items:center;gap:14px}.budget-month a{font-size:24px;text-decoration:none}
-.budget-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
-.budget-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:22px;min-width:0}
-.budget-card small{display:block;color:#64748b;margin-bottom:12px}.budget-card strong{display:block;font-size:clamp(20px,2vw,29px);overflow-wrap:anywhere}
-.budget-highlight{background:#123b32;color:#fff}.budget-highlight small{color:#c4dfd3}
-.budget-panels{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
-.budget-panel h2{font-size:19px;margin:0 0 6px}.budget-panel p{font-size:13px;color:#64748b;margin:0 0 16px}
-.budget-item{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid #edf2f7}
-.budget-item:last-child{border-bottom:0}.budget-item span{font-size:14px}.budget-item small{margin:3px 0 0;color:#64748b;display:block}
-.budget-item strong{white-space:nowrap}.budget-form{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px;align-items:end}
-.budget-form label{font-size:12px;font-weight:600;flex:1;min-width:115px}.budget-form input,.budget-form select{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:11px;background:white;margin-top:5px;color:#1e293b}
-.budget-form button,.budget-button{background:#145c48;color:white;border:0;border-radius:9px;padding:12px 15px;font-weight:600;cursor:pointer}
-.budget-remove{border:0;background:transparent;color:#9f3131;cursor:pointer;font-size:12px;padding:5px}
-.budget-meter{height:9px;background:#e2e8f0;border-radius:10px;overflow:hidden;margin:8px 0}
-.budget-meter div{height:100%;background:#2d9976}.budget-note{color:#64748b;font-size:13px;margin-top:12px}
-.budget-warning{color:#9a3412}.budget-actions{margin-top:18px}.budget-actions a{display:inline-block;color:#145c48;font-weight:650}
-.budget-alert{border:1px solid #f4c77c;background:#fff8e8;padding:15px;border-radius:12px;margin-bottom:18px}
-@media(max-width:1050px){.budget-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:720px){.budget-panels,.budget-grid{grid-template-columns:1fr}.budget-wrap{padding:20px 14px 55px}}
-</style></head><body><div class="shell ref-shell"><?php render_sidebar('dashboard',$csrf); ?><main><?php render_topbar($user); ?>
-<div class="budget-wrap">
-<header class="budget-title"><div><p class="eyebrow">PLANEJAMENTO DA FAMÍLIA</p><h1>Fluxo mensal</h1><p>Quanto vamos receber, gastar e reservar neste mês.</p></div>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel • Família Almeida</title>
+<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="/assets/budget-dashboard.css?v=2">
+</head>
+<body>
+<div class="shell ref-shell"><?php render_sidebar('dashboard',$csrf); ?>
+<main><?php render_topbar($user); ?>
+<div class="budget-wrap budget-dashboard">
+<header class="budget-title">
+<div><p class="eyebrow">VISÃO GERAL · <?= e(mb_strtoupper($label,'UTF-8')) ?></p>
+<h1>Painel financeiro</h1>
+<p>Uma visão clara de tudo que está previsto para o mês.</p></div>
 </header>
 <?php if($flash): ?><div class="budget-alert"><?= e($flash['message']) ?></div><?php endif; ?>
-<?php if(!$ready): ?><div class="budget-alert"><strong>Atualização necessária</strong><p>Execute a migration de orçamento mensal em <a href="/configuracoes/manutencao">Configurações → Manutenção</a> para ativar esta tela.</p></div>
+<?php if(!$ready): ?>
+<div class="budget-alert">Atualização necessária: execute as migrations em <a href="/configuracoes/manutencao">Configurações → Manutenção</a>.</div>
 <?php else: ?>
-<section class="budget-grid" aria-label="Resumo da previsão">
-<div class="budget-card"><small>Receitas do mês</small><strong><?= money($data['incomeTotal']) ?></strong><small><?= money($data['recordedIncomeTotal']) ?> lançados + <?= money($data['recurringIncomeTotal']) ?> recorrentes</small></div>
-<div class="budget-card"><small>Contas do mês</small><strong><?= money($data['billTotal']) ?></strong></div>
-<div class="budget-card budget-highlight"><small>Disponível após contas</small><strong><?= money($data['after_bills']) ?></strong></div>
-<div class="budget-card"><small>Ainda sem destino</small><strong><?= money($data['unallocated']) ?></strong></div>
+<section class="budget-grid" aria-label="Indicadores financeiros">
+<article class="budget-card metric"><span class="metric-label">Receitas previstas</span><strong><?= money($data['incomeTotal']) ?></strong><small><?= money($data['recordedIncomeTotal']) ?> em lançamentos</small></article>
+<article class="budget-card metric"><span class="metric-label">Contas previstas</span><strong><?= money($data['billTotal']) ?></strong><small><?= count($data['bills']) ?> contas no mês</small></article>
+<article class="budget-card metric metric-feature"><span class="metric-label">Disponível após contas</span><strong><?= money($data['after_bills']) ?></strong><small>Antes dos gastos avulsos</small></article>
+<article class="budget-card metric"><span class="metric-label">Saldo projetado</span><strong><?= money($data['expected_end']) ?></strong><small>Após gastos registrados</small></article>
 </section>
-<?php if($data['missingBills']): ?><p class="budget-note budget-warning">Atenção: <?= (int)$data['missingBills'] ?> conta(s) sem valor definido. A previsão pode estar incompleta.</p><?php endif; ?>
-<?php if($data['unallocated']<0): ?><p class="budget-note budget-warning">O total reservado ultrapassa o dinheiro disponível depois das contas. Ajuste as categorias ou receitas.</p><?php endif; ?>
-<section class="budget-charts" aria-label="Gráficos do planejamento">
-<article class="budget-card budget-chart-card">
-  <div class="budget-chart-head"><div><h2>Panorama do mês</h2><p>Como a receita prevista se distribui entre contas e saldo disponível.</p></div><span class="budget-chart-pill">Previsão</span></div>
-  <div class="budget-chart-layout">
-    <div class="budget-donut" id="budget-donut" role="img" aria-label="Distribuição da receita entre contas, gastos avulsos e saldo disponível">
-      <div class="budget-donut-center"><small>Receitas</small><strong><?= money($data['incomeTotal']) ?></strong></div>
-    </div>
-    <div class="budget-chart-legend" id="budget-chart-legend"></div>
-  </div>
+<?php if($data['missingBills']): ?><div class="budget-inline-alert" role="status">⚠ <?= (int)$data['missingBills'] ?> conta(s) sem valor informado. A previsão pode estar incompleta.</div><?php endif; ?>
+<section class="dashboard-visual-grid" aria-label="Análise visual do mês">
+<article class="budget-card dashboard-main-chart">
+<div class="dashboard-section-head"><div><h2>Para onde vai o dinheiro</h2><p>Distribuição da receita mensal entre compromissos, gastos e saldo projetado.</p></div><span class="budget-chart-pill"><?= e($label) ?></span></div>
+<div class="dashboard-donut-layout">
+<div class="dashboard-donut" id="budget-donut" role="img" aria-label="Gráfico de distribuição do orçamento">
+<div class="dashboard-donut-center"><span id="donut-focus-label">Saldo projetado</span><strong id="donut-focus-value"><?= money($data['expected_end']) ?></strong><small id="donut-focus-share">do total previsto</small></div>
+</div>
+<div class="dashboard-chart-side">
+<div class="dashboard-legend" id="budget-chart-legend"></div>
+<div class="dashboard-chart-foot">Toque em uma categoria para destacar sua participação.</div>
+</div>
+</div>
 </article>
-<article class="budget-card budget-chart-card">
-  <div class="budget-chart-head"><div><h2>Destino do orçamento</h2><p>Distribuição entre categorias, com os gastos já registrados.</p></div><span class="budget-chart-pill"><?= e($label) ?></span></div>
-  <div class="budget-bars" id="budget-allocation-bars" aria-live="polite"></div>
+<article class="budget-card dashboard-breakdown">
+<div class="dashboard-section-head"><div><h2>Maiores contas</h2><p>Principais compromissos previstos no mês.</p></div><span class="budget-chart-pill"><?= count($rankedBills) ?> com valor</span></div>
+<?php if($rankedBills): ?>
+<div class="dashboard-bill-bars">
+<?php foreach(array_slice($rankedBills,0,6) as $bill):
+$ratio=$data['billTotal']>0?min(100,100*(float)$bill['amount']/(float)$data['billTotal']):0;
+?>
+<div class="dashboard-bill">
+<div class="dashboard-bill-top"><span><?= e($bill['name']) ?></span><strong><?= money($bill['amount']) ?></strong></div>
+<div class="dashboard-track"><span style="width:<?= number_format($ratio,2,'.','') ?>%"></span></div>
+</div>
+<?php endforeach; ?>
+</div>
+<?php else: ?><p class="dashboard-empty">Nenhuma conta com valor previsto neste mês.</p><?php endif; ?>
 </article>
 </section>
+<section class="dashboard-bottom-grid">
+<article class="budget-card dashboard-stat-panel">
+<div class="dashboard-section-head"><div><h2>Resumo do mês</h2><p>Valores previstos, sem depender de confirmação de pagamento.</p></div></div>
+<div class="dashboard-summary-row"><span>Receitas recorrentes</span><strong><?= money($data['recurringIncomeTotal']) ?></strong></div>
+<div class="dashboard-summary-row"><span>Receitas lançadas</span><strong><?= money($data['recordedIncomeTotal']) ?></strong></div>
+<div class="dashboard-summary-row"><span>Gastos avulsos registrados</span><strong><?= money($data['variableSpent']) ?></strong></div>
+<div class="dashboard-summary-row"><span>Valor destinado a categorias</span><strong><?= money($data['allocated']) ?></strong></div>
+<div class="dashboard-summary-row"><span>Ainda sem destino</span><strong><?= money($data['unallocated']) ?></strong></div>
+</article>
+<article class="budget-card dashboard-recent">
+<div class="dashboard-section-head"><div><h2>Últimos lançamentos</h2><p>Movimentações registradas em <?= e($label) ?>.</p></div><a href="/movimentacoes">Ver histórico →</a></div>
+<?php if($recent): ?>
+<?php foreach($recent as $transaction): ?>
+<div class="dashboard-transaction"><div><strong><?= e($transaction['description']) ?></strong><small><?= e($transaction['category']) ?> · <?= e(date('d/m',strtotime($transaction['occurred_on']))) ?></small></div><span class="<?= $transaction['type']==='income'?'income':'expense' ?>"><?= $transaction['type']==='income'?'+':'−' ?> <?= money($transaction['amount']) ?></span></div>
+<?php endforeach; ?>
+<?php else: ?><p class="dashboard-empty">Nenhum lançamento para este mês.</p><?php endif; ?>
+</article>
+</section>
+<p class="dashboard-disclaimer">Os números são projeções do mês selecionado, não o saldo de uma conta bancária. Contas entram no cálculo mesmo sem confirmação de pagamento.</p>
 <script id="budget-visual-data" type="application/json"><?= json_encode([
- 'income'=>(float)$data['incomeTotal'],
- 'bills'=>(float)$data['billTotal'],
- 'spent'=>(float)$data['variableSpent'],
- 'available'=>(float)$data['after_bills'],
- 'allocated'=>(float)$data['allocated'],
- 'unallocated'=>(float)$data['unallocated'],
- 'allocations'=>array_map(static fn($row)=>[
- 'category'=>(string)$row['category'],
- 'amount'=>(float)$row['amount'],
- 'spent'=>(float)($data['spent'][strtolower(trim((string)$row['category']))]??0)
- ],$data['allocations'])
-], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
-<section class="budget-panels">
-<article class="budget-card budget-panel"><h2>Ganhos mensais</h2><p>Receitas recorrentes são somadas aos ganhos já lançados no mês. Não cadastre o mesmo ganho duas vezes.</p>
-<?php foreach($data['incomes'] as $income): ?><div class="budget-item"><span><?= e($income['name']) ?></span><div><strong><?= money($income['amount']) ?></strong><form method="post" action="/budget_action.php" style="display:inline"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="action" value="remove_income"><input type="hidden" name="id" value="<?= (int)$income['id'] ?>"><button class="budget-remove" title="Desativar receita">Remover</button></form></div></div><?php endforeach; ?>
-<form class="budget-form" method="post" action="/budget_action.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="action" value="save_income"><label>Receita<input name="name" placeholder="Ex.: Salário" maxlength="160" required></label><label>Valor mensal<input name="amount" type="number" min=".01" step=".01" placeholder="0,00" required></label><button type="submit">Adicionar</button></form>
-</article>
-<article class="budget-card budget-panel"><h2>Contas previstas</h2><p>Entram na previsão independentemente de marcar como pagas. Contas parceladas respeitam seu período.</p>
-<?php foreach($data['bills'] as $bill): ?><div class="budget-item"><span><?= e($bill['name']) ?><small>Dia <?= (int)$bill['due_day'] ?><?= $bill['needs_amount']?' · valor não informado':'' ?></small></span><div><strong><?= $bill['needs_amount']?'—':money($bill['amount']) ?></strong><form method="post" action="/budget_action.php" style="display:inline"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="action" value="remove_bill"><input type="hidden" name="id" value="<?= (int)$bill['id'] ?>"><button class="budget-remove" title="Desativar conta">Remover</button></form></div></div><?php endforeach; ?>
-<form class="budget-form" method="post" action="/budget_action.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="action" value="save_bill"><label>Conta<input name="name" placeholder="Ex.: Internet" maxlength="120" required></label><label>Valor<input name="amount" type="number" min=".01" step=".01" required></label><label>Dia<input name="due_day" type="number" min="1" max="31" required></label><button type="submit">Adicionar</button></form>
-<p class="budget-note">Para ajustar valores variáveis e parcelas, <a href="/contas?month=<?= e($month) ?>">edite as contas</a>.</p>
-</article></section>
-<section class="budget-panels">
-<article class="budget-card budget-panel"><h2>Para onde vai o restante?</h2><p>Distribua o dinheiro após as contas. Cada valor vale apenas para <?= e($label) ?>.</p>
-<?php foreach($data['allocations'] as $allocation):
-$category=(string)$allocation['category'];$limit=(float)$allocation['amount'];$used=(float)($data['spent'][strtolower(trim($category))]??0);
-?><div class="budget-item"><div style="flex:1"><strong><?= e($category) ?></strong><small><?= money($used) ?> gasto(s) de <?= money($limit) ?> destinados</small><div class="budget-meter"><div style="width:<?= budget_percent($used,$limit) ?>%"></div></div></div><form method="post" action="/budget_action.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="action" value="remove_allocation"><input type="hidden" name="category" value="<?= e($category) ?>"><button class="budget-remove" title="Remover categoria">×</button></form></div><?php endforeach; ?>
-<form class="budget-form" method="post" action="/budget_action.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="action" value="save_allocation"><label>Destino<input name="category" list="budget-categories" placeholder="Mercado, Farmácia..." maxlength="100" required><datalist id="budget-categories"><option value="Mercado"><option value="Farmácia"><option value="Lazer"><option value="Transporte"><option value="Pet"><option value="Outros"></datalist></label><label>Valor destinado<input name="amount" type="number" min="0" step=".01" required></label><button type="submit">Destinar / atualizar</button></form>
-<p class="budget-note">Total destinado: <strong><?= money($data['allocated']) ?></strong>. Livre para distribuir: <strong><?= money($data['unallocated']) ?></strong>.</p></article>
-<article class="budget-card budget-panel"><h2>Gastos do mês</h2><p>Os gastos lançados reduzem o saldo previsto e consomem os valores destinados por categoria.</p>
-<div class="budget-item"><span>Gastos avulsos registrados</span><strong><?= money($data['variableSpent']) ?></strong></div>
-<div class="budget-item"><span>Saldo projetado após gastos registrados</span><strong><?= money($data['expected_end']) ?></strong></div>
-<form class="budget-form" method="post" action="/acao"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="return_to" value="/"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="action" value="add_transaction"><input type="hidden" name="type" value="expense"><label>Descrição<input name="description" required placeholder="Ex.: Compras da semana"></label><label>Categoria<input name="category" list="budget-categories" required placeholder="Mercado"></label><label>Valor<input name="amount" type="number" min=".01" step=".01" required></label><label>Data<input name="date" type="date" value="<?= e(date('Y-m-d')) ?>" required></label><button type="submit">Registrar gasto</button></form>
-<div class="budget-actions"><a href="/movimentacoes?month=<?= e($month) ?>">Ver todos os ganhos e gastos →</a></div>
-<p class="budget-note">Previsão não é saldo bancário: contas são consideradas no mês mesmo sem confirmação de pagamento. Lançamentos de contas já vinculados não são descontados outra vez.</p>
-</article></section>
-<?php endif; ?></div></main></div><script src="/assets/budget-dashboard.js" defer></script></body></html>
+'income'=>(float)$data['incomeTotal'],
+'bills'=>(float)$data['billTotal'],
+'spent'=>(float)$data['variableSpent'],
+'remaining'=>(float)$data['expected_end']
+],JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) ?></script>
+<?php endif; ?>
+</div>
+</main></div>
+<script src="/assets/budget-dashboard.js?v=2" defer></script>
+</body></html>
