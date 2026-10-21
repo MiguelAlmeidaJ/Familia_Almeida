@@ -37,7 +37,7 @@ if ($ready) {
 <main><?php render_topbar($user); ?>
 <div class="budget-wrap budget-dashboard">
 <header class="budget-title">
-<div><p class="eyebrow">VISÃO GERAL · <?= e(mb_strtoupper($label,'UTF-8')) ?></p>
+<div><p class="eyebrow">VISÃO GERAL · <?= e($label) ?></p>
 <h1>Painel financeiro</h1>
 <p>Uma visão clara de tudo que está previsto para o mês.</p></div>
 </header>
