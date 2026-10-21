@@ -236,3 +236,12 @@ CREATE TABLE IF NOT EXISTS monthly_allocations (
  amount DECIMAL(12,2) NOT NULL DEFAULT 0,
  PRIMARY KEY(month, category)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Cadastro compartilhado de categorias de movimentações.
+CREATE TABLE IF NOT EXISTS categories (
+ id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ name VARCHAR(100) NOT NULL,
+ type ENUM('income','expense') NOT NULL,
+ active TINYINT(1) NOT NULL DEFAULT 1,
+ UNIQUE KEY categories_type_name_unique(type,name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

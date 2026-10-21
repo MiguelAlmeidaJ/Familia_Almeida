@@ -6,6 +6,7 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/finance.php';
 require_once __DIR__ . '/../includes/layout.php';
 require_once __DIR__ . '/../includes/receipts.php';
+require_once __DIR__ . '/../includes/categories.php';
 
 $user = require_auth();
 $pdo = db();
@@ -18,6 +19,8 @@ $current = new DateTimeImmutable($month . '-01');
 $prevMonth = $current->modify('-1 month')->format('Y-m');
 $nextMonth = $current->modify('+1 month')->format('Y-m');
 $receiptsReady = receipts_schema_ready($pdo);
+$categories = category_list($pdo);
+$categoriesReady = categories_ready($pdo);
 $receiptsByTransaction = receipts_for_month($pdo, $month);
 
 [$year, $monthNumber] = array_map('intval', explode('-', $month));
@@ -66,6 +69,7 @@ $averageDay = $expenseDays > 0 ? ((float) $data['totals']['expense'] / $expenseD
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Lançamentos • Família Almeida</title>
     <link rel="stylesheet" href="/assets/style.css">
+    <link rel="stylesheet" href="/assets/categories.css">
 </head>
 <body>
 <div class="shell ref-shell">
@@ -110,7 +114,7 @@ $averageDay = $expenseDays > 0 ? ((float) $data['totals']['expense'] / $expenseD
     <section class="movements-main-grid">
         <article class="card movement-entry-card">
             <div class="movement-card-heading">
-                <div><p class="eyebrow">NOVO LANÇAMENTO</p><h2>Registrar movimento</h2></div>
+                <div><p class="eyebrow">NOVO LANÇAMENTO</p><h2>Registrar movimento</h2><a href="/categorias" class="category-manage-link">Gerenciar categorias →</a></div>
             </div>
 
             <form method="post" action="/acao" enctype="multipart/form-data" class="movement-entry-form" id="transaction-form">
@@ -133,7 +137,12 @@ $averageDay = $expenseDays > 0 ? ((float) $data['totals']['expense'] / $expenseD
 
                 <div class="movement-form-grid">
                     <label>Categoria
-                        <input name="category" maxlength="100" placeholder="Ex.: Mercado" required>
+                        <span class="smart-category" id="smart-category">
+                            <input name="category" id="category-input" maxlength="100" placeholder="Buscar ou criar categoria..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="category-options" required>
+                            <span class="smart-category-arrow" aria-hidden="true">⌄</span>
+                            <span class="smart-category-options" id="category-options" role="listbox" hidden></span>
+                        </span>
+                        <small class="smart-category-hint">Selecione uma existente ou digite para criar.</small>
                     </label>
                     <label>Valor (R$)
                         <input type="number" name="amount" min="0.01" step="0.01" placeholder="0,00" required>
@@ -340,5 +349,7 @@ function openReceiptDialog(transactionId, description) {
     document.getElementById('receipt-dialog').showModal();
 }
 </script>
+<script>window.familiaCategories = <?= json_encode($categories, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
+<script src="/assets/categories.js" defer></script>
 </body>
 </html>

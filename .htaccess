@@ -24,6 +24,8 @@ DirectoryIndex index.php
     RewriteRule ^sair/?$ logout.php [L,QSA]
     RewriteRule ^comprovante/?$ receipt.php [L,QSA]
     RewriteRule ^movimentacoes/?$ pages/movimentacoes.php [L,QSA]
+    RewriteRule ^categorias/?$ pages/categorias.php [L,QSA]
+    RewriteRule ^categorias/acao/?$ categories_action.php [L,QSA]
     RewriteRule ^compras/?$ pages/compras.php [L,QSA]
     RewriteRule ^estoque/?$ pages/estoque.php [L,QSA]
     RewriteRule ^compras/mercado/?$ pages/compras_mercado.php [L,QSA]
