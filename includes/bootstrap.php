@@ -96,6 +96,15 @@ function valid_month(?string $month): string
     return date('Y-m');
 }
 
+function selected_month(): string
+{
+    $requested = $_GET['month'] ?? null;
+    if (is_string($requested) && valid_month($requested) === $requested) {
+        $_SESSION['selected_month'] = $requested;
+    }
+    return valid_month($_SESSION['selected_month'] ?? null);
+}
+
 function redirect_to(string $url): never
 {
     header('Location: ' . $url);
