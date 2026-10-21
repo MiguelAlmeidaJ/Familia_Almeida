@@ -7,7 +7,7 @@ require_once __DIR__ . '/../includes/finance.php';
 require_once __DIR__ . '/../includes/layout.php';
 
 $user = require_auth();
-$month = valid_month($_GET['month'] ?? null);
+$month = selected_month();
 $pdo = db();
 $recurringSchemaReady = recurring_bills_schema_ready($pdo);
 $allBills = fixed_bills_data($pdo, $month, true);
@@ -89,12 +89,7 @@ function fixed_bill_subtitle(array $bill): string
                     <p>As despesas que fazem parte da rotina da família.</p>
                 </div>
 
-                <div class="ref-month-picker">
-                    <a href="?month=<?= e($prevMonth) ?>" aria-label="Mês anterior">‹</a>
-                    <span><?= e($monthLabel) ?></span>
-                    <span class="ref-calendar">▣</span>
-                    <a href="?month=<?= e($nextMonth) ?>" aria-label="Próximo mês">›</a>
-                </div>
+                
             </section>
 
             <?php if ($flash): ?>
