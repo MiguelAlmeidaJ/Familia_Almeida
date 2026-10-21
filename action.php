@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/finance.php';
+require_once __DIR__ . '/includes/categories.php';
 require_once __DIR__ . '/includes/receipts.php';
 require_once __DIR__ . '/includes/shopping.php';
 require_once __DIR__ . '/includes/inventory.php';
@@ -58,6 +59,7 @@ try {
             }
 
             $pdo->beginTransaction();
+            $category = category_ensure($pdo, $category, $type === 'income' ? 'income' : 'expense');
 
             $stmt = $pdo->prepare(
                 'INSERT INTO transactions (created_by, type, description, category, amount, occurred_on)
