@@ -98,6 +98,15 @@ function render_sidebar(string $active, string $csrf): void
 
 function render_topbar(array $user, string $context = 'Espaço privado'): void
 {
+    $month = selected_month();
+    $date = new DateTimeImmutable($month . '-01');
+    $previous = $date->modify('-1 month')->format('Y-m');
+    $next = $date->modify('+1 month')->format('Y-m');
+    $monthNames = [1=>'Janeiro',2=>'Fevereiro',3=>'Março',4=>'Abril',5=>'Maio',6=>'Junho',7=>'Julho',8=>'Agosto',9=>'Setembro',10=>'Outubro',11=>'Novembro',12=>'Dezembro'];
+    $monthLabel = $monthNames[(int)$date->format('n')] . ' de ' . $date->format('Y');
+    $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+    if (!str_starts_with($currentPath, '/') || str_starts_with($currentPath, '//')) $currentPath = '/';
+    $monthLink = static fn(string $target): string => $currentPath . '?month=' . rawurlencode($target);
     ?>
     <header class="topbar ref-topbar">
         <div class="topbar-left">
@@ -107,11 +116,27 @@ function render_topbar(array $user, string $context = 'Espaço privado'): void
             <span class="ref-topbar-title">Nosso planejamento financeiro</span>
         </div>
 
+        <div class="topbar-month" aria-label="Mês do planejamento">
+            <a href="<?= e($monthLink($previous)) ?>" aria-label="Mês anterior">‹</a>
+            <label class="topbar-month-current" for="global-month-picker"><span><?= e($monthLabel) ?></span><input id="global-month-picker" type="month" value="<?= e($month) ?>" aria-label="Selecionar mês"></label>
+            <a href="<?= e($monthLink($next)) ?>" aria-label="Próximo mês">›</a>
+        </div>
         <div class="ref-private">
             <?= nav_icon('shield') ?>
             <span><?= e($context) ?></span>
         </div>
     </header>
+    <style>
+    .ref-topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+    .topbar-month{margin-left:auto;display:flex;align-items:center;gap:9px;border:1px solid #dde7eb;border-radius:12px;background:#fff;padding:4px 8px;color:#173749;white-space:nowrap}
+    .topbar-month>a{display:inline-flex;align-items:center;justify-content:center;width:26px;height:29px;color:#173749;text-decoration:none;font-size:21px;border-radius:7px}
+    .topbar-month>a:hover{background:#edf5f3}
+    .topbar-month-current{position:relative;display:flex;align-items:center;justify-content:center;min-width:132px;cursor:pointer;font-size:12px;font-weight:650}
+    .topbar-month-current input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}
+    .ref-private{margin-left:0}
+    @media(max-width:700px){.topbar-month{order:3;width:100%;justify-content:space-between;margin-left:0}.ref-private{margin-left:auto}.topbar-month-current{flex:1}}
+    </style>
+    <script>document.addEventListener("DOMContentLoaded",()=>{const picker=document.getElementById("global-month-picker");picker?.addEventListener("change",()=>{if(/^\\d{4}-\\d{2}$/.test(picker.value)){const url=new URL(location.href);url.searchParams.set("month",picker.value);location.assign(url.toString());}});});</script>
     <?php
 }
 
