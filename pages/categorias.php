@@ -18,7 +18,7 @@ $ready=categories_ready($pdo);$groups=category_list($pdo);
 .category-row:last-child{border:0}.category-row button{border:0;background:transparent;color:#b44141;cursor:pointer}
 .category-group{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media(max-width:680px){.category-group{grid-template-columns:1fr}}
-</style></head><body><div class="shell ref-shell"><?php render_sidebar('movimentacoes',$csrf);?><main><?php render_topbar($user);?>
+</style></head><body><div class="shell ref-shell"><?php render_sidebar('categorias',$csrf);?><main><?php render_topbar($user);?>
 <div class="category-page"><p class="eyebrow">ORGANIZAÇÃO</p><h1>Categorias</h1>
 <p>Cadastre as categorias usadas nos ganhos e gastos. Ao registrar um lançamento, você também poderá criar uma nova diretamente pelo campo de busca.</p>
 <a href="/movimentacoes">← Voltar aos lançamentos</a>
