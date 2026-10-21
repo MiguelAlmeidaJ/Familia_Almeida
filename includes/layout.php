@@ -9,6 +9,7 @@ function nav_icon(string $name): string
     $icons = [
         'dashboard' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg>',
         'movimentacoes' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="M7 9h10M7 13h6"/></svg>',
+        'categorias' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>',
         'contas' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>',
         'cartoes' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>',
         'metas' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="m15 9 4-4"/></svg>',
@@ -34,6 +35,7 @@ function render_sidebar(string $active, string $csrf): void
         ['key' => 'dashboard', 'href' => '/', 'label' => 'Fluxo mensal'],
         ['key' => 'movimentacoes', 'href' => '/movimentacoes', 'label' => 'Ganhos e gastos'],
         ['key' => 'contas', 'href' => '/contas', 'label' => 'Contas previstas'],
+        ['key' => 'categorias', 'href' => '/categorias', 'label' => 'Categorias'],
     ];
 
     $user = function_exists('current_user') ? current_user() : null;
