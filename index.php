@@ -14,7 +14,7 @@ $label=ucfirst($months[(int)$date->format('n')]).' de '.$date->format('Y');
 function budget_percent(float $used,float $limit):float{return $limit>0?min(100,max(0,$used/$limit*100)):0;}
 ?>
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fluxo mensal • Família Almeida</title><link rel="stylesheet" href="/assets/style.css">
+<title>Fluxo mensal • Família Almeida</title><link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/budget-dashboard.css">
 <style>
 .budget-wrap{max-width:1230px;margin:auto;padding:28px 24px 70px}
 .budget-title{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:25px}
@@ -53,6 +53,34 @@ function budget_percent(float $used,float $limit):float{return $limit>0?min(100,
 </section>
 <?php if($data['missingBills']): ?><p class="budget-note budget-warning">Atenção: <?= (int)$data['missingBills'] ?> conta(s) sem valor definido. A previsão pode estar incompleta.</p><?php endif; ?>
 <?php if($data['unallocated']<0): ?><p class="budget-note budget-warning">O total reservado ultrapassa o dinheiro disponível depois das contas. Ajuste as categorias ou receitas.</p><?php endif; ?>
+<section class="budget-charts" aria-label="Gráficos do planejamento">
+<article class="budget-card budget-chart-card">
+  <div class="budget-chart-head"><div><h2>Panorama do mês</h2><p>Como a receita prevista se distribui entre contas e saldo disponível.</p></div><span class="budget-chart-pill">Previsão</span></div>
+  <div class="budget-chart-layout">
+    <div class="budget-donut" id="budget-donut" role="img" aria-label="Distribuição da receita entre contas, gastos avulsos e saldo disponível">
+      <div class="budget-donut-center"><small>Receitas</small><strong><?= money($data['incomeTotal']) ?></strong></div>
+    </div>
+    <div class="budget-chart-legend" id="budget-chart-legend"></div>
+  </div>
+</article>
+<article class="budget-card budget-chart-card">
+  <div class="budget-chart-head"><div><h2>Destino do orçamento</h2><p>Distribuição entre categorias, com os gastos já registrados.</p></div><span class="budget-chart-pill"><?= e($label) ?></span></div>
+  <div class="budget-bars" id="budget-allocation-bars" aria-live="polite"></div>
+</article>
+</section>
+<script id="budget-visual-data" type="application/json"><?= json_encode([
+ 'income'=>(float)$data['incomeTotal'],
+ 'bills'=>(float)$data['billTotal'],
+ 'spent'=>(float)$data['variableSpent'],
+ 'available'=>(float)$data['after_bills'],
+ 'allocated'=>(float)$data['allocated'],
+ 'unallocated'=>(float)$data['unallocated'],
+ 'allocations'=>array_map(static fn($row)=>[
+ 'category'=>(string)$row['category'],
+ 'amount'=>(float)$row['amount'],
+ 'spent'=>(float)($data['spent'][strtolower(trim((string)$row['category']))]??0)
+ ],$data['allocations'])
+], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
 <section class="budget-panels">
 <article class="budget-card budget-panel"><h2>Ganhos mensais</h2><p>Receitas recorrentes são somadas aos ganhos já lançados no mês. Não cadastre o mesmo ganho duas vezes.</p>
 <?php foreach($data['incomes'] as $income): ?><div class="budget-item"><span><?= e($income['name']) ?></span><div><strong><?= money($income['amount']) ?></strong><form method="post" action="/budget_action.php" style="display:inline"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="action" value="remove_income"><input type="hidden" name="id" value="<?= (int)$income['id'] ?>"><button class="budget-remove" title="Desativar receita">Remover</button></form></div></div><?php endforeach; ?>
@@ -77,4 +105,4 @@ $category=(string)$allocation['category'];$limit=(float)$allocation['amount'];$u
 <div class="budget-actions"><a href="/movimentacoes?month=<?= e($month) ?>">Ver todos os ganhos e gastos →</a></div>
 <p class="budget-note">Previsão não é saldo bancário: contas são consideradas no mês mesmo sem confirmação de pagamento. Lançamentos de contas já vinculados não são descontados outra vez.</p>
 </article></section>
-<?php endif; ?></div></main></div></body></html>
+<?php endif; ?></div></main></div><script src="/assets/budget-dashboard.js" defer></script></body></html>
