@@ -3,7 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/monthly_budget.php';
 require_once __DIR__ . '/includes/layout.php';
-$user=require_auth();$pdo=db();$month=valid_month($_GET['month'] ?? null);
+$user=require_auth();$pdo=db();$month=selected_month();
 $ready=monthly_budget_ready($pdo);$data=$ready?monthly_budget_data($pdo,$month):null;
 $flash=pull_flash();$csrf=csrf_token();
 $date=new DateTimeImmutable($month.'-01');
@@ -41,12 +41,12 @@ function budget_percent(float $used,float $limit):float{return $limit>0?min(100,
 </style></head><body><div class="shell ref-shell"><?php render_sidebar('dashboard',$csrf); ?><main><?php render_topbar($user); ?>
 <div class="budget-wrap">
 <header class="budget-title"><div><p class="eyebrow">PLANEJAMENTO DA FAMÍLIA</p><h1>Fluxo mensal</h1><p>Quanto vamos receber, gastar e reservar neste mês.</p></div>
-<nav class="budget-month" aria-label="Escolher mês"><a href="?month=<?= e($previous) ?>" aria-label="Mês anterior">‹</a><strong><?= e($label) ?></strong><a href="?month=<?= e($next) ?>" aria-label="Próximo mês">›</a></nav></header>
+</header>
 <?php if($flash): ?><div class="budget-alert"><?= e($flash['message']) ?></div><?php endif; ?>
 <?php if(!$ready): ?><div class="budget-alert"><strong>Atualização necessária</strong><p>Execute a migration de orçamento mensal em <a href="/configuracoes/manutencao">Configurações → Manutenção</a> para ativar esta tela.</p></div>
 <?php else: ?>
 <section class="budget-grid" aria-label="Resumo da previsão">
-<div class="budget-card"><small>Receitas previstas</small><strong><?= money($data['incomeTotal']) ?></strong></div>
+<div class="budget-card"><small>Receitas do mês</small><strong><?= money($data['incomeTotal']) ?></strong><small><?= money($data['recordedIncomeTotal']) ?> lançados + <?= money($data['recurringIncomeTotal']) ?> recorrentes</small></div>
 <div class="budget-card"><small>Contas do mês</small><strong><?= money($data['billTotal']) ?></strong></div>
 <div class="budget-card budget-highlight"><small>Disponível após contas</small><strong><?= money($data['after_bills']) ?></strong></div>
 <div class="budget-card"><small>Ainda sem destino</small><strong><?= money($data['unallocated']) ?></strong></div>
@@ -54,7 +54,7 @@ function budget_percent(float $used,float $limit):float{return $limit>0?min(100,
 <?php if($data['missingBills']): ?><p class="budget-note budget-warning">Atenção: <?= (int)$data['missingBills'] ?> conta(s) sem valor definido. A previsão pode estar incompleta.</p><?php endif; ?>
 <?php if($data['unallocated']<0): ?><p class="budget-note budget-warning">O total reservado ultrapassa o dinheiro disponível depois das contas. Ajuste as categorias ou receitas.</p><?php endif; ?>
 <section class="budget-panels">
-<article class="budget-card budget-panel"><h2>Ganhos mensais</h2><p>Receitas recorrentes entram automaticamente na previsão de todos os meses.</p>
+<article class="budget-card budget-panel"><h2>Ganhos mensais</h2><p>Receitas recorrentes são somadas aos ganhos já lançados no mês. Não cadastre o mesmo ganho duas vezes.</p>
 <?php foreach($data['incomes'] as $income): ?><div class="budget-item"><span><?= e($income['name']) ?></span><div><strong><?= money($income['amount']) ?></strong><form method="post" action="/budget_action.php" style="display:inline"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="action" value="remove_income"><input type="hidden" name="id" value="<?= (int)$income['id'] ?>"><button class="budget-remove" title="Desativar receita">Remover</button></form></div></div><?php endforeach; ?>
 <form class="budget-form" method="post" action="/budget_action.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="month" value="<?= e($month) ?>"><input type="hidden" name="action" value="save_income"><label>Receita<input name="name" placeholder="Ex.: Salário" maxlength="160" required></label><label>Valor mensal<input name="amount" type="number" min=".01" step=".01" placeholder="0,00" required></label><button type="submit">Adicionar</button></form>
 </article>
