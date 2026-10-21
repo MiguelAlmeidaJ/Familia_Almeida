@@ -136,7 +136,7 @@ function render_topbar(array $user, string $context = 'Espaço privado'): void
     .ref-private{margin-left:0}
     @media(max-width:700px){.topbar-month{order:3;width:100%;justify-content:space-between;margin-left:0}.ref-private{margin-left:auto}.topbar-month-current{flex:1}}
     </style>
-    <script>document.addEventListener("DOMContentLoaded",()=>{const picker=document.getElementById("global-month-picker");picker?.addEventListener("change",()=>{if(/^\\d{4}-\\d{2}$/.test(picker.value)){const url=new URL(location.href);url.searchParams.set("month",picker.value);location.assign(url.toString());}});});</script>
+    <script>document.addEventListener("DOMContentLoaded",()=>{const picker=document.getElementById("global-month-picker");picker?.addEventListener("change",()=>{if(/^\d{4}-\d{2}$/.test(picker.value)){const url=new URL(location.href);url.searchParams.set("month",picker.value);location.assign(url.toString());}});});</script>
     <?php
 }
 
