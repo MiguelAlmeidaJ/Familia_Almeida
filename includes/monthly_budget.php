@@ -10,7 +10,12 @@ function monthly_budget_data(PDO $pdo, string $month): array {
     $start = $month . '-01';
     $end = (new DateTimeImmutable($start))->modify('+1 month')->format('Y-m-d');
     $incomes = $pdo->query('SELECT id,name,amount FROM recurring_incomes WHERE active = 1 ORDER BY name')->fetchAll();
-    $incomeTotal = array_sum(array_map(static fn($r) => (float)$r['amount'], $incomes));
+    $recurringIncomeTotal = array_sum(array_map(static fn($r) => (float)$r['amount'], $incomes));
+    // Ganhos lançados no mês fazem parte da previsão, sem status de recebido.
+    $stmtIncome = $pdo->prepare("SELECT COALESCE(SUM(amount),0) FROM transactions WHERE type='income' AND occurred_on >= ? AND occurred_on < ?");
+    $stmtIncome->execute([$start,$end]);
+    $recordedIncomeTotal = (float)$stmtIncome->fetchColumn();
+    $incomeTotal = $recurringIncomeTotal + $recordedIncomeTotal;
     $bills = fixed_bills_data($pdo, $month);
     $billTotal = array_sum(array_map(static fn($b) => (float)$b['amount'], $bills));
     $missingBills = count(array_filter($bills, static fn($b) => $b['needs_amount']));
@@ -46,7 +51,7 @@ function monthly_budget_data(PDO $pdo, string $month): array {
       AND bill_payment_id IS NULL AND LOWER(category) NOT IN ('contas recorrentes','contas fixas')");
     $stmt->execute([$start,$end]);
     $variableSpent=(float)$stmt->fetchColumn();
-    return compact('incomes','incomeTotal','bills','billTotal','missingBills','allocations','allocated','spent','actuals','billTransactions','variableSpent') + [
+    return compact('incomes','recurringIncomeTotal','recordedIncomeTotal','incomeTotal','bills','billTotal','missingBills','allocations','allocated','spent','actuals','billTransactions','variableSpent') + [
       'after_bills'=>$incomeTotal-$billTotal,
       'unallocated'=>$incomeTotal-$billTotal-$allocated,
       'expected_end'=>$incomeTotal-$billTotal-$variableSpent,
