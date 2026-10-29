@@ -27,6 +27,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($user && password_verify($password, $user['password_hash'])) {
                 session_regenerate_id(true);
                 $_SESSION['user_id'] = (int) $user['id'];
+                $adminCheck = db()->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='users' AND column_name='system_role'");
+                if ((int)$adminCheck->fetchColumn() > 0) {
+                    $roleStmt = db()->prepare('SELECT system_role FROM users WHERE id=?');
+                    $roleStmt->execute([(int)$user['id']]);
+                    if ($roleStmt->fetchColumn() === 'system_admin') redirect_to('/system_admin.php');
+                }
                 redirect_to('/');
             }
 
