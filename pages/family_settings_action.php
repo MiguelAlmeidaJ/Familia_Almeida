@@ -12,9 +12,24 @@ if($q->fetchColumn()!=='family_admin'){http_response_code(403);exit('Apenas o ad
 $action=(string)($_POST['action']??'');
 try {
  if($action==='finance_mode'){
-  if(($_POST['finance_mode']??'')!=='shared')throw new RuntimeException('O modo individual será disponibilizado após o isolamento financeiro por membro.');
-  $pdo->prepare("UPDATE tenants SET finance_mode='shared' WHERE id=?")->execute([$tid]);
-  flash('success','Finanças compartilhadas mantidas.');
+  $selected=(string)($_POST['finance_mode']??'');
+  if(!in_array($selected,['shared','separate'],true))throw new RuntimeException('Modo financeiro inválido.');
+  if($selected==='separate' && !finance_separate_schema_ready($pdo))
+    throw new RuntimeException('Execute as migrations 015 e 016 antes de ativar as finanças individuais.');
+  $currentStmt=$pdo->prepare('SELECT finance_mode FROM tenants WHERE id=? FOR UPDATE');
+  $currentStmt->execute([$tid]);
+  $previous=(string)$currentStmt->fetchColumn();
+  if($selected==='shared' && $previous==='separate' &&
+      ($_POST['acknowledge_disclosure']??'')!=='yes'){
+    throw new RuntimeException('Confirme que os registros pessoais voltarão a ser visíveis para a família.');
+  }
+  if($selected==='separate' && ($_POST['acknowledge_legacy']??'')!=='yes'){
+    throw new RuntimeException('Confirme que registros sem titular continuarão compartilhados.');
+  }
+  $pdo->prepare('UPDATE tenants SET finance_mode=? WHERE id=?')->execute([$selected,$tid]);
+  flash('success',$selected==='separate'
+      ? 'Finanças individuais ativadas. Registros sem titular continuam compartilhados.'
+      : 'Finanças compartilhadas ativadas para a família.');
  }elseif($action==='assign_financial_owner'){
   $kind=(string)($_POST['record_type']??'');
   $tables=['transaction'=>'transactions','bill'=>'fixed_bills','income'=>'recurring_incomes'];
