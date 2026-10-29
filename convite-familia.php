@@ -52,17 +52,12 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 <header class="invite-brand">
 <?php if(brand_asset_url('logo')): ?><img class="invite-logo" src="<?= e(brand_asset_url('logo')) ?>" alt="Bemora">
 <?php else: ?><span class="invite-wordmark">bemora</span><?php endif; ?>
-<div class="invite-brand-caption">by Anoar<br>Seu dinheiro em ordem. Sua vida mais leve.</div>
 </header>
 <?php if(($_GET['status']??'')==='received'): ?>
 <section class="invite-card invite-state"><i class="bi bi-check-circle" aria-hidden="true"></i><h1 class="invite-title">Cadastro recebido!</h1><p class="invite-subtitle">Sua família foi enviada para análise. O acesso financeiro só será liberado após aprovação e ativação segura.</p></section>
 <?php elseif(!$invitation): ?>
 <section class="invite-card invite-state"><i class="bi bi-link-45deg" aria-hidden="true"></i><h1 class="invite-title">Convite indisponível</h1><p class="invite-subtitle">Este link é inválido, expirou ou já foi utilizado. Solicite outro convite ao responsável.</p></section>
 <?php else: ?>
-<div class="invite-hero">
-<section class="invite-hero-primary"><h1>Um começo mais leve para as finanças da família.</h1><p>Crie seu espaço Bemora e organize as informações de quem vai cuidar do dinheiro junto com você.</p></section>
-<aside class="invite-hero-secondary"><span class="invite-chip"><i class="bi bi-shield-check" aria-hidden="true"></i> Convite exclusivo</span><ul class="invite-benefits"><li><i class="bi bi-people" aria-hidden="true"></i> Até <?= (int)$invitation['max_members'] ?> membros</li><li><i class="bi bi-clock-history" aria-hidden="true"></i> Link de uso único</li><li><i class="bi bi-check2-circle" aria-hidden="true"></i> Cadastro em 3 etapas</li></ul></aside>
-</div>
 <section class="invite-card">
 <h2 class="invite-title">Cadastro da família</h2><p class="invite-subtitle">Preencha as informações abaixo para enviar seu cadastro.</p>
 <?php if($error): ?><div class="invite-error" role="alert"><?= e($error) ?></div><?php endif; ?>
