@@ -730,10 +730,9 @@ try {
             $stmt = $pdo->prepare(
                 'UPDATE fixed_bills
                  SET name = ?, billing_type = ?, amount = ?, due_day = ?, start_month = ?, installment_total = ?
-                 WHERE id = ?'
+                 WHERE id = ? AND tenant_id=?'
             );
             $stmt->execute([
-                $tenantId,
                 $name,
                 $billingType,
                 $amount,
