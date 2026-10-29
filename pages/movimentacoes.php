@@ -67,11 +67,11 @@ $averageDay = $expenseDays > 0 ? ((float) $data['totals']['expense'] / $expenseD
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Lançamentos • Família Almeida</title>
-    <link rel="stylesheet" href="/assets/style.css">
+    <title>Lançamentos • Bemora</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="/assets/style.css">
     <link rel="stylesheet" href="/assets/categories.css">
-</head>
-<body>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"></head>
+<body class="bemora-finance">
 <div class="shell ref-shell">
 <?php render_sidebar('movimentacoes', $csrf); ?>
 <main>
