@@ -50,5 +50,5 @@ try {
   }
   flash('success','Responsabilidade atualizada. A responsabilidade é informativa e não limita o acesso aos dados.');
  }else throw new RuntimeException('Ação inválida.');
-}catch(Throwable $e){flash('error',$e->getMessage());}
+}catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();flash('error',$e->getMessage());}
 redirect_to('/minha-conta');
