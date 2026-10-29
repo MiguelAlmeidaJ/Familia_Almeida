@@ -16,9 +16,20 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 $pdo=db();$tenantId=(int)$user['tenant_id'];
 $roleQuery=$pdo->prepare('SELECT role FROM tenant_users WHERE tenant_id=? AND user_id=?');$roleQuery->execute([$tenantId,(int)$user['id']]);$familyAdmin=$roleQuery->fetchColumn()==='family_admin';
 $familyQuery=$pdo->prepare('SELECT name,finance_mode FROM tenants WHERE id=?');$familyQuery->execute([$tenantId]);$family=$familyQuery->fetch();
-$members=[];$bills=[];
+$members=[];$bills=[];$ownedRecords=[];$ownershipReady=true;
+foreach(['transactions','fixed_bills','recurring_incomes'] as $ownershipTable){
+ $q=$pdo->prepare("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name=? AND column_name='owner_user_id'");
+ $q->execute([$ownershipTable]);if(!(int)$q->fetchColumn())$ownershipReady=false;
+}
 if($familyAdmin){
  $q=$pdo->prepare('SELECT u.id,u.name FROM tenant_users tu JOIN users u ON u.id=tu.user_id WHERE tu.tenant_id=? ORDER BY u.name');$q->execute([$tenantId]);$members=$q->fetchAll();
+ if($ownershipReady){
+  foreach(['transaction'=>['transactions','description'],'bill'=>['fixed_bills','name'],'income'=>['recurring_incomes','name']] as $kind=>$meta){
+   $q=$pdo->prepare("SELECT id, `{$meta[1]}` AS label, owner_user_id FROM `{$meta[0]}` WHERE tenant_id=? ORDER BY id DESC LIMIT 30");
+   $q->execute([$tenantId]);
+   foreach($q->fetchAll() as $item)$ownedRecords[]=['type'=>$kind]+$item;
+  }
+ }
  $q=$pdo->prepare('SELECT b.id,b.name,r.user_id FROM fixed_bills b LEFT JOIN family_bill_responsibilities r ON r.fixed_bill_id=b.id AND r.tenant_id=b.tenant_id WHERE b.tenant_id=? ORDER BY b.name');$q->execute([$tenantId]);$bills=$q->fetchAll();
 }
 ?><!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Minha conta • Bemora</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=3"><link rel="stylesheet" href="/assets/bemora-family-settings.css?v=1"></head><body class="bemora-finance"><div class="shell"><?php render_sidebar('minha-conta',$csrf); ?><main><?php render_topbar($user); ?><div class="content"><?php page_header('MINHA CONTA','Configurações','Dados pessoais e segurança do seu acesso.'); ?>
@@ -54,5 +65,32 @@ if($familyAdmin){
 </form>
 <?php endforeach; ?>
 </div></section>
+<section class="card family-preferences" style="padding:26px;margin-top:20px">
+<h2><i class="bi bi-person-check" aria-hidden="true"></i> Titularidade dos recursos</h2>
+<p class="text-secondary">Defina a quem pertence cada receita, gasto ou conta prevista. Deixar sem titular mantém o registro compartilhado. Essa preparação ainda não habilita a visualização individual.</p>
+<?php if(!$ownershipReady): ?>
+<div class="alert alert-warning">Execute a migration 015 para disponibilizar as atribuições.</div>
+<?php elseif(!$ownedRecords): ?>
+<p class="text-secondary">Nenhum registro financeiro encontrado.</p>
+<?php else: ?>
+<div class="family-bill-list">
+<?php foreach($ownedRecords as $record): ?>
+<form method="post" action="/pages/family_settings_action.php" class="family-bill-row">
+<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+<input type="hidden" name="action" value="assign_financial_owner">
+<input type="hidden" name="record_type" value="<?= e($record['type']) ?>">
+<input type="hidden" name="record_id" value="<?= (int)$record['id'] ?>">
+<strong><?= e(['transaction'=>'Lançamento','bill'=>'Conta prevista','income'=>'Receita recorrente'][$record['type']]) ?> · <?= e($record['label']) ?></strong>
+<label>Titular
+<select name="owner_user_id" class="form-select">
+<option value="0">Compartilhado</option>
+<?php foreach($members as $member): ?><option value="<?= (int)$member['id'] ?>" <?= (int)$record['owner_user_id']===(int)$member['id']?'selected':'' ?>><?= e($member['name']) ?></option><?php endforeach; ?>
+</select></label>
+<button class="btn btn-primary" type="submit">Salvar</button>
+</form>
+<?php endforeach; ?>
+</div>
+<?php endif; ?>
+</section>
 <?php endif; ?>
 </div></main></div></body></html>
