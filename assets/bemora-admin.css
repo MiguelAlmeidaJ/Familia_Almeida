@@ -16,3 +16,28 @@ body{background:#F7FAF8!important;color:#20332F!important}
 .pill,.status{background:#e0f6e8;color:#066a51}
 .button{background:#06463F}.button.secondary{background:#e5f4ec;color:#06463F}
 .admin-tile:hover{border-color:#168F82}
+
+/* Light admin sidebar: fixed viewport with independently scrolling menu */
+.admin-shell{min-height:100vh;align-items:stretch}
+.admin-side{position:sticky;top:0;height:100dvh;min-height:0;overflow:hidden;display:flex;flex-direction:column;background:#fff!important;color:#20332F!important;border-right:1px solid #e0ebe5;padding:18px 14px!important}
+.admin-brand{color:#06463F!important;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:10px 12px 18px;border-bottom:1px solid #e7efeb;min-height:75px}
+.admin-brand .brand-icon{width:auto!important;height:auto!important;max-width:175px;max-height:62px;display:flex;align-items:center}
+.admin-brand .brand-icon img{max-width:175px;width:auto!important;max-height:57px;height:auto!important;object-fit:contain}
+.admin-brand .brand-icon strong{color:#06463F!important;font-size:25px}
+.admin-brand-subtitle{font-size:11px;color:#6d8579;font-weight:650;letter-spacing:.09em;text-transform:uppercase}
+.admin-side-label{color:#799085!important;padding-top:5px}
+.admin-nav{min-height:0;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:5px}
+.admin-nav a{color:#466057!important;flex-shrink:0}
+.admin-nav a.active{color:#06463F!important;background:#e7f6ee!important;box-shadow:inset 3px 0 #168F82!important}
+.admin-nav a:hover{background:#edf8f2!important;color:#06463F!important}
+.admin-side-bottom{flex-shrink:0;margin-top:0;background:#fff;border-top:1px solid #e0ebe5;padding:14px 0 2px}
+.admin-profile strong{color:#20332F}.admin-profile small{color:#6f857b}
+.admin-logout{border-color:#d4e4da;color:#06463F}.admin-logout:hover{background:#edf8f2}
+.admin-brand-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.admin-brand-form{padding:18px;border:1px solid #e0ebe5;border-radius:14px;display:grid;gap:12px;align-content:start}
+.admin-brand-form h3{font-size:16px;color:#06463F;margin:0}
+.brand-preview{height:115px;display:flex;align-items:center;justify-content:center;background:#F7FAF8;border:1px dashed #bdcfc4;border-radius:10px;color:#75877d}
+.brand-preview img{max-height:100px;max-width:95%;object-fit:contain}
+.admin-brand-form label{font-size:13px;font-weight:650;color:#425c50}
+.admin-brand-form input{width:100%;font-size:13px}
+@media(max-width:850px){.admin-side{position:relative;height:auto;min-height:0;overflow:visible}.admin-nav{flex-direction:row;overflow-x:auto;overflow-y:hidden}.admin-side-bottom{display:flex!important;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}.admin-side-bottom form{min-width:145px}.admin-brand-grid{grid-template-columns:1fr}}
