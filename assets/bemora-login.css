@@ -1,0 +1,15 @@
+/* Bemora login visual refinements */
+.login-card{max-width:470px!important;padding:34px!important;border:1px solid #e2ede7!important;border-radius:24px!important;box-shadow:0 24px 65px rgba(6,70,63,.08)!important}
+.login-card .brand{display:flex!important;align-items:center!important;justify-content:center!important;padding:0 0 24px!important;margin-bottom:25px!important;border-bottom:1px solid #e9f0eb!important}
+.login-card .brandmark{width:auto!important;height:auto!important;max-width:240px!important;display:flex!important;align-items:center!important;justify-content:center!important}
+.login-card .brandmark img{display:block!important;width:auto!important;height:auto!important;max-width:240px!important;max-height:82px!important;object-fit:contain!important}
+.login-card .brandmark strong{font:800 34px 'Nunito Sans',Inter,sans-serif;color:#06463f}
+.login-copy h1{font-size:clamp(25px,3vw,31px)!important}
+.login-form label[for="login-password"]{display:block;margin-bottom:6px;font-size:13px;font-weight:700;color:#24453c}
+.login-form .login-password-wrap{position:relative;display:flex;align-items:center;margin-bottom:18px}
+.login-form .login-password-wrap input{display:block;width:100%;padding-right:55px!important;margin:0!important;min-height:46px;border-radius:11px}
+.login-password-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:42px;height:38px;display:grid;place-items:center;border:0;border-radius:8px;background:transparent;color:#557366;cursor:pointer;font-size:19px}
+.login-password-toggle:hover{background:#eaf5ee;color:#06463f}
+.login-password-toggle:focus-visible{outline:2px solid #168f82;outline-offset:1px}
+.login-button{border-radius:11px!important;min-height:47px}
+@media(max-width:520px){.login-card{padding:25px 20px!important;margin:12px!important}.login-card .brandmark img{max-width:200px!important}}
