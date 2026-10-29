@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/receipts.php';
+require_once __DIR__ . '/includes/finance_scope.php';
 
 $user=require_family_access();
 
@@ -14,9 +15,9 @@ if ($receiptId <= 0 || !receipts_schema_ready(db())) {
 }
 
 $stmt = db()->prepare(
-    'SELECT id, original_name, stored_name, mime_type
-     FROM transaction_receipts
-     WHERE id = ? AND tenant_id = ?
+    'SELECT r.id,r.original_name,r.stored_name,r.mime_type
+     FROM transaction_receipts r INNER JOIN transactions t ON t.id=r.transaction_id AND t.tenant_id=r.tenant_id
+     WHERE r.id = ? AND r.tenant_id = ?' . finance_read_owner_clause(db(),'transactions','t') . '
      LIMIT 1'
 );
 $stmt->execute([$receiptId,(int)$user['tenant_id']]);
