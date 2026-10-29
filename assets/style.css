@@ -2434,3 +2434,88 @@ html.sidebar-collapsed .ref-sidebar .modern-logout{justify-content:center;width:
   .settings-card p{font-size:11px!important;line-height:1.45!important}
   .settings-card>span:last-child{font-size:11px!important}
 }
+
+/* Bemora: shared white sidebar design for the family workspace (matches admin). */
+.sidebar.ref-sidebar{
+  background:#fff!important;
+  color:#20332f!important;
+  border-right:1px solid #e0ebe5!important;
+  box-shadow:none!important;
+  display:flex!important;
+  flex-direction:column!important;
+  min-height:100dvh!important;
+  height:100dvh!important;
+  overflow:hidden!important;
+}
+.sidebar.ref-sidebar .ref-sidebar-head{
+  flex:0 0 auto!important;
+  border-bottom:1px solid #e7efeb!important;
+  padding-bottom:16px!important;
+}
+.sidebar.ref-sidebar .ref-brand{color:#06463f!important;gap:8px!important;min-width:0}
+.sidebar.ref-sidebar .ref-brand-icon{
+  width:auto!important;
+  height:auto!important;
+  min-width:0!important;
+  max-width:155px!important;
+  padding:0!important;
+  background:transparent!important;
+  border:none!important;
+}
+.sidebar.ref-sidebar .ref-brand-icon img{
+  width:auto!important;
+  height:auto!important;
+  max-width:150px!important;
+  max-height:55px!important;
+  object-fit:contain!important;
+}
+.sidebar.ref-sidebar .ref-brand-icon strong{font:800 24px "Nunito Sans",Inter,sans-serif!important;color:#06463f!important}
+.sidebar.ref-sidebar .ref-brand-copy small{color:#6d8579!important;font-size:10px!important;letter-spacing:.04em}
+.sidebar.ref-sidebar .ref-collapse{color:#45675b!important;border-color:#dce8e0!important;background:#f4faf6!important}
+.sidebar.ref-sidebar .side-nav.ref-nav{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  padding-top:17px!important;
+  scrollbar-width:thin;
+}
+.sidebar.ref-sidebar .ref-nav .nav-item{
+  color:#466057!important;
+  background:transparent!important;
+  border-radius:11px!important;
+  font-weight:600!important;
+}
+.sidebar.ref-sidebar .ref-nav .nav-item.active{
+  color:#06463f!important;
+  background:#e7f6ee!important;
+  box-shadow:inset 3px 0 #168f82!important;
+}
+.sidebar.ref-sidebar .ref-nav .nav-item:hover{
+  color:#06463f!important;
+  background:#edf8f2!important;
+}
+.sidebar.ref-sidebar .ref-nav .nav-icon,
+.sidebar.ref-sidebar .ref-nav .nav-icon .bi{color:#168f82!important}
+.sidebar.ref-sidebar .ref-nav-divider{border-color:#e7efeb!important;background:#e7efeb!important}
+.sidebar.ref-sidebar .ref-sidebar-user{
+  flex:0 0 auto!important;
+  margin-top:auto!important;
+  border-top:1px solid #e0ebe5!important;
+  color:#20332f!important;
+}
+.sidebar.ref-sidebar .ref-sidebar-user .user-avatar{background:#e0f4e8!important;color:#06463f!important}
+.sidebar.ref-sidebar .ref-sidebar-user strong{color:#20332f!important}
+.sidebar.ref-sidebar .ref-sidebar-user span{color:#6e8579!important}
+.sidebar.ref-sidebar .sidebar-logout{flex:0 0 auto!important}
+.sidebar.ref-sidebar .sidebar-logout .modern-logout{
+  background:#fff!important;
+  border:1px solid #d4e4da!important;
+  border-radius:10px!important;
+  color:#06463f!important;
+}
+.sidebar.ref-sidebar .sidebar-logout .modern-logout:hover{background:#edf8f2!important}
+.sidebar.ref-sidebar .sidebar-logout .nav-icon{color:#168f82!important}
+@media(max-width:760px){
+  .sidebar.ref-sidebar{height:100dvh!important;min-height:0!important;overflow:hidden!important}
+  .sidebar.ref-sidebar .side-nav.ref-nav{overflow-y:auto!important}
+}
