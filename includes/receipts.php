@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/tenant.php';
 
 const RECEIPT_MAX_FILES = 5;
 const RECEIPT_MAX_BYTES = 8 * 1024 * 1024;
@@ -177,8 +178,8 @@ function save_receipts_for_transaction(PDO $pdo, int $transactionId, int $userId
     try {
         $insert = $pdo->prepare(
             'INSERT INTO transaction_receipts
-                (transaction_id, uploaded_by, original_name, stored_name, mime_type, file_size)
-             VALUES (?, ?, ?, ?, ?, ?)'
+                (tenant_id,transaction_id, uploaded_by, original_name, stored_name, mime_type, file_size)
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
         );
 
         foreach ($prepared as $file) {
@@ -192,6 +193,7 @@ function save_receipts_for_transaction(PDO $pdo, int $transactionId, int $userId
             $stored[] = $storedName;
 
             $insert->execute([
+                require_tenant_id(),
                 $transactionId,
                 $userId,
                 $file['original_name'],
@@ -226,10 +228,10 @@ function receipts_for_month(PDO $pdo, string $month): array
         'SELECT r.id, r.transaction_id, r.original_name, r.mime_type, r.file_size, r.created_at
          FROM transaction_receipts r
          INNER JOIN transactions t ON t.id = r.transaction_id
-         WHERE t.occurred_on >= ? AND t.occurred_on < ?
+         WHERE t.tenant_id=? AND r.tenant_id=t.tenant_id AND t.occurred_on >= ? AND t.occurred_on < ?
          ORDER BY r.id'
     );
-    $stmt->execute([$start, $next]);
+    $stmt->execute([require_tenant_id(),$start, $next]);
 
     $result = [];
     foreach ($stmt->fetchAll() as $row) {
@@ -251,9 +253,9 @@ function receipt_files_for_transaction(PDO $pdo, int $transactionId): array
     $stmt = $pdo->prepare(
         'SELECT id, stored_name
          FROM transaction_receipts
-         WHERE transaction_id = ?'
+         WHERE transaction_id = ? AND tenant_id=?'
     );
-    $stmt->execute([$transactionId]);
+    $stmt->execute([$transactionId,require_tenant_id()]);
 
     return $stmt->fetchAll();
 }
