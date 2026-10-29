@@ -32,7 +32,7 @@ function nav_icon(string $name): string
 function render_sidebar(string $active, string $csrf): void
 {
     $items = [
-        ['key' => 'dashboard', 'href' => '/', 'label' => 'Fluxo mensal'],
+        ['key' => 'dashboard', 'href' => '/', 'label' => 'Painel'],
         ['key' => 'movimentacoes', 'href' => '/movimentacoes', 'label' => 'Ganhos e gastos'],
         ['key' => 'contas', 'href' => '/contas', 'label' => 'Contas previstas'],
         ['key' => 'categorias', 'href' => '/categorias', 'label' => 'Categorias'],
@@ -62,12 +62,10 @@ function render_sidebar(string $active, string $csrf): void
 
             <div class="ref-nav-divider"></div>
 
-            <?php if (!empty($user['system_admin'])): ?>
-            <a class="nav-item <?= in_array($active, ['configuracoes', 'manutencao'], true) ? 'active' : '' ?>" href="/configuracoes" title="Configurações">
+            <a class="nav-item <?= $active === 'minha-conta' ? 'active' : '' ?>" href="/minha-conta" title="Configurações da conta">
                 <span class="nav-icon"><?= nav_icon('configuracoes') ?></span>
                 <span class="nav-item-label">Configurações</span>
             </a>
-            <?php endif; ?>
         </nav>
 
         <div class="ref-sidebar-message">
