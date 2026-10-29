@@ -55,3 +55,9 @@ Arquivos legados que eventualmente permaneçam no repositório devem ser tratado
 - A escolha `Compartilhado` mantém `owner_user_id=NULL`; outras escolhas exigem associação do usuário ao mesmo tenant, com registro bloqueado em transação e rollback no erro.
 - A listagem de atribuição apresenta até 30 registros recentes por tipo e exige a migration 015. A responsabilidade por uma conta permanece distinta de titularidade.
 - **Importante:** essa operação prepara dados, mas NÃO os torna privados enquanto a família está em modo compartilhado. O modo individual segue bloqueado até que o filtro de proprietário esteja presente em TODAS as rotas e seja testado com membros diferentes.
+
+## Etapa seguinte — controle de propriedade nas mutações (29/10/2026)
+- `includes/finance_scope.php`: adicionadas funções de predicado de visibilidade individual e verificação de propriedade de registros. Para famílias compartilhadas antes da migration 015, a verificação exige ao menos associação ao tenant.
+- `action.php`: exclusão de lançamentos e anexação/exclusão de comprovantes passam também pela verificação de titularidade.
+- `budget_action.php`: desativar receita recorrente ou conta prevista verifica a propriedade.
+- **Estado:** preparação de autorização, NÃO liberação do modo individual. Ainda faltam filtros de `owner_user_id` em todas as consultas consolidadas, criação/edição e validação de índices/chaves de referências, além de testes end-to-end. Não remover o bloqueio atual de `finance_mode=separate`.
