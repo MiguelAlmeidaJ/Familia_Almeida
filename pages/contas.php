@@ -130,7 +130,7 @@ function fixed_bill_subtitle(array $bill): string
                         <p>Valores e vencimentos são reaproveitados nos próximos meses. Pagamentos não.</p>
                     </div>
 
-                    <button class="ref-green-button fixed-add-button" type="button" onclick="openNewBill()">
+                    <button class="ref-green-button fixed-add-button btn btn-primary" type="button" onclick="openNewBill()">
                         ＋&nbsp; Adicionar conta
                     </button>
                 </header>
@@ -221,7 +221,7 @@ function fixed_bill_subtitle(array $bill): string
                                         <input type="hidden" name="action" value="delete_bill">
                                         <input type="hidden" name="month" value="<?= e($month) ?>">
                                         <input type="hidden" name="bill_id" value="<?= (int) $bill['id'] ?>">
-                                        <button class="fixed-icon-action danger" type="submit" title="Excluir">⌫</button>
+                                        <button class="fixed-icon-action danger btn btn-sm btn-outline-danger" type="submit" title="Excluir">⌫</button>
                                     </form>
                                 </div>
                             </div>
