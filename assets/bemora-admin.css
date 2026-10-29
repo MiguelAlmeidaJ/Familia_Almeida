@@ -41,3 +41,10 @@ body{background:#F7FAF8!important;color:#20332F!important}
 .admin-brand-form label{font-size:13px;font-weight:650;color:#425c50}
 .admin-brand-form input{width:100%;font-size:13px}
 @media(max-width:850px){.admin-side{position:relative;height:auto;min-height:0;overflow:visible}.admin-nav{flex-direction:row;overflow-x:auto;overflow-y:hidden}.admin-side-bottom{display:flex!important;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}.admin-side-bottom form{min-width:145px}.admin-brand-grid{grid-template-columns:1fr}}
+
+/* Family management actions */
+.admin-shell .actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.admin-shell .actions form{display:inline-flex;align-items:center;gap:5px;margin:0}
+.admin-shell .actions input[name="name"]{max-width:170px;min-width:125px;border:1px solid #d7e6dc;padding:8px;border-radius:9px;font:inherit;font-size:12px}
+.admin-shell .actions button{cursor:pointer;min-width:35px;min-height:35px;display:inline-grid;place-items:center;padding:5px 9px}
+.admin-shell .admin-brand-form input[type="number"]{border:1px solid #d7e6dc;padding:11px;border-radius:10px;font:inherit}
