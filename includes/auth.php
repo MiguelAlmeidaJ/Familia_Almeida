@@ -70,7 +70,10 @@ function require_auth(): array
                 '/receipt.php','/pages/movimentacoes.php','/pages/contas.php',
                 '/pages/categorias.php','/pages/minha_conta.php',
                 '/pages/family_settings_action.php','/logout.php','/convite-familia.php'];
-            if(!in_array($script,$allowed,true)){
+            $path=(string)(parse_url((string)($_SERVER['REQUEST_URI']??'/'),PHP_URL_PATH)??'/');
+            $allowedRoutes=['/','/acao','/movimentacoes','/contas','/categorias',
+                '/categorias/acao','/minha-conta','/comprovante','/sair','/convite-familia'];
+            if(!in_array($script,$allowed,true) && !in_array(rtrim($path,'/')?:'/',$allowedRoutes,true)){
                 http_response_code(403);
                 exit('Funcionalidade indisponível no modo de finanças individuais.');
             }
