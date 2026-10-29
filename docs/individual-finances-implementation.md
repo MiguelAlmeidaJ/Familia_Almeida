@@ -43,3 +43,9 @@ IMPORTANTE: `finance_mode=separate` e famílias adicionais permanecem bloqueados
 A aplicação Bemora foi simplificada. O produto ativo inclui somente **Painel financeiro, Ganhos e Gastos, Contas Previstas, Categorias, Configurações pessoais/familiares e administração global de famílias**. **Cartões, estoque e compras não fazem parte do produto atual** e NÃO devem ser reintroduzidos ou incluídos no plano de desenvolvimento.
 
 Arquivos legados que eventualmente permaneçam no repositório devem ser tratados como passivo técnico: verificar se rotas ainda estão publicamente acessíveis e desativá-las com segurança em etapa específica, sem restabelecer menus ou funcionalidades. O isolamento restante deve se concentrar exclusivamente nos fluxos ativos e seus anexos/comprovantes.
+
+## Continuação — consultas de leitura (outubro de 2026)
+- `includes/finance.php`: consultas de lançamentos, contas previstas, pagamentos de contas, metas, dívidas, investimento e agregações do painel agora usam `tenant_id` da sessão.
+- `includes/monthly_budget.php`: receitas recorrentes, alocações, despesas, pagamentos e saldos passaram a calcular apenas registros da família autenticada.
+- Não foram reativados cartões, estoque ou compras. O escopo vigente permanece Painel, Ganhos e Gastos, Contas Previstas, Categorias e Configurações.
+- **Ainda não liberar finanças individuais**: falta impor `owner_user_id` em cada leitura e gravação, classificar registros antigos, auditar outras gravações em `action.php` e testes automatizados contra acesso cruzado. Atualização em produção depende de validação PHP/SQL com base de homologação.
