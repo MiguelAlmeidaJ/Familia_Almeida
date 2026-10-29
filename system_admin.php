@@ -2,38 +2,42 @@
 declare(strict_types=1);
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/tenant.php';
-require_auth();
-require_system_admin();
-$pdo=db();
-$tenants=$pdo->query("SELECT t.id,t.name,t.slug,t.active,
-    COUNT(tu.user_id) AS members
-    FROM tenants t LEFT JOIN tenant_users tu ON tu.tenant_id=t.id
-    GROUP BY t.id,t.name,t.slug,t.active ORDER BY t.name")->fetchAll();
-$users=$pdo->query("SELECT u.id,u.name,u.email,u.system_role,
-    GROUP_CONCAT(t.name ORDER BY t.name SEPARATOR ', ') AS families
-    FROM users u LEFT JOIN tenant_users tu ON tu.user_id=u.id
-    LEFT JOIN tenants t ON t.id=tu.tenant_id
-    GROUP BY u.id,u.name,u.email,u.system_role ORDER BY u.name")->fetchAll();
-$ctx=tenant_context($pdo,(int)$_SESSION['user_id']);
+$user = require_admin_access();
+$pdo = db();
+$tenants=$pdo->query("SELECT t.id,t.name,t.slug,t.active,COUNT(tu.user_id) AS members FROM tenants t LEFT JOIN tenant_users tu ON tu.tenant_id=t.id GROUP BY t.id,t.name,t.slug,t.active ORDER BY t.name")->fetchAll();
+$users=$pdo->query("SELECT u.id,u.name,u.email,u.system_role,GROUP_CONCAT(t.name ORDER BY t.name SEPARATOR ', ') AS families FROM users u LEFT JOIN tenant_users tu ON tu.user_id=u.id LEFT JOIN tenants t ON t.id=tu.tenant_id GROUP BY u.id,u.name,u.email,u.system_role ORDER BY u.name")->fetchAll();
+$activeCount=count(array_filter($tenants,static fn($t)=>(bool)$t['active']));
 ?><!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Administração do sistema</title><link rel="stylesheet" href="/assets/style.css">
-<style>main{max-width:1000px;margin:3rem auto;padding:1rem}section{padding:1rem;margin:1rem 0;border:1px solid #ccc;border-radius:12px;overflow:auto}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:.75rem;border-bottom:1px solid #ddd}nav a{margin-right:1rem}</style></head>
-<body><main><nav><a href="/">Voltar ao financeiro</a><a href="/logout">Sair</a></nav>
-<h1>Administração do sistema</h1>
-<p>Visão global somente de usuários e famílias. Dados financeiros não são exibidos.</p>
-<section><h2>Famílias</h2><table><thead><tr><th>Família</th><th>Identificador</th><th>Membros</th><th>Status</th></tr></thead><tbody>
-<?php foreach($tenants as $tenant): ?><tr><td><?= e($tenant['name']) ?></td><td><?= e($tenant['slug']) ?></td><td><?= (int)$tenant['members'] ?></td><td><?= $tenant['active']?'Ativa':'Inativa' ?></td></tr><?php endforeach ?>
-</tbody></table></section>
-<section><h2>Usuários</h2><table><thead><tr><th>Nome</th><th>E-mail</th><th>Papel global</th><th>Famílias</th></tr></thead><tbody>
-<?php foreach($users as $user): ?><tr><td><?= e($user['name']) ?></td><td><?= e($user['email']) ?></td><td><?= e($user['system_role']) ?></td><td><?= e($user['families']??'—') ?></td></tr><?php endforeach ?>
-</tbody></table></section>
-<section><h2>Família ativa</h2>
-<?php if($ctx['tenants']): ?><form action="/tenant_switch.php" method="post">
-<input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-<select name="tenant_id"><?php foreach($ctx['tenants'] as $tenant): ?>
-<option value="<?= (int)$tenant['id'] ?>" <?= $ctx['tenant_id']==(int)$tenant['id']?'selected':'' ?>><?= e($tenant['name']) ?></option>
-<?php endforeach ?></select><button type="submit">Selecionar</button></form>
-<?php else: ?><p>Nenhuma família associada.</p><?php endif ?></section>
-<p>Novas famílias permanecem desabilitadas até que todas as operações do financeiro estejam isoladas por tenant.</p>
-</main></body></html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Administração geral • Família Almeida</title><link rel="stylesheet" href="/assets/system-admin.css?v=2"></head>
+<body><div class="admin-shell">
+<aside class="admin-side">
+<div class="admin-brand"><span class="brand-icon">⌂</span><span>Família Almeida<small style="display:block;font-size:11px;font-weight:500;color:#b5ced0">Painel do sistema</small></span></div>
+<nav class="admin-nav" aria-label="Administração">
+<a class="active" href="/system_admin.php" aria-current="page">▦　Visão geral</a>
+<a href="/configuracoes">⚙　Configurações</a>
+<a href="/configuracoes/manutencao">◴　Manutenção</a>
+</nav>
+<footer>Administração protegida<br><a href="/logout">↪　Sair da conta</a></footer>
+</aside>
+<main class="admin-main">
+<div class="admin-top"><div><p class="eyebrow">Gestão da plataforma</p><h1>Administração do sistema</h1><p class="sub">Gerencie e acompanhe as famílias e os acessos à plataforma.</p></div><span class="pill">● Acesso de administrador</span></div>
+<div class="metrics">
+<article class="metric"><span>Famílias cadastradas</span><strong><?= count($tenants) ?></strong><small><?= $activeCount ?> ativas</small></article>
+<article class="metric"><span>Usuários cadastrados</span><strong><?= count($users) ?></strong><small>Contas na plataforma</small></article>
+<article class="metric"><span>Administradores globais</span><strong><?= count(array_filter($users,static fn($u)=>$u['system_role']==='system_admin')) ?></strong><small>Contas privilegiadas</small></article>
+</div>
+<section class="panel"><div class="panel-head"><div><h2>Famílias</h2><p class="sub">Organizações e quantidade de membros</p></div><span class="member"><?= count($tenants) ?> cadastradas</span></div>
+<div class="table-wrap"><table><thead><tr><th>Família</th><th>Identificador</th><th>Membros</th><th>Situação</th></tr></thead><tbody>
+<?php foreach($tenants as $t): ?><tr><td><strong><?= e($t['name']) ?></strong></td><td class="muted"><?= e($t['slug']) ?></td><td><?= (int)$t['members'] ?></td><td><span class="<?= $t['active']?'status':'member' ?>"><?= $t['active']?'Ativa':'Inativa' ?></span></td></tr><?php endforeach ?>
+<?php if(!$tenants): ?><tr><td colspan="4">Nenhuma família cadastrada.</td></tr><?php endif ?>
+</tbody></table></div></section>
+<section class="panel"><div class="panel-head"><div><h2>Usuários e permissões</h2><p class="sub">Visão geral dos acessos existentes</p></div><span class="member"><?= count($users) ?> usuários</span></div>
+<div class="table-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Papel global</th><th>Famílias vinculadas</th></tr></thead><tbody>
+<?php foreach($users as $u): ?><tr><td><strong><?= e($u['name']) ?></strong></td><td><?= e($u['email']) ?></td><td><span class="member"><?= $u['system_role']==='system_admin'?'Administrador global':'Usuário' ?></span></td><td class="muted"><?= e($u['families']?:'Sem família associada') ?></td></tr><?php endforeach ?>
+</tbody></table></div></section>
+<section class="panel"><div class="panel-head"><div><h2>Ferramentas administrativas</h2><p class="sub">Diagnóstico e configuração da instalação</p></div></div>
+<div class="actions"><a class="button" href="/configuracoes">Abrir configurações</a><a class="button secondary" href="/configuracoes/manutencao">Migrations e diagnóstico</a></div>
+<p class="notice"><strong>Ambiente em transição multi-tenant.</strong> O isolamento completo das operações financeiras ainda não está concluído. O cadastro de novas famílias permanece indisponível por segurança.</p>
+</section>
+</main></div></body></html>
