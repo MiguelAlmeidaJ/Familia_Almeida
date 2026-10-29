@@ -41,7 +41,7 @@ $usage = $limit > 0 ? min(100, ($openCommitment / $limit) * 100) : 0;
     <title>Cartões de crédito • Família Almeida</title>
     <link rel="stylesheet" href="/assets/style.css">
     <link rel="stylesheet" href="/assets/credit-cards.css">
-</head>
+<?php brand_head_tags(); ?></head>
 <body>
 <div class="shell ref-shell">
 <?php render_sidebar('cartoes', $csrf); ?>
