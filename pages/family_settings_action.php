@@ -55,7 +55,18 @@ try {
     $member->execute([$tid,$owner]);
     if(!$member->fetchColumn())throw new RuntimeException('Titular não pertence à família.');
   }
+  if($kind==='transaction'){
+    $linked=$pdo->prepare('SELECT bill_payment_id FROM transactions WHERE tenant_id=? AND id=?');
+    $linked->execute([$tid,$id]);
+    if($linked->fetchColumn())throw new RuntimeException('Lançamentos automáticos herdam o titular da conta prevista.');
+  }
   $pdo->prepare("UPDATE `{$table}` SET owner_user_id=? WHERE tenant_id=? AND id=?")->execute([$owner?:null,$tid,$id]);
+  if($kind==='bill'){
+    // Existing paid months must follow the bill owner, not remain visible to everyone.
+    $pdo->prepare('UPDATE transactions t INNER JOIN bill_payments p ON p.id=t.bill_payment_id AND p.tenant_id=t.tenant_id
+      SET t.owner_user_id=? WHERE p.bill_id=? AND p.tenant_id=? AND t.tenant_id=?')
+      ->execute([$owner?:null,$id,$tid,$tid]);
+  }
   $pdo->commit();
   flash('success','Titularidade registrada. No modo compartilhado, todos continuam com acesso.');
  }elseif($action==='bill_responsibility'){
