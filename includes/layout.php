@@ -6,6 +6,8 @@ require_once __DIR__ . '/bootstrap.php';
 
 function nav_icon(string $name): string
 {
+    $bootstrapIcons = ['dashboard'=>'bi-grid-1x2','movimentacoes'=>'bi-arrow-left-right','contas'=>'bi-receipt','categorias'=>'bi-tags','configuracoes'=>'bi-gear','logout'=>'bi-box-arrow-right','home'=>'bi-house','shield'=>'bi-shield-check','heart'=>'bi-heart','chevron'=>'bi-chevron-right','menu'=>'bi-list'];
+    if (isset($bootstrapIcons[$name])) return '<i class="bi ' . $bootstrapIcons[$name] . '" aria-hidden="true"></i>';
     $icons = [
         'dashboard' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg>',
         'movimentacoes' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="M7 9h10M7 13h6"/></svg>',
