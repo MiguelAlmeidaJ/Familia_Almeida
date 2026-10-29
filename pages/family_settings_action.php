@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/../includes/auth.php';
+require_once __DIR__.'/../includes/finance_scope.php';
 $user=require_family_access();
 if($_SERVER['REQUEST_METHOD']!=='POST'){http_response_code(405);exit('Método inválido');}
 verify_csrf();
@@ -26,8 +27,14 @@ try {
   $col->execute([$table]);
   if(!(int)$col->fetchColumn())throw new RuntimeException('Execute a migration de titularidade antes de atribuir registros.');
   $pdo->beginTransaction();
-  $record=$pdo->prepare("SELECT id FROM `{$table}` WHERE tenant_id=? AND id=? FOR UPDATE");
-  $record->execute([$tid,$id]);if(!$record->fetchColumn())throw new RuntimeException('Registro não pertence à família.');
+  $record=$pdo->prepare("SELECT owner_user_id FROM `{$table}` WHERE tenant_id=? AND id=? FOR UPDATE");
+  $record->execute([$tid,$id]);$oldOwner=$record->fetchColumn();
+  if($oldOwner===false)throw new RuntimeException('Registro não pertence à família.');
+  $modeStmt=$pdo->prepare('SELECT finance_mode FROM tenants WHERE id=?');
+  $modeStmt->execute([$tid]);
+  if($modeStmt->fetchColumn()==='separate' && $oldOwner!==null && (int)$oldOwner!==(int)$user['id']){
+    throw new RuntimeException('O administrador não pode alterar registros privados de outros membros.');
+  }
   if($owner>0){
     $member=$pdo->prepare('SELECT 1 FROM tenant_users WHERE tenant_id=? AND user_id=?');
     $member->execute([$tid,$owner]);
@@ -39,6 +46,9 @@ try {
  }elseif($action==='bill_responsibility'){
   $bill=(int)($_POST['bill_id']??0);$member=(int)($_POST['user_id']??0);
   if($bill<1)throw new RuntimeException('Conta inválida.');
+  $state=$pdo->prepare('SELECT finance_mode FROM tenants WHERE id=?');$state->execute([$tid]);
+  $mode=(string)$state->fetchColumn();
+  finance_assert_owned_record($pdo,'fixed_bills',$bill,['tenant_id'=>$tid,'user_id'=>(int)$user['id'],'mode'=>$mode]);
   $q=$pdo->prepare('SELECT 1 FROM fixed_bills WHERE id=? AND tenant_id=?');$q->execute([$bill,$tid]);
   if(!$q->fetchColumn())throw new RuntimeException('Conta não pertence à família.');
   if($member===0){
