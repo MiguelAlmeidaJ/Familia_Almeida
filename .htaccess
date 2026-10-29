@@ -39,6 +39,8 @@ DirectoryIndex index.php
     RewriteRule ^configuracoes/?$ pages/configuracoes.php [L,QSA]
     RewriteRule ^minha-conta/?$ pages/minha_conta.php [L,QSA]
     RewriteRule ^admin/tenants/?$ admin/tenants.php [L,QSA]
+    RewriteRule ^admin/family_action/?$ admin/family_action.php [L,QSA]
+    RewriteRule ^convite-familia/?$ convite-familia.php [L,QSA]
     RewriteRule ^admin/configuracoes/?$ admin/configuracoes.php [L,QSA]
     RewriteRule ^configuracoes/manutencao/?$ pages/manutencao.php [L,QSA]
 </IfModule>
