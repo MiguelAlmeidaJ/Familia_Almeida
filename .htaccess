@@ -17,6 +17,11 @@ DirectoryIndex index.php
     RewriteCond %{THE_REQUEST} \s/+install\.php(?:[?\s]) [NC]
     RewriteRule ^install\.php$ /instalar [R=302,L,NE]
 
+    # Funcionalidades removidas do Bemora: bloquear URL amigável e PHP direto.
+    RewriteRule ^(?:cartoes|cartoes/acao|estoque|compras|compras/mercado|compras/offline|api/compras/sincronizar|metas|dividas)/?$ - [G,L,NC]
+    RewriteRule ^(?:credit_card_action|shopping_sync)\.php$ - [G,L,NC]
+    RewriteRule ^pages/(?:cartoes|estoque|compras|compras_mercado|metas|dividas)\.php$ - [G,L,NC]
+
     # Rotas amigáveis
     RewriteRule ^login/?$ login.php [L,QSA]
     RewriteRule ^instalar/?$ install.php [L,QSA]
