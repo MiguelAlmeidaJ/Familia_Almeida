@@ -16,9 +16,9 @@ $monthNames = [1=>'Janeiro',2=>'Fevereiro',3=>'Março',4=>'Abril',5=>'Maio',6=>'
 $label = $monthNames[(int)$date->format('n')] . ' de ' . $date->format('Y');
 if ($ready) {
     $stmt = $pdo->prepare("SELECT description,category,type,amount,occurred_on
-      FROM transactions WHERE type IN ('income','expense') AND occurred_on >= ? AND occurred_on < ?
+      FROM transactions WHERE tenant_id=? AND type IN ('income','expense') AND occurred_on >= ? AND occurred_on < ?
       ORDER BY occurred_on DESC,id DESC LIMIT 6");
-    $stmt->execute([$month.'-01',$date->modify('+1 month')->format('Y-m-d')]);
+    $stmt->execute([(int)$user['tenant_id'],$month.'-01',$date->modify('+1 month')->format('Y-m-d')]);
     $recent = $stmt->fetchAll();
     $rankedBills = array_values(array_filter($data['bills'],static fn($b) => !$b['needs_amount'] && (float)$b['amount']>0));
     usort($rankedBills,static fn($a,$b) => (float)$b['amount'] <=> (float)$a['amount']);
