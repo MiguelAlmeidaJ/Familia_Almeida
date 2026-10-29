@@ -18,7 +18,7 @@ $activeCount=count(array_filter($tenants,static fn($t)=>(bool)$t['active']));
 <a href="/configuracoes">⚙　Configurações</a>
 <a href="/configuracoes/manutencao">◴　Manutenção</a>
 </nav>
-<footer>Administração protegida<br><a href="/logout">↪　Sair da conta</a></footer>
+<footer>Administração protegida<form method="post" action="/sair" style="margin-top:15px"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><button type="submit" style="border:0;background:transparent;color:white;padding:0;cursor:pointer;font:inherit">↪　Sair da conta</button></form></footer>
 </aside>
 <main class="admin-main">
 <div class="admin-top"><div><p class="eyebrow">Gestão da plataforma</p><h1>Administração do sistema</h1><p class="sub">Gerencie e acompanhe as famílias e os acessos à plataforma.</p></div><span class="pill">● Acesso de administrador</span></div>
