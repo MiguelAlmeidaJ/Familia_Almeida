@@ -38,7 +38,7 @@ function monthly_budget_data(PDO $pdo, string $month): array {
     $stmt = $pdo->prepare("SELECT type,COALESCE(SUM(amount),0) total FROM transactions
        WHERE tenant_id=? AND type IN ('income','expense') AND occurred_on >= ? AND occurred_on < ?
        GROUP BY type");
-    $stmt->execute([$start,$end]);
+    $stmt->execute([require_tenant_id(),$start,$end]);
     $actuals=['income'=>0.0,'expense'=>0.0];
     foreach($stmt->fetchAll() as $r) $actuals[$r['type']] = (float)$r['total'];
     // Recorded recurring-bill payments are represented by the forecast already.
@@ -46,12 +46,12 @@ function monthly_budget_data(PDO $pdo, string $month): array {
     $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount),0) FROM transactions
       WHERE tenant_id=? AND type='expense' AND occurred_on >= ? AND occurred_on < ?
       AND (bill_payment_id IS NOT NULL OR LOWER(category) IN ('contas recorrentes','contas fixas'))");
-    $stmt->execute([$start,$end]);
+    $stmt->execute([require_tenant_id(),$start,$end]);
     $billTransactions=(float)$stmt->fetchColumn();
     $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount),0) FROM transactions
-      WHERE type='expense' AND occurred_on >= ? AND occurred_on < ?
+      WHERE tenant_id=? AND type='expense' AND occurred_on >= ? AND occurred_on < ?
       AND bill_payment_id IS NULL AND LOWER(category) NOT IN ('contas recorrentes','contas fixas')");
-    $stmt->execute([$start,$end]);
+    $stmt->execute([require_tenant_id(),$start,$end]);
     $variableSpent=(float)$stmt->fetchColumn();
     return compact('incomes','recurringIncomeTotal','recordedIncomeTotal','incomeTotal','bills','billTotal','missingBills','allocations','allocated','spent','actuals','billTransactions','variableSpent') + [
       'after_bills'=>$incomeTotal-$billTotal,
