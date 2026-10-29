@@ -24,18 +24,18 @@ $ready=categories_ready($pdo);$groups=category_list($pdo);
 <a href="/movimentacoes">← Voltar aos lançamentos</a>
 <?php if($flash):?><div class="alert"><?= e($flash['message']) ?></div><?php endif;?>
 <?php if(!$ready):?><div class="alert">Execute a migração de categorias em <a href="/configuracoes/manutencao">Configurações → Manutenção</a>.</div><?php else:?>
-<section class="category-card"><h2>Nova categoria</h2>
+<section class="category-card card"><h2>Nova categoria</h2>
 <form class="category-form" action="/categorias/acao" method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="create">
-<label>Nome<input name="name" maxlength="100" placeholder="Ex.: Saúde" required></label>
-<label>Tipo<select name="type"><option value="expense">Gasto</option><option value="income">Ganho</option></select></label>
-<button type="submit">Adicionar categoria</button></form></section>
+<label>Nome<input class="form-control" name="name" maxlength="100" placeholder="Ex.: Saúde" required></label>
+<label>Tipo<select class="form-select" name="type"><option value="expense">Gasto</option><option value="income">Ganho</option></select></label>
+<button class="btn btn-primary" type="submit"><i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar categoria</button></form></section>
 <div class="category-group">
 <?php foreach(['expense'=>'Categorias de gastos','income'=>'Categorias de ganhos'] as $type=>$title):?>
 <section class="category-card"><h2><?= e($title) ?></h2>
 <?php if(!$groups[$type]):?><p>Nenhuma categoria cadastrada.</p><?php endif;?>
 <?php foreach($groups[$type] as $cat):?>
 <div class="category-row"><span><?= e($cat['name']) ?></span>
-<form action="/categorias/acao" method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="remove"><input type="hidden" name="id" value="<?= (int)$cat['id'] ?>"><button type="submit" title="Remover categoria">Remover</button></form></div>
+<form action="/categorias/acao" method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="remove"><input type="hidden" name="id" value="<?= (int)$cat['id'] ?>"><button type="submit" title="Remover categoria" aria-label="Remover categoria">Remover</button></form></div>
 <?php endforeach;?></section>
 <?php endforeach;?></div>
 <?php endif;?></div></main></div></body></html>
