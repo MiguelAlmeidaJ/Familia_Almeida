@@ -23,6 +23,8 @@ $pdo = db();
 $scope = finance_scope($pdo,$user);
 $tenantId = $scope['tenant_id'];
 $action = (string) ($_POST['action'] ?? '');
+$activeActions=['add_transaction','add_receipts','delete_receipt','delete_transaction','add_bill','update_bill','archive_bill','restore_bill','delete_bill','set_bill_month_amount','toggle_bill'];
+if(!in_array($action,$activeActions,true)){http_response_code(404);exit('Funcionalidade descontinuada.');}
 $month = valid_month($_POST['month'] ?? null);
 $returnTo = (string) ($_POST['return_to'] ?? '/');
 $allowedReturns = ['/', '/movimentacoes', '/contas', '/metas', '/dividas', '/compras', '/estoque'];
@@ -303,7 +305,7 @@ try {
             $stmt = $pdo->prepare(
                 'UPDATE inventory_items
                  SET name = ?, category = ?, unit = ?, min_quantity = ?, active = 1
-                 WHERE id = ?'
+                 WHERE id = ? AND tenant_id=?'
             );
             $stmt->execute([
                 $name,
@@ -678,10 +680,11 @@ try {
 
             $stmt = $pdo->prepare(
                 'INSERT INTO fixed_bills
-                    (name, billing_type, amount, due_day, start_month, installment_total)
-                 VALUES (?, ?, ?, ?, ?, ?)'
+                    (tenant_id, name, billing_type, amount, due_day, start_month, installment_total)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
             );
             $stmt->execute([
+                $tenantId,
                 $name,
                 $billingType,
                 $amount,
@@ -723,12 +726,14 @@ try {
                 $installmentTotal = 0;
             }
 
+            finance_assert_owned_record($pdo,'fixed_bills',$billId,$scope);
             $stmt = $pdo->prepare(
                 'UPDATE fixed_bills
                  SET name = ?, billing_type = ?, amount = ?, due_day = ?, start_month = ?, installment_total = ?
                  WHERE id = ?'
             );
             $stmt->execute([
+                $tenantId,
                 $name,
                 $billingType,
                 $amount,
@@ -736,6 +741,7 @@ try {
                 $startMonth !== '' ? $startMonth : null,
                 $installmentTotal > 0 ? $installmentTotal : null,
                 $billId,
+                $tenantId,
             ]);
 
             flash('success', 'Conta recorrente atualizada.');
@@ -747,8 +753,10 @@ try {
                 throw new RuntimeException('Conta inválida.');
             }
 
-            $stmt = $pdo->prepare('UPDATE fixed_bills SET active = 0 WHERE id = ?');
-            $stmt->execute([$billId]);
+            finance_assert_owned_record($pdo,'fixed_bills',$billId,$scope);
+
+            $stmt = $pdo->prepare('UPDATE fixed_bills SET active = 0 WHERE id = ? AND tenant_id=?');
+            $stmt->execute([$billId,$tenantId]);
             flash('success', 'Conta arquivada. O histórico foi preservado.');
             break;
 
@@ -758,8 +766,10 @@ try {
                 throw new RuntimeException('Conta inválida.');
             }
 
-            $stmt = $pdo->prepare('UPDATE fixed_bills SET active = 1 WHERE id = ?');
-            $stmt->execute([$billId]);
+            finance_assert_owned_record($pdo,'fixed_bills',$billId,$scope);
+
+            $stmt = $pdo->prepare('UPDATE fixed_bills SET active = 1 WHERE id = ? AND tenant_id=?');
+            $stmt->execute([$billId,$tenantId]);
             flash('success', 'Conta restaurada.');
             break;
 
@@ -770,6 +780,8 @@ try {
                 throw new RuntimeException('Conta inválida.');
             }
 
+            finance_assert_owned_record($pdo,'fixed_bills',$billId,$scope);
+
             $pdo->beginTransaction();
 
             if (db_column_exists($pdo, 'transactions', 'bill_payment_id')) {
@@ -777,16 +789,16 @@ try {
                     'DELETE t
                      FROM transactions t
                      INNER JOIN bill_payments p ON p.id = t.bill_payment_id
-                     WHERE p.bill_id = ?'
+                     WHERE p.bill_id = ? AND p.tenant_id=? AND t.tenant_id=?'
                 );
-                $deleteTransactions->execute([$billId]);
+                $deleteTransactions->execute([$billId,$tenantId,$tenantId]);
             }
 
-            $deletePayments = $pdo->prepare('DELETE FROM bill_payments WHERE bill_id = ?');
-            $deletePayments->execute([$billId]);
+            $deletePayments = $pdo->prepare('DELETE FROM bill_payments WHERE bill_id = ? AND tenant_id=?');
+            $deletePayments->execute([$billId,$tenantId]);
 
-            $deleteBill = $pdo->prepare('DELETE FROM fixed_bills WHERE id = ?');
-            $deleteBill->execute([$billId]);
+            $deleteBill = $pdo->prepare('DELETE FROM fixed_bills WHERE id = ? AND tenant_id=?');
+            $deleteBill->execute([$billId,$tenantId]);
 
             if ($deleteBill->rowCount() === 0) {
                 throw new RuntimeException('Conta não encontrada.');
@@ -804,11 +816,13 @@ try {
                 throw new RuntimeException('Informe um valor válido para o mês.');
             }
 
+            finance_assert_owned_record($pdo,'fixed_bills',$billId,$scope);
+
             $billStmt = $pdo->prepare(
                 'SELECT id, name, billing_type, amount, due_day, start_month, installment_total
-                 FROM fixed_bills WHERE id = ? LIMIT 1'
+                 FROM fixed_bills WHERE id = ? AND tenant_id=? LIMIT 1'
             );
-            $billStmt->execute([$billId]);
+            $billStmt->execute([$billId,$tenantId]);
             $bill = $billStmt->fetch();
 
             if (!$bill) {
@@ -828,16 +842,16 @@ try {
             $pdo->beginTransaction();
 
             $paymentStmt = $pdo->prepare(
-                'INSERT INTO bill_payments (bill_id, month, amount_due, installment_number, paid)
-                 VALUES (?, ?, ?, ?, 0)
+                'INSERT INTO bill_payments (tenant_id,bill_id, month, amount_due, installment_number, paid)
+                 VALUES (?, ?, ?, ?, ?, 0)
                  ON DUPLICATE KEY UPDATE
                     amount_due = VALUES(amount_due),
                     installment_number = VALUES(installment_number)'
             );
-            $paymentStmt->execute([$billId, $month, $amount, $installmentNumber]);
+            $paymentStmt->execute([$tenantId,$billId, $month, $amount, $installmentNumber]);
 
-            $paymentIdStmt = $pdo->prepare('SELECT id, paid FROM bill_payments WHERE bill_id = ? AND month = ? LIMIT 1');
-            $paymentIdStmt->execute([$billId, $month]);
+            $paymentIdStmt = $pdo->prepare('SELECT id, paid FROM bill_payments WHERE bill_id = ? AND month = ? AND tenant_id=? LIMIT 1');
+            $paymentIdStmt->execute([$billId, $month,$tenantId]);
             $payment = $paymentIdStmt->fetch();
 
             if ($payment && (bool) $payment['paid']) {
@@ -848,9 +862,9 @@ try {
                 $updateTransaction = $pdo->prepare(
                     'UPDATE transactions
                      SET amount = ?, description = ?, category = "Contas recorrentes"
-                     WHERE bill_payment_id = ?'
+                     WHERE bill_payment_id = ? AND tenant_id=?'
                 );
-                $updateTransaction->execute([$amount, $description, (int) $payment['id']]);
+                $updateTransaction->execute([$amount, $description, (int) $payment['id'],$tenantId]);
             }
 
             $pdo->commit();
@@ -871,13 +885,15 @@ try {
                 throw new RuntimeException('Existem migrations pendentes para contas recorrentes. Execute em Configurações > Manutenção.');
             }
 
+            finance_assert_owned_record($pdo,'fixed_bills',$billId,$scope);
+
             $pdo->beginTransaction();
 
             $billStmt = $pdo->prepare(
                 'SELECT id, name, billing_type, amount, due_day, start_month, installment_total
-                 FROM fixed_bills WHERE id = ? FOR UPDATE'
+                 FROM fixed_bills WHERE id = ? AND tenant_id=? FOR UPDATE'
             );
-            $billStmt->execute([$billId]);
+            $billStmt->execute([$billId,$tenantId]);
             $bill = $billStmt->fetch();
 
             if (!$bill) {
@@ -899,10 +915,10 @@ try {
             $existingStmt = $pdo->prepare(
                 'SELECT id, amount_due
                  FROM bill_payments
-                 WHERE bill_id = ? AND month = ?
+                 WHERE bill_id = ? AND month = ? AND tenant_id=?
                  LIMIT 1'
             );
-            $existingStmt->execute([$billId, $month]);
+            $existingStmt->execute([$billId,$month,$tenantId]);
             $existingPayment = $existingStmt->fetch();
 
             $monthlyAmount = $existingPayment && $existingPayment['amount_due'] !== null
@@ -936,6 +952,7 @@ try {
                     paid_on = VALUES(paid_on)'
             );
             $paymentStmt->execute([
+                $tenantId,
                 $billId,
                 $month,
                 $monthlyAmount,
@@ -946,8 +963,8 @@ try {
                 $paymentDate,
             ]);
 
-            $paymentIdStmt = $pdo->prepare('SELECT id FROM bill_payments WHERE bill_id = ? AND month = ? LIMIT 1');
-            $paymentIdStmt->execute([$billId, $month]);
+            $paymentIdStmt = $pdo->prepare('SELECT id FROM bill_payments WHERE bill_id = ? AND month = ? AND tenant_id=? LIMIT 1');
+            $paymentIdStmt->execute([$billId, $month,$tenantId]);
             $paymentId = (int) $paymentIdStmt->fetchColumn();
 
             if ($paid === 1) {
@@ -966,6 +983,7 @@ try {
                         occurred_on = VALUES(occurred_on)'
                 );
                 $transactionStmt->execute([
+                    $tenantId,
                     (int) $user['id'],
                     $paymentId,
                     $description,
@@ -975,8 +993,8 @@ try {
 
                 flash('success', 'Conta paga e lançada automaticamente nas movimentações.');
             } else {
-                $deleteStmt = $pdo->prepare('DELETE FROM transactions WHERE bill_payment_id = ?');
-                $deleteStmt->execute([$paymentId]);
+                $deleteStmt = $pdo->prepare('DELETE FROM transactions WHERE bill_payment_id = ? AND tenant_id=?');
+                $deleteStmt->execute([$paymentId,$tenantId]);
                 flash('success', 'Pagamento desmarcado e movimentação removida.');
             }
 
