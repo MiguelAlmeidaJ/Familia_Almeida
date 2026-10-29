@@ -1,0 +1,28 @@
+/* Bemora phase 2 — scoped financial components, loaded after legacy styles. */
+:root{--bs-body-color:#20332F;--bs-body-bg:#F7FAF8;--bs-border-color:#DFEBE5;--bs-link-color:#08695F;--bs-link-hover-color:#06463F;--bs-focus-ring-color:rgba(52,201,161,.3)}
+.bemora-finance .ref-dashboard-heading,.bemora-finance .budget-title{margin-bottom:25px}
+.bemora-finance h1,.bemora-finance h2,.bemora-finance h3{font-family:"Nunito Sans",Inter,sans-serif;color:#06463F}
+.bemora-finance .eyebrow{color:#168F82;letter-spacing:.14em;font-weight:800}
+.bemora-finance .card,.bemora-finance .budget-card,.bemora-finance .category-card,.bemora-finance .stat,.bemora-finance [class*="-panel"]{border-color:#DFEBE5}
+.bemora-finance .card,.bemora-finance .budget-card,.bemora-finance .category-card{box-shadow:0 7px 24px rgba(6,70,63,.045);border-radius:16px}
+.bemora-finance .metric-feature{background:#06463F!important;border-color:#06463F!important}
+.bemora-finance .metric:not(.metric-feature) strong{color:#06463F}
+.bemora-finance input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]),.bemora-finance select,.bemora-finance textarea{border-radius:10px;border-color:#cedfd6;max-width:100%}
+.bemora-finance input:focus,.bemora-finance select:focus,.bemora-finance textarea:focus{border-color:#168F82;box-shadow:0 0 0 .2rem rgba(52,201,161,.13);outline:0}
+.bemora-finance .form-control,.bemora-finance .form-select{min-height:40px}
+.bemora-finance button[type="submit"]:not(.movement-delete-button),.bemora-finance .primary{border-radius:10px;font-weight:700}
+.bemora-finance .btn-primary,.bemora-finance button.primary{background:#06463F!important;border-color:#06463F!important;color:white!important}
+.bemora-finance .btn-primary:hover,.bemora-finance button.primary:hover{background:#08675c!important}
+.bemora-finance .btn-outline-primary{color:#06463F;border-color:#168F82}
+.bemora-finance .btn-outline-primary:hover{background:#06463F;border-color:#06463F;color:#fff}
+.bemora-finance .alert{border-radius:11px}
+.bemora-finance .table-responsive{border-radius:13px;overflow:auto}
+.bemora-finance .table{--bs-table-bg:transparent;--bs-table-border-color:#e0ebe5;vertical-align:middle}
+.bemora-finance .badge{font-weight:650;letter-spacing:.01em}
+.bemora-finance .category-card h2{margin-bottom:16px}
+.bemora-finance .category-row{border-color:#edf2ef}
+.bemora-finance .category-row button{color:#ac4747}
+.bemora-finance .ref-dashboard-heading>div>p:not(.eyebrow){color:#60766d}
+.bemora-finance .budget-card strong{font-variant-numeric:tabular-nums}
+.ref-nav .nav-item .nav-icon .bi{font-size:19px;display:inline-flex;width:22px;align-items:center;justify-content:center}
+@media(max-width:700px){.bemora-finance .content{padding:20px 14px}.bemora-finance .category-page{padding:22px 14px 60px}.bemora-finance .category-card{padding:18px}.bemora-finance .budget-wrap{padding:20px 14px 40px}}
