@@ -66,11 +66,13 @@ try {
             $pdo->beginTransaction();
             $category = category_ensure($pdo, $category, $type === 'income' ? 'income' : 'expense');
 
-            $stmt = $pdo->prepare(
-                'INSERT INTO transactions (tenant_id, created_by, type, description, category, amount, occurred_on)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)'
-            );
-            $stmt->execute([$tenantId,(int) $user['id'], $type, $description, $category, $amount, $date]);
+            $personal=$scope['mode']==='separate';
+            $stmt = $pdo->prepare($personal
+                ? 'INSERT INTO transactions (tenant_id,owner_user_id,created_by,type,description,category,amount,occurred_on) VALUES (?,?,?,?,?,?,?,?)'
+                : 'INSERT INTO transactions (tenant_id,created_by,type,description,category,amount,occurred_on) VALUES (?,?,?,?,?,?,?)');
+            $parameters=[$tenantId,(int)$user['id'],$type,$description,$category,$amount,$date];
+            if($personal)array_splice($parameters,1,0,[(int)$user['id']]);
+            $stmt->execute($parameters);
 
             $transactionId = (int) $pdo->lastInsertId();
             save_receipts_for_transaction($pdo, $transactionId, (int) $user['id'], $receiptUploads);
@@ -678,12 +680,11 @@ try {
                 $installmentTotal = 0;
             }
 
-            $stmt = $pdo->prepare(
-                'INSERT INTO fixed_bills
-                    (tenant_id, name, billing_type, amount, due_day, start_month, installment_total)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)'
-            );
-            $stmt->execute([
+            $personal=$scope['mode']==='separate';
+            $stmt = $pdo->prepare($personal
+                ? 'INSERT INTO fixed_bills (tenant_id,owner_user_id,name,billing_type,amount,due_day,start_month,installment_total) VALUES (?,?,?,?,?,?,?,?)'
+                : 'INSERT INTO fixed_bills (tenant_id,name,billing_type,amount,due_day,start_month,installment_total) VALUES (?,?,?,?,?,?,?)');
+            $parameters=[
                 $tenantId,
                 $name,
                 $billingType,
@@ -691,7 +692,9 @@ try {
                 $dueDay,
                 $startMonth !== '' ? $startMonth : null,
                 $installmentTotal > 0 ? $installmentTotal : null,
-            ]);
+            ];
+            if($personal)array_splice($parameters,1,0,[(int)$user['id']]);
+            $stmt->execute($parameters);
 
             flash('success', 'Conta recorrente adicionada.');
             break;
