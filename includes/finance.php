@@ -195,8 +195,8 @@ function dashboard_data(PDO $pdo, string $month): array
          FROM spending_goals g
          LEFT JOIN transactions t
            ON LOWER(t.category) = LOWER(g.category) AND t.tenant_id=g.tenant_id
-          AND t.occurred_on >= ? AND t.occurred_on < ?
-         WHERE g.tenant_id=?
+          AND t.occurred_on >= ? AND t.occurred_on < ?' . finance_read_owner_clause($pdo,'transactions','t') . '
+         WHERE g.tenant_id=?' . finance_read_owner_clause($pdo,'spending_goals','g') . '
          GROUP BY g.id, g.category, g.monthly_limit
          ORDER BY g.category'
     );
@@ -208,7 +208,7 @@ function dashboard_data(PDO $pdo, string $month): array
     }
     unset($goal);
 
-    $debtStmt=$pdo->prepare('SELECT id,name,total_amount,paid_amount FROM debts WHERE tenant_id=? ORDER BY created_at DESC');
+    $debtStmt=$pdo->prepare('SELECT id,name,total_amount,paid_amount FROM debts WHERE tenant_id=?' . finance_read_owner_clause($pdo,'debts') . ' ORDER BY created_at DESC');
     $debtStmt->execute([require_tenant_id()]);
     $debts=$debtStmt->fetchAll();
     foreach ($debts as &$debt) {
