@@ -5,7 +5,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/bootstrap.php';
 
 if (!empty($_SESSION['user_id'])) {
-    redirect_to('/');
+    require_once __DIR__ . '/includes/auth.php';
+    $existing = current_user();
+    redirect_to(!empty($existing['system_admin']) ? '/system_admin.php' : '/');
 }
 
 $error = null;
