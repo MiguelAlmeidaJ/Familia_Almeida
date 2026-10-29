@@ -67,3 +67,9 @@ Arquivos legados que eventualmente permaneçam no repositório devem ser tratado
 - Aplicado às listagens de lançamentos, contas previstas, atividade recente e diversos agregados de receitas e despesas em `includes/finance.php`, `includes/monthly_budget.php` e `index.php`.
 - O modo individual **continua bloqueado** em `includes/auth.php` e `includes/finance_scope.php`. O código de leitura é preparatório; não atesta privacidade completa. Há consultas auxiliares, gravações e comprovantes ainda a auditar com testes de dois usuários e dois tenants.
 - Não publicar em produção sem validação de sintaxe PHP, esquema migrado 015, integração dos cálculos e testes contra acesso cruzado.
+
+## Auditoria adicional de propriedade e validação de sintaxe
+- Download, listagem mensal e busca de comprovantes agora verificam a visibilidade do lançamento associado, não apenas a família.
+- Metas e dívidas consultadas no painel usam a política de titularidade, assim como os lançamentos usados na soma de metas.
+- Workflow `.github/workflows/php-syntax.yml` adiciona validação de sintaxe PHP a push/PR. A execução do workflow ainda precisa ser confirmada no GitHub Actions.
+- **Não declarar concluído:** falta cobertura de escrita/consultas de contas previstas e lançamentos gerados automaticamente, revisão de chaves únicas e FKs, testes reais de isolamento entre membros e entre famílias. O modo individual permanece bloqueado em autenticação.
