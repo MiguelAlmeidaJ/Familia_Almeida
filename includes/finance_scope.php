@@ -74,5 +74,6 @@ function finance_read_owner_clause(PDO $pdo,string $table,string $alias=''):stri
     if(!(int)$column->fetchColumn())throw new RuntimeException('Titularidade não configurada nesta tabela.');
     $prefix=$alias!==''?$alias.'.':'';
     // IDs are server-derived integers, not raw request text.
+    if($table==='monthly_allocations')return " AND ({$prefix}owner_user_id=0 OR {$prefix}owner_user_id={$userId})";
     return " AND ({$prefix}owner_user_id IS NULL OR {$prefix}owner_user_id={$userId})";
 }
