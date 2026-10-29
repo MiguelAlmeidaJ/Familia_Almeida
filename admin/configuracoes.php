@@ -9,7 +9,7 @@ admin_shell_start('settings','Configurações','Ferramentas e parâmetros globai
 <?php if($flash): ?><div class="notice" role="status"><?= e($flash['message']) ?></div><?php endif; ?>
 <section class="panel"><div class="panel-head"><div><h2>Gestão do sistema</h2><p class="sub">Operações exclusivas do administrador global</p></div></div><div class="admin-tiles">
 <a class="admin-tile" href="/configuracoes/manutencao"><span class="tile-icon"><i class="bi bi-tools" aria-hidden="true"></i></span><strong>Manutenção</strong><small>Atualizações, migrations e diagnóstico de banco de dados</small><span class="tile-arrow">→</span></a>
-<a class="admin-tile" href="/admin/tenants"><span class="tile-icon"><i class="bi bi-people" aria-hidden="true"></i></span><strong>Gerenciar tenants</strong><small>Consulte famílias e a situação dos ambientes</small><span class="tile-arrow">→</span></a>
+<a class="admin-tile" href="/admin/tenants"><span class="tile-icon"><i class="bi bi-people" aria-hidden="true"></i></span><strong>Gerenciar famílias</strong><small>Consulte famílias, convites e cadastros pendentes</small><span class="tile-arrow">→</span></a>
 </div></section>
 <section class="panel"><h2>Segurança e isolamento</h2><p class="sub">A administração global permanece separada das configurações pessoais dos usuários.</p><p class="notice">A plataforma ainda está em transição multi-tenant. Não habilite o cadastro de novas famílias até terminar os filtros de isolamento e os testes de acesso cruzado.</p></section>
 <section class="panel"><div class="panel-head"><div><h2>Identidade visual</h2><p class="sub">Personalize a logo e o favicon do Bemora.</p></div></div>
