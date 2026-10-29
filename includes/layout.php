@@ -7,7 +7,7 @@ require_once __DIR__ . '/branding.php';
 
 function nav_icon(string $name): string
 {
-    $bootstrapIcons = ['dashboard'=>'bi-grid-1x2','movimentacoes'=>'bi-arrow-left-right','contas'=>'bi-receipt','categorias'=>'bi-tags','configuracoes'=>'bi-gear','logout'=>'bi-box-arrow-right','home'=>'bi-house','shield'=>'bi-shield-check','heart'=>'bi-heart','chevron'=>'bi-chevron-right','menu'=>'bi-list'];
+    $bootstrapIcons = ['dashboard'=>'bi-grid-1x2-fill','movimentacoes'=>'bi-arrow-left-right','contas'=>'bi-receipt-cutoff','categorias'=>'bi-bookmarks','configuracoes'=>'bi-sliders2','logout'=>'bi-box-arrow-right','home'=>'bi-house','shield'=>'bi-shield-check','heart'=>'bi-heart','chevron'=>'bi-chevron-right','menu'=>'bi-list'];
     if (isset($bootstrapIcons[$name])) return '<i class="bi ' . $bootstrapIcons[$name] . '" aria-hidden="true"></i>';
     $icons = [
         'dashboard' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg>',
@@ -48,10 +48,11 @@ function render_sidebar(string $active, string $csrf): void
         <div class="ref-sidebar-head">
             <a class="ref-brand" href="/">
                 <span class="ref-brand-icon"><?php if(brand_asset_url('logo')): ?><img src="<?= e(brand_asset_url('logo')) ?>" alt="Bemora"><?php else: ?><strong>bemora</strong><?php endif; ?></span>
+                <span class="ref-brand-favicon"><?php if(brand_asset_url('favicon')): ?><img src="<?= e(brand_asset_url('favicon')) ?>" alt="Bemora"><?php else: ?><span aria-hidden="true">B</span><?php endif; ?></span>
                 <span class="ref-brand-copy"><small>Área financeira</small></span>
             </a>
             <button class="sidebar-toggle ref-collapse" id="sidebarToggle" type="button" aria-label="Recolher menu" aria-expanded="true">
-                <?= nav_icon('chevron') ?>
+                <i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i>
             </button>
         </div>
 
