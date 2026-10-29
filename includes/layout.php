@@ -62,10 +62,12 @@ function render_sidebar(string $active, string $csrf): void
 
             <div class="ref-nav-divider"></div>
 
+            <?php if (!empty($user['system_admin'])): ?>
             <a class="nav-item <?= in_array($active, ['configuracoes', 'manutencao'], true) ? 'active' : '' ?>" href="/configuracoes" title="Configurações">
                 <span class="nav-icon"><?= nav_icon('configuracoes') ?></span>
                 <span class="nav-item-label">Configurações</span>
             </a>
+            <?php endif; ?>
         </nav>
 
         <div class="ref-sidebar-message">
