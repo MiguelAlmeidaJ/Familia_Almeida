@@ -1,0 +1,33 @@
+/* Bemora design tokens — phase 1, additive to legacy styles. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito+Sans:wght@600;700;800&display=swap');
+:root{--bemora-deep:#06463F;--bemora-petrol:#168F82;--bemora-mint:#34C9A1;--bemora-soft:#AFDE8E;--bemora-snow:#F7FAF8;--bemora-graphite:#20332F;--bs-primary:#06463F;--bs-primary-rgb:6,70,63;--bg:#F7FAF8;--card:#fff;--ink:#20332F;--muted:#647b73;--line:#E1ECE6;--green:#168F82;--gold:#168F82}
+html,body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bemora-snow);color:var(--bemora-graphite)}
+h1,h2,h3,h4,h5,h6,.nav-item-label,.admin-brand strong{font-family:"Nunito Sans",Inter,sans-serif;letter-spacing:-.02em}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--bemora-mint)!important;outline-offset:3px}
+button,.primary,.btn-primary{transition:background-color .15s ease,border-color .15s ease,transform .15s ease}
+.primary,.btn-primary{background:var(--bemora-deep)!important;border-color:var(--bemora-deep)!important;color:#fff!important}
+.primary:hover,.btn-primary:hover{background:#086558!important}
+.sidebar.ref-sidebar{background:#06463F!important}
+.ref-brand{gap:10px!important}
+.ref-brand-icon{border:0!important;background:transparent!important;width:42px!important;height:42px!important;padding:0!important}
+.ref-brand-icon img{display:block;width:40px;height:40px;object-fit:contain}
+.ref-brand-copy small{color:#b6e4d3!important}
+.ref-brand-copy strong{color:white!important;font-family:"Nunito Sans",sans-serif;font-size:20px!important}
+.ref-nav .nav-item{border-radius:11px!important;transition:background .16s ease}
+.ref-nav .nav-item.active,.ref-nav .nav-item:hover{background:#17675b!important;color:#fff!important}
+.ref-sidebar-message{border-color:#ffffff1c!important}
+.ref-sidebar-message strong{color:#ccf6dd!important}
+.topbar.ref-topbar{background:#fff;border-color:#e1ece6}
+.content{color:var(--bemora-graphite)}
+.card,.budget-card,.settings-card{border-radius:16px!important;border-color:#e1ece6!important}
+.page-heading h1,.budget-title h1{color:var(--bemora-deep)!important}
+.brand .brandmark{border:0!important;width:57px;height:57px;background:transparent!important}
+.brandmark img{width:54px;height:54px;object-fit:contain}
+.brandcopy b{font-family:"Nunito Sans",sans-serif;font-size:22px!important;letter-spacing:-.04em!important;color:var(--bemora-deep)}
+.brandcopy strong{color:var(--bemora-petrol)!important;font-size:12px!important}
+.brandcopy small{font-size:9px!important;color:#67867b!important}
+.login-screen{background:radial-gradient(circle at 20% 15%,#dbf5e7,transparent 34%),#f7faf8!important}
+.login-card{border-radius:24px!important;border:1px solid #e2ede7!important;box-shadow:0 24px 60px #06463f12!important}
+.login-copy h1{font-family:"Nunito Sans",sans-serif;color:var(--bemora-deep)}
+.login-button{background:var(--bemora-deep)!important}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
