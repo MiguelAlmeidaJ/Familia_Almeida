@@ -19,3 +19,10 @@ A implementação ainda não está completa. Rotas não filtradas identificadas:
 
 ## Publicação
 Antes de executar migration 015 em produção: backup, teste em cópia do MySQL e análise de tamanho de tabelas/índices. É uma preparação de esquema; **não libera finanças individuais**.
+
+## Etapa seguinte — lançamentos (código publicado)
+- Novo `includes/finance_scope.php` resolve família pelo vínculo autenticado e rejeita modo individual até a auditoria completa.
+- `action.php`: novos lançamentos recebem `tenant_id` explicitamente. Anexar/remover comprovantes e excluir lançamentos exigem associação à família.
+- `index.php`: lista recente de lançamentos filtrada pela família ativa.
+- Pendência importante: consultas agregadas, contas, orçamento, categorias, cartões, compras, estoque, arquivos de recibos e demais gravações ainda exigem isolamento. Nenhuma alteração habilitou o modo individual.
+- Os testes de sintaxe e integração no servidor ainda precisam ser executados antes de produção.
