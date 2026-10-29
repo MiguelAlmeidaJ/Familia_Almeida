@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/branding.php';
 
 function nav_icon(string $name): string
 {
@@ -46,8 +47,8 @@ function render_sidebar(string $active, string $csrf): void
     <aside class="sidebar ref-sidebar" id="sidebar">
         <div class="ref-sidebar-head">
             <a class="ref-brand" href="/">
-                <span class="ref-brand-icon"><img src="/assets/bemora-icon.svg" alt="" width="40" height="40"></span>
-                <span class="ref-brand-copy"><small>FINANÇAS</small><strong>bemora</strong></span>
+                <span class="ref-brand-icon"><?php if(brand_asset_url('logo')): ?><img src="<?= e(brand_asset_url('logo')) ?>" alt="Bemora"><?php else: ?><strong>bemora</strong><?php endif; ?></span>
+                <span class="ref-brand-copy"><small>FINANÇAS COM LEVEZA</small></span>
             </a>
             <button class="sidebar-toggle ref-collapse" id="sidebarToggle" type="button" aria-label="Recolher menu" aria-expanded="true">
                 <?= nav_icon('chevron') ?>
