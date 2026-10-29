@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/tenant.php';
 
 function current_user(): ?array
 {
@@ -24,6 +25,12 @@ function current_user(): ?array
         return null;
     }
 
+    $check = db()->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='tenant_users'");
+    if ((int)$check->fetchColumn() > 0) {
+        $ctx = tenant_context(db(), (int)$row['id']);
+        $row['tenant_id'] = $ctx['tenant_id'];
+        $row['system_admin'] = $ctx['system_admin'];
+    }
     $user = $row;
     return $user;
 }
