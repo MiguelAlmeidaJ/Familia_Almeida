@@ -26,3 +26,15 @@ Antes de executar migration 015 em produção: backup, teste em cópia do MySQL 
 - `index.php`: lista recente de lançamentos filtrada pela família ativa.
 - Pendência importante: consultas agregadas, contas, orçamento, categorias, cartões, compras, estoque, arquivos de recibos e demais gravações ainda exigem isolamento. Nenhuma alteração habilitou o modo individual.
 - Os testes de sintaxe e integração no servidor ainda precisam ser executados antes de produção.
+
+## Auditoria adicional de consultas e gravações — outubro de 2026
+Foram introduzidos filtros por tenant em:
+- `receipt.php` (download de comprovantes);
+- `includes/receipts.php` (criação, listagem mensal e procura de arquivos);
+- `includes/categories.php` e `categories_action.php` (consultas, inserção, reativação e exclusão);
+- `budget_action.php` (receitas recorrentes, alocações, contas previstas);
+- algumas rotas de `action.php` e lista recente do painel (etapa anterior).
+
+**Não concluído / não liberado:** `includes/finance.php`, `includes/monthly_budget.php`, `includes/credit_cards.php`, `credit_card_action.php`, `includes/shopping.php`, `shopping_sync.php`, `includes/inventory.php`, demais caminhos de `action.php`, configurações e tabelas com índices únicos sem `tenant_id`. Esses módulos ainda requerem auditoria detalhada de SQL, gravações indiretas e testes de integração.
+
+IMPORTANTE: `finance_mode=separate` e famílias adicionais permanecem bloqueados na autenticação; nenhum destes commits é autorização para remover essa trava. Os commits de isolamento parcial devem ser testados em homologação antes de publicar em produção.
