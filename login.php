@@ -50,21 +50,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Entrar • Família Almeida Finanças</title>
-    <link rel="stylesheet" href="assets/style.css">
+    <title>Entrar • Bemora</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=1">
 </head>
 <body>
 <main class="login-screen">
     <section class="login-card">
         <div class="brand brand-dark">
-            <div class="brandmark">FA</div>
-            <div class="brandcopy"><b>FAMÍLIA</b><strong>ALMEIDA</strong><small>FINANÇAS</small></div>
+            <div class="brandmark"><img src="/assets/bemora-icon.svg" alt="" width="54" height="54"></div>
+            <div class="brandcopy"><b>bemora</b><strong>by Anoar</strong><small>FINANÇAS COM LEVEZA</small></div>
         </div>
 
         <div class="login-copy">
-            <p class="eyebrow">ACESSO DA FAMÍLIA</p>
-            <h1>Entrar no financeiro</h1>
-            <p>Use seu e-mail e senha para acessar os dados compartilhados da família.</p>
+            <p class="eyebrow">BEM-VINDO À BEMORA</p>
+            <h1>Seu dinheiro em ordem.</h1>
+            <p>Organize suas finanças com clareza e tranquilidade.</p>
         </div>
 
         <form method="post" class="login-form">
