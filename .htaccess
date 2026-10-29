@@ -17,6 +17,9 @@ DirectoryIndex index.php
     RewriteCond %{THE_REQUEST} \s/+install\.php(?:[?\s]) [NC]
     RewriteRule ^install\.php$ /instalar [R=302,L,NE]
 
+    # Código de teste e migrations não são endpoints HTTP.
+    RewriteRule ^(?:tests|database)/ - [F,L,NC]
+
     # Funcionalidades removidas do Bemora: bloquear URL amigável e PHP direto.
     RewriteRule ^(?:cartoes|cartoes/acao|estoque|compras|compras/mercado|compras/offline|api/compras/sincronizar|metas|dividas)/?$ - [G,L,NC]
     RewriteRule ^(?:credit_card_action|shopping_sync)\.php$ - [G,L,NC]
