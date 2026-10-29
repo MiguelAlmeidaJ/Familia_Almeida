@@ -27,10 +27,9 @@ php scripts/create_system_admin.php
 unset SYSTEM_ADMIN_PASSWORD
 ```
 
-Esse usuário recebe `system_role = system_admin`. Nesta fase, o login usa a interface
-legada e o usuário é associado à família atual apenas para compatibilidade. A tela de
-administração global **ainda precisa ser implementada**. Não use este script como
-provisionamento multi-tenant definitivo.
+Esse usuário recebe `system_role = system_admin`. O login direciona o usuário para a página de administração global somente leitura.
+Um novo administrador global não recebe acesso implícito às finanças de nenhuma família.
+O cadastro de outras famílias continua desabilitado até o isolamento integral.
 
 ## Critérios antes de habilitar mais famílias
 
