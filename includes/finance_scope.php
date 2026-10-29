@@ -12,7 +12,9 @@ function finance_scope(PDO $pdo, array $user): array {
     $q=$pdo->prepare("SELECT t.id,t.finance_mode,tu.role FROM tenants t INNER JOIN tenant_users tu ON tu.tenant_id=t.id AND tu.user_id=? WHERE t.id=? AND t.active=1");
     $q->execute([$userId,$tenantId]);$scope=$q->fetch(PDO::FETCH_ASSOC);
     if(!$scope)throw new RuntimeException('Acesso financeiro não autorizado.');
-    if($scope['finance_mode']!=='shared')throw new RuntimeException('O modo individual ainda não está liberado.');
+    if(!in_array($scope['finance_mode'],['shared','separate'],true))throw new RuntimeException('Modo financeiro inválido.');
+    if($scope['finance_mode']==='separate' && !finance_separate_schema_ready($pdo))
+        throw new RuntimeException('Execute todas as migrations de titularidade antes de usar finanças individuais.');
     return ['tenant_id'=>$tenantId,'user_id'=>$userId,'role'=>$scope['role'],'mode'=>$scope['finance_mode']];
 }
 function finance_assert_transaction(PDO $pdo,int $transactionId,int $tenantId):void {
