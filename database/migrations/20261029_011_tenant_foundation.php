@@ -74,7 +74,7 @@ return [
             $stmt->execute([$legacyId]);
             $remaining = (int) $pdo->query("SELECT COUNT(*) FROM `{$table}` WHERE tenant_id IS NULL")->fetchColumn();
             if ($remaining > 0) throw new RuntimeException("Falha ao atribuir família em {$table}");
-            $pdo->exec("ALTER TABLE `{$table}` MODIFY tenant_id BIGINT UNSIGNED NOT NULL");
+            $pdo->exec("ALTER TABLE `{$table}` MODIFY tenant_id BIGINT UNSIGNED NOT NULL DEFAULT {$legacyId}");
 
             $index = $pdo->prepare("SELECT COUNT(*) FROM information_schema.statistics
                 WHERE table_schema = DATABASE() AND table_name = ? AND index_name = 'tenant_id_idx'");
