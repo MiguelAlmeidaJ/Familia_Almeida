@@ -46,7 +46,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cadastro da família • Bemora</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-<link rel="stylesheet" href="/assets/bemora-invite.css?v=3">
+<link rel="stylesheet" href="/assets/bemora-invite.css?v=4">
 <?php require_once __DIR__.'/includes/branding.php'; brand_head_tags(); ?>
 </head><body class="invite-page"><main class="invite-shell">
 <header class="invite-brand">
