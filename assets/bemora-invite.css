@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+:root{--deep:#06463F;--petrol:#168F82;--mint:#34C9A1;--snow:#F7FAF8;--ink:#20332F;--muted:#687e73;--line:#dce9e1}
+*{box-sizing:border-box}body.invite-page{margin:0;background:radial-gradient(circle at 0 0,#e3f7ea 0,transparent 38%),radial-gradient(circle at 100% 10%,#eaf6dc 0,transparent 32%),var(--snow);color:var(--ink);font-family:Inter,system-ui,sans-serif}
+.invite-shell{max-width:1020px;padding:34px 20px 65px;margin:0 auto}
+.invite-brand{display:flex;align-items:center;gap:18px;margin:0 0 30px}
+.invite-logo{max-height:74px;max-width:260px;object-fit:contain}.invite-wordmark{font:800 34px 'Nunito Sans',sans-serif;color:var(--deep)}
+.invite-brand-caption{padding-left:17px;border-left:1px solid var(--line);color:var(--muted);font-size:13px;line-height:1.65}
+.invite-hero{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;margin-bottom:20px}
+.invite-hero-primary,.invite-hero-secondary,.invite-card{background:white;border:1px solid var(--line);border-radius:22px;box-shadow:0 12px 38px #06463f09}
+.invite-hero-primary{padding:32px}.invite-hero-primary h1{font:800 clamp(28px,3vw,38px)/1.17 'Nunito Sans',sans-serif;max-width:560px;letter-spacing:-.04em;color:var(--deep);margin:0 0 14px}
+.invite-hero-primary p,.invite-hero-secondary p,.invite-subtitle{color:var(--muted);line-height:1.65;margin:0}
+.invite-hero-secondary{background:linear-gradient(145deg,#f0faf3,#fff);padding:29px;display:flex;flex-direction:column;justify-content:center;gap:15px}
+.invite-chip{background:#e3f5e9;border-radius:50px;padding:8px 13px;display:inline-flex;gap:8px;align-items:center;color:var(--deep);font-size:12px;font-weight:700;width:fit-content}
+.invite-benefits{padding:0;margin:0;list-style:none;display:grid;gap:12px}.invite-benefits li{display:flex;align-items:center;gap:10px;color:#4a6c59;font-size:14px}.invite-benefits .bi{color:var(--petrol);font-size:18px}
+.invite-card{padding:35px 38px}.invite-title{font:800 26px 'Nunito Sans',sans-serif;color:var(--deep);margin:0 0 4px}.invite-subtitle{font-size:14px}
+.invite-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:27px 0 30px}
+.invite-step{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:13px;background:#f8fbf9;padding:12px;color:#687e73;font-size:13px;font-weight:700;min-width:0}
+.invite-step-number{display:grid;place-items:center;border-radius:50%;width:28px;height:28px;flex-shrink:0;background:#e9f0ec;color:#607b6b}
+.invite-step.active{background:#e9f7ef;border-color:#afd8c3;color:var(--deep)}.invite-step.active .invite-step-number{background:var(--deep);color:#fff}.invite-step.done{color:var(--petrol)}.invite-step.done .invite-step-number{background:#d6f3e0;color:var(--deep)}
+.invite-section-title{font:800 22px 'Nunito Sans',sans-serif;color:var(--deep);margin:0 0 18px}
+.invite-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.invite-field{display:flex;flex-direction:column;gap:7px;min-width:0}.invite-field.wide{grid-column:1/-1}.invite-field label{font-weight:700;font-size:13px}
+.invite-field input,.invite-field select{width:100%;border:1px solid #cedfd4;border-radius:12px;padding:12px 14px;min-height:46px;color:var(--ink);background:white;font-size:14px}
+.invite-field input:focus,.invite-field select:focus{outline:none;border-color:var(--petrol);box-shadow:0 0 0 4px #168f821f}
+.invite-help{font-size:12px;color:var(--muted);margin-top:9px}
+.invite-actions{display:flex;gap:12px;justify-content:space-between;margin-top:30px}
+.invite-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border-radius:12px;border:1px solid var(--deep);padding:13px 20px;font-size:14px;font-weight:700;cursor:pointer}
+.invite-btn.primary{color:#fff;background:var(--deep);margin-left:auto}.invite-btn.primary:hover{background:#08675b}.invite-btn.secondary{background:#fff;color:var(--deep);border-color:#d8e8dd}
+.invite-btn[hidden],.invite-step[hidden],.step[hidden],.member-fields[hidden]{display:none!important}
+.member-tabs{display:flex;flex-wrap:wrap;gap:9px;margin:20px 0}.member-tab{border:1px solid #d7e7dd;color:var(--deep);background:#fff;border-radius:11px;padding:11px 16px;font-size:13px;font-weight:700;cursor:pointer}.member-tab.active{background:#e5f5ec;border-color:#8bc3a7}
+.member-fields{background:#fbfdfb;padding:22px;border:1px solid #e1ece5;border-radius:15px}
+.admin-choice{display:flex;gap:13px;align-items:center;cursor:pointer;padding:17px;border:1px solid #d7e7dd;border-radius:13px;margin-bottom:10px}.admin-choice:has(input:checked){border-color:var(--petrol);background:#eff9f2}.admin-choice input{accent-color:var(--deep);width:18px;height:18px}.admin-choice strong{font-size:14px}
+.invite-error{background:#fff3f2;border:1px solid #f3ccc8;padding:14px 16px;border-radius:12px;color:#8f3534;margin:17px 0}
+.invite-state{max-width:670px;margin:70px auto;text-align:center}.invite-state .bi{font-size:40px;color:var(--petrol)}
+@media(max-width:750px){.invite-hero{grid-template-columns:1fr}.invite-hero-primary,.invite-hero-secondary{padding:24px}.invite-steps{gap:5px}.invite-step{padding:9px;gap:6px;font-size:11px}}
+@media(max-width:560px){.invite-shell{padding:20px 12px 45px}.invite-card{padding:22px 17px}.invite-brand{flex-direction:column;align-items:flex-start;gap:8px}.invite-brand-caption{border:0;padding:0}.invite-form-grid{grid-template-columns:1fr}.invite-step{flex-direction:column;align-items:center;text-align:center}.invite-actions{flex-wrap:wrap}.invite-actions .invite-btn{flex:1}}
