@@ -44,7 +44,7 @@ try{
   $info=@getimagesizefromstring($bytes);
   if(!$info||$info[0]!==1080||$info[1]!==1080||$info['mime']!=='image/jpeg')
    throw new RuntimeException('A foto deve ter exatamente 1080 × 1080 pixels em JPEG.');
-  $dir=dirname(__DIR__).'/storage/avatars';
+  $dir=dirname(__DIR__,2).'/bemora-private/avatars';
   if(!is_dir($dir)&&!mkdir($dir,0750,true)&&!is_dir($dir))throw new RuntimeException('Pasta de fotos indisponível.');
   $filename=bin2hex(random_bytes(24)).'.jpg';
   $destination=$dir.'/'.$filename;
@@ -61,7 +61,7 @@ try{
  }elseif($action==='remove_avatar'){
   $q=$pdo->prepare('SELECT avatar_path FROM users WHERE id=?');$q->execute([$uid]);$previous=$q->fetchColumn();
   $pdo->prepare('UPDATE users SET avatar_path=NULL WHERE id=?')->execute([$uid]);
-  if(is_string($previous)&&preg_match('/^[a-f0-9]{48}\.jpg$/',$previous))@unlink(dirname(__DIR__).'/storage/avatars/'.$previous);
+  if(is_string($previous)&&preg_match('/^[a-f0-9]{48}\.jpg$/',$previous))@unlink(dirname(__DIR__,2).'/bemora-private/avatars/'.$previous);
   flash('success','Foto removida.');
  }else throw new RuntimeException('Ação inválida.');
 }catch(Throwable $e){
