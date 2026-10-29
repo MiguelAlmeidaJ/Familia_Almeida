@@ -1,6 +1,6 @@
-# Separação financeira por membro — implementação em andamento
+# Separação financeira por membro — histórico de implementação
 
-## Garantias já adicionadas
+> **Estado atualizado em 29/10/2026:** o modo de finanças individuais foi liberado para a família legada após as migrations 015 e 016, com testes automatizados PHP/MySQL e verificação das telas. As seções abaixo registram etapas históricas e podem mencionar bloqueios que já foram resolvidos. O onboarding financeiro de outras famílias continua bloqueado. Consulte [o roteiro de ativação na ValueHost](individual-finances-release.md).\n\n## Garantias já adicionadas
 - Migration 015 cria `owner_user_id` nullable nas tabelas financeiras principais com índice (tenant_id,owner_user_id).
 - Registros existentes **não** são atribuídos automaticamente a um membro: permanecem compartilhados.
 - `require_auth()` nega acesso financeiro de tenants diferentes do legado e de modo `separate` até que todos os módulos estejam isolados.
