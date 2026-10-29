@@ -17,6 +17,7 @@ $csrf = csrf_token();
 <div class="content">
 <?php page_header('SISTEMA', 'Configurações', 'Ajustes e ferramentas administrativas do financeiro da família.'); ?>
 <div class="settings-grid">
+<?php if(!empty($user['system_admin'])): ?><a class="settings-card" href="/system_admin.php"><span class="settings-icon">♙</span><div><strong>Administração global</strong><p>Consulte famílias e usuários do sistema.</p></div><span>→</span></a><?php endif; ?>
 <a class="settings-card" href="/configuracoes/manutencao"><span class="settings-icon">⚙</span><div><strong>Manutenção</strong><p>Migrations, diagnóstico do MySQL, informações do servidor e otimização de tabelas.</p></div><span>→</span></a>
 
 <button class="settings-card settings-cache-card" id="clear-app-cache" type="button">
