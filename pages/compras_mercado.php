@@ -57,7 +57,7 @@ $offlinePayload = [
     <title>Modo compra • Família Almeida</title>
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="stylesheet" href="/assets/style.css">
-</head>
+<?php brand_head_tags(); ?></head>
 <body class="shopping-mode-body">
 <div class="shopping-mode-shell">
     <header class="shopping-mode-header">
