@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/layout.php';
+require_once __DIR__ . '/../includes/finance_scope.php';
 $user=require_family_access(); $csrf=csrf_token(); $flash=pull_flash();
 if($_SERVER['REQUEST_METHOD']==='POST'){
  verify_csrf();
@@ -16,6 +17,8 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 $pdo=db();$tenantId=(int)$user['tenant_id'];
 $roleQuery=$pdo->prepare('SELECT role FROM tenant_users WHERE tenant_id=? AND user_id=?');$roleQuery->execute([$tenantId,(int)$user['id']]);$familyAdmin=$roleQuery->fetchColumn()==='family_admin';
 $familyQuery=$pdo->prepare('SELECT name,finance_mode FROM tenants WHERE id=?');$familyQuery->execute([$tenantId]);$family=$familyQuery->fetch();
+$financeReady=finance_separate_schema_ready($pdo);
+$isSeparate=($family['finance_mode']??'shared')==='separate';
 $members=[];$bills=[];$ownedRecords=[];$ownershipReady=true;
 foreach(['transactions','fixed_bills','recurring_incomes'] as $ownershipTable){
  $q=$pdo->prepare("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name=? AND column_name='owner_user_id'");
@@ -45,10 +48,27 @@ if($familyAdmin){
 <p class="text-secondary">Família <?= e($family['name']??'') ?> · Apenas o administrador familiar pode alterar estas opções. O nome da família é gerenciado exclusivamente pelo administrador do sistema.</p>
 <h3>Organização das finanças</h3>
 <div class="finance-mode-options">
-<div class="finance-mode-option selected"><i class="bi bi-people-fill" aria-hidden="true"></i><div><strong>Finanças compartilhadas</strong><p>Todos os membros da família continuam visualizando as informações financeiras em conjunto.</p></div><span class="badge">Ativo</span></div>
-<div class="finance-mode-option unavailable"><i class="bi bi-person-lock" aria-hidden="true"></i><div><strong>Finanças individuais</strong><p>Separar salários, lançamentos e visualização de cada integrante.</p></div><span class="badge">Em preparação</span></div>
+<div class="finance-mode-option <?= !$isSeparate?'selected':'' ?>"><i class="bi bi-people-fill" aria-hidden="true"></i><div class="finance-mode-copy"><strong>Finanças compartilhadas</strong><p>Todos os membros visualizam as receitas, os gastos e as contas da família.</p>
+<?php if($isSeparate): ?>
+<form method="post" action="/pages/family_settings_action.php" class="finance-mode-form">
+<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="finance_mode"><input type="hidden" name="finance_mode" value="shared">
+<label class="finance-mode-confirm"><input type="checkbox" name="acknowledge_disclosure" value="yes" required> Compreendo que todas as finanças pessoais voltarão a ficar visíveis para a família.</label>
+<button type="submit" class="btn btn-outline-success btn-sm">Ativar modo compartilhado</button>
+</form>
+<?php endif; ?></div><?php if(!$isSeparate): ?><span class="badge">Ativo</span><?php endif; ?></div>
+<div class="finance-mode-option <?= $isSeparate?'selected':(!$financeReady?'unavailable':'') ?>"><i class="bi bi-person-lock" aria-hidden="true"></i><div class="finance-mode-copy"><strong>Finanças individuais</strong><p>Cada membro visualiza os próprios registros e aqueles marcados como compartilhados.</p>
+<?php if(!$isSeparate && $financeReady): ?>
+<form method="post" action="/pages/family_settings_action.php" class="finance-mode-form">
+<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="finance_mode"><input type="hidden" name="finance_mode" value="separate">
+<label class="finance-mode-confirm"><input type="checkbox" name="acknowledge_legacy" value="yes" required> Compreendo que os registros antigos sem titular continuarão visíveis para todos.</label>
+<button type="submit" class="btn btn-success btn-sm">Ativar finanças individuais</button>
+</form>
+<?php endif; ?></div>
+<?php if($isSeparate): ?><span class="badge">Ativo</span><?php elseif(!$financeReady): ?><span class="badge">Migrations pendentes</span><?php endif; ?></div>
 </div>
-<p class="alert alert-warning mt-3">A separação individual exige filtros de acesso por membro em todas as consultas e movimentações. Essa opção permanece bloqueada para proteger os dados da família.</p>
+<?php if(!$financeReady): ?><p class="alert alert-warning mt-3">Execute as migrations 015 e 016 em Configurações → Manutenção antes de ativar a separação.</p>
+<?php elseif(!$isSeparate): ?><p class="alert alert-info mt-3">Antes de ativar, defina os titulares das receitas, gastos e contas abaixo. Registros sem titular permanecem compartilhados.</p>
+<?php else: ?><p class="alert alert-info mt-3">Modo individual ativo. Registros pessoais pertencem aos titulares; registros sem titular continuam compartilhados.</p><?php endif; ?>
 <h3 class="mt-4">Responsáveis pelas contas previstas</h3>
 <p class="text-secondary">Defina quem acompanha cada conta fixa. Em finanças compartilhadas, isso não oculta valores nem restringe o acesso dos demais membros.</p>
 <?php if(!$bills): ?><p class="text-secondary">Nenhuma conta prevista cadastrada.</p><?php endif; ?>
