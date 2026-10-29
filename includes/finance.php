@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+require_once __DIR__.'/tenant.php';
 
 function db_column_exists(PDO $pdo, string $table, string $column): bool
 {
@@ -61,7 +62,8 @@ function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false
                 COALESCE(p.paid, 0) AS paid,' .
                 ($paidOnReady ? ' p.paid_on ' : ' NULL AS paid_on ') .
             'FROM fixed_bills b
-             LEFT JOIN bill_payments p ON p.bill_id = b.id AND p.month = ?
+             LEFT JOIN bill_payments p ON p.bill_id = b.id AND p.tenant_id=b.tenant_id AND p.month = ?
+             WHERE b.tenant_id=?
              ORDER BY b.active DESC, b.due_day, b.name';
     } else {
         // Compatibility mode: keeps the site online before migration 003 is applied.
@@ -86,7 +88,7 @@ function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false
     }
 
     $stmt = $pdo->prepare($select);
-    $stmt->execute([$month]);
+    $stmt->execute([$month,require_tenant_id()]);
     $rows = $stmt->fetchAll();
 
     $bills = [];
@@ -168,10 +170,10 @@ function dashboard_data(PDO $pdo, string $month): array
                 t.debt_id, ' . $billPaymentSelect . ', u.name AS created_by_name
          FROM transactions t
          LEFT JOIN users u ON u.id = t.created_by
-         WHERE t.occurred_on >= ? AND t.occurred_on < ?
+         WHERE t.tenant_id=? AND t.occurred_on >= ? AND t.occurred_on < ?
          ORDER BY t.occurred_on DESC, t.created_at DESC'
     );
-    $stmt->execute([$start, $next]);
+    $stmt->execute([require_tenant_id(),$start, $next]);
     $transactions = $stmt->fetchAll();
 
     $totals = ['income' => 0.0, 'expense' => 0.0, 'investment' => 0.0, 'debt' => 0.0];
@@ -190,8 +192,9 @@ function dashboard_data(PDO $pdo, string $month): array
                 COALESCE(SUM(CASE WHEN t.type = "expense" THEN t.amount ELSE 0 END), 0) AS spent
          FROM spending_goals g
          LEFT JOIN transactions t
-           ON LOWER(t.category) = LOWER(g.category)
+           ON LOWER(t.category) = LOWER(g.category) AND t.tenant_id=g.tenant_id
           AND t.occurred_on >= ? AND t.occurred_on < ?
+         WHERE g.tenant_id=?
          GROUP BY g.id, g.category, g.monthly_limit
          ORDER BY g.category'
     );
@@ -203,20 +206,17 @@ function dashboard_data(PDO $pdo, string $month): array
     }
     unset($goal);
 
-    $debts = $pdo->query(
-        'SELECT id, name, total_amount, paid_amount
-         FROM debts
-         ORDER BY created_at DESC'
-    )->fetchAll();
+    $debtStmt=$pdo->prepare('SELECT id,name,total_amount,paid_amount FROM debts WHERE tenant_id=? ORDER BY created_at DESC');
+    $debtStmt->execute([require_tenant_id()]);
+    $debts=$debtStmt->fetchAll();
     foreach ($debts as &$debt) {
         $debt['total_amount'] = (float) $debt['total_amount'];
         $debt['paid_amount'] = (float) $debt['paid_amount'];
     }
     unset($debt);
 
-    $investmentGoalStmt = $pdo->query(
-        "SELECT value FROM settings WHERE setting_key = 'investment_goal' LIMIT 1"
-    );
+    $investmentGoalStmt=$pdo->prepare("SELECT value FROM settings WHERE tenant_id=? AND setting_key='investment_goal' LIMIT 1");
+    $investmentGoalStmt->execute([require_tenant_id()]);
     $investmentGoal = (float) ($investmentGoalStmt->fetchColumn() ?: 0);
 
     return compact('transactions', 'totals', 'bills', 'goals', 'debts', 'investmentGoal');
@@ -235,7 +235,7 @@ function monthly_transaction_totals(PDO $pdo, string $month): array
             COALESCE(SUM(CASE WHEN type = "investment" THEN amount ELSE 0 END), 0) AS investment,
             COALESCE(SUM(CASE WHEN type = "debt" THEN amount ELSE 0 END), 0) AS debt
          FROM transactions
-         WHERE occurred_on >= ? AND occurred_on < ?'
+         WHERE tenant_id=? AND occurred_on >= ? AND occurred_on < ?'
     );
     $stmt->execute([$start, $next]);
     $row = $stmt->fetch() ?: [];
@@ -269,7 +269,7 @@ function dashboard_analytics(PDO $pdo, string $month): array
          GROUP BY occurred_on
          ORDER BY occurred_on'
     );
-    $dailyStmt->execute([$currentStart->format('Y-m-d'), $nextStart->format('Y-m-d')]);
+    $dailyStmt->execute([require_tenant_id(),$currentStart->format('Y-m-d'), $nextStart->format('Y-m-d')]);
     $daily = [];
     foreach ($dailyStmt->fetchAll() as $row) {
         $daily[] = [
@@ -283,13 +283,13 @@ function dashboard_analytics(PDO $pdo, string $month): array
     $categoryStmt = $pdo->prepare(
         'SELECT category, SUM(amount) AS total
          FROM transactions
-         WHERE type = "expense"
+         WHERE tenant_id=? AND type = "expense"
            AND occurred_on >= ? AND occurred_on < ?
          GROUP BY category
          HAVING SUM(amount) > 0
          ORDER BY total DESC'
     );
-    $categoryStmt->execute([$currentStart->format('Y-m-d'), $nextStart->format('Y-m-d')]);
+    $categoryStmt->execute([require_tenant_id(),$currentStart->format('Y-m-d'), $nextStart->format('Y-m-d')]);
     $categories = [];
     foreach ($categoryStmt->fetchAll() as $row) {
         $categories[] = ['category' => $row['category'], 'total' => (float) $row['total']];
@@ -307,7 +307,7 @@ function dashboard_analytics(PDO $pdo, string $month): array
          GROUP BY DATE_FORMAT(occurred_on, "%Y-%m")
          ORDER BY month'
     );
-    $sixStmt->execute([$sixStart->format('Y-m-d'), $nextStart->format('Y-m-d')]);
+    $sixStmt->execute([require_tenant_id(),$sixStart->format('Y-m-d'), $nextStart->format('Y-m-d')]);
     $indexed = [];
     foreach ($sixStmt->fetchAll() as $row) {
         $indexed[$row['month']] = [
@@ -334,11 +334,11 @@ function dashboard_analytics(PDO $pdo, string $month): array
     $largestStmt = $pdo->prepare(
         'SELECT description, category, amount, DATE_FORMAT(occurred_on, "%Y-%m-%d") AS occurred_on
          FROM transactions
-         WHERE type = "expense" AND occurred_on >= ? AND occurred_on < ?
+         WHERE tenant_id=? AND type = "expense" AND occurred_on >= ? AND occurred_on < ?
          ORDER BY amount DESC
          LIMIT 1'
     );
-    $largestStmt->execute([$currentStart->format('Y-m-d'), $nextStart->format('Y-m-d')]);
+    $largestStmt->execute([require_tenant_id(),$currentStart->format('Y-m-d'), $nextStart->format('Y-m-d')]);
     $largestExpense = $largestStmt->fetch() ?: null;
     if ($largestExpense) {
         $largestExpense['amount'] = (float) $largestExpense['amount'];
