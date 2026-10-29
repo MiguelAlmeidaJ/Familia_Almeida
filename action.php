@@ -942,8 +942,8 @@ try {
 
             $paymentStmt = $pdo->prepare(
                 'INSERT INTO bill_payments
-                    (bill_id, month, amount_due, installment_number, paid, paid_at, paid_on)
-                 VALUES (?, ?, ?, ?, ?, IF(? = 1, NOW(), NULL), IF(? = 1, ?, NULL))
+                    (tenant_id,bill_id, month, amount_due, installment_number, paid, paid_at, paid_on)
+                 VALUES (?, ?, ?, ?, ?, ?, IF(? = 1, NOW(), NULL), IF(? = 1, ?, NULL))
                  ON DUPLICATE KEY UPDATE
                     amount_due = VALUES(amount_due),
                     installment_number = VALUES(installment_number),
@@ -974,8 +974,8 @@ try {
 
                 $transactionStmt = $pdo->prepare(
                     'INSERT INTO transactions
-                        (created_by, bill_payment_id, type, description, category, amount, occurred_on)
-                     VALUES (?, ?, "expense", ?, "Contas recorrentes", ?, ?)
+                        (tenant_id,created_by, bill_payment_id, type, description, category, amount, occurred_on)
+                     VALUES (?, ?, ?, "expense", ?, "Contas recorrentes", ?, ?)
                      ON DUPLICATE KEY UPDATE
                         description = VALUES(description),
                         category = VALUES(category),
