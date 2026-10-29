@@ -53,7 +53,8 @@ return [
             'transaction_receipts','shopping_lists','shopping_purchases',
             'shopping_items','inventory_items','inventory_movements',
             'spending_goals','settings','recurring_incomes','monthly_allocations',
-            'categories','credit_cards','credit_card_purchases','credit_card_invoices'
+            'categories','credit_cards','credit_card_purchases',
+            'credit_card_installments','credit_card_invoice_payments'
         ];
 
         foreach ($tables as $table) {
