@@ -4,7 +4,7 @@ require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/monthly_budget.php';
 require_once __DIR__ . '/includes/layout.php';
 
-$user = require_auth();
+$user = require_family_access();
 $pdo = db();
 $month = selected_month();
 $ready = monthly_budget_ready($pdo);
