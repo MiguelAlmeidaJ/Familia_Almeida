@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/receipts.php';
 
-require_auth();
+$user=require_family_access();
 
 $receiptId = (int) ($_GET['id'] ?? 0);
 if ($receiptId <= 0 || !receipts_schema_ready(db())) {
@@ -16,10 +16,10 @@ if ($receiptId <= 0 || !receipts_schema_ready(db())) {
 $stmt = db()->prepare(
     'SELECT id, original_name, stored_name, mime_type
      FROM transaction_receipts
-     WHERE id = ?
+     WHERE id = ? AND tenant_id = ?
      LIMIT 1'
 );
-$stmt->execute([$receiptId]);
+$stmt->execute([$receiptId,(int)$user['tenant_id']]);
 $receipt = $stmt->fetch();
 
 if (!$receipt) {
