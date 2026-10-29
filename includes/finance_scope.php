@@ -77,3 +77,22 @@ function finance_read_owner_clause(PDO $pdo,string $table,string $alias=''):stri
     if($table==='monthly_allocations')return " AND ({$prefix}owner_user_id=0 OR {$prefix}owner_user_id={$userId})";
     return " AND ({$prefix}owner_user_id IS NULL OR {$prefix}owner_user_id={$userId})";
 }
+
+/**
+ * Release gate: the individual mode is available only after the ownership
+ * migrations, including the per-user allocation unique key, are installed.
+ * Schema readiness does not replace integration testing.
+ */
+function finance_separate_schema_ready(PDO $pdo):bool {
+    foreach(['transactions','fixed_bills','recurring_incomes','monthly_allocations'] as $table){
+        $q=$pdo->prepare("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name=? AND column_name='owner_user_id'");
+        $q->execute([$table]);
+        if(!(int)$q->fetchColumn())return false;
+    }
+    $q=$pdo->query("SELECT GROUP_CONCAT(column_name ORDER BY seq_in_index SEPARATOR ',') FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='monthly_allocations' AND index_name='PRIMARY'");
+    if($q->fetchColumn()!=='tenant_id,month,category,owner_user_id')return false;
+    $q=$pdo->query("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='categories' AND index_name='categories_tenant_type_name_unique'");
+    if(!(int)$q->fetchColumn())return false;
+    $q=$pdo->query("SELECT COUNT(*) FROM schema_migrations WHERE migration IN ('20261029_015_financial_ownership','20261029_016_finance_owner_keys')");
+    return (int)$q->fetchColumn()===2;
+}
