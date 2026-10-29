@@ -53,3 +53,16 @@ function require_admin_access(): array
     }
     return $user;
 }
+
+function require_family_access(): array
+{
+    $user=require_auth();
+    if (!empty($user['system_admin']) && empty($user['tenant_id'])) {
+        redirect_to('/system_admin.php');
+    }
+    if (empty($user['tenant_id'])) {
+        http_response_code(403);
+        exit('Usuário sem família autorizada.');
+    }
+    return $user;
+}
