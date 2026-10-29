@@ -77,6 +77,32 @@ check(abs($b['recurringIncomeTotal']-150)<0.001,'member A recurring income exclu
 check(abs($b['allocated']-15)<0.001,'member A budget allocations exclude B');
 try{finance_assert_owned_record($pdo,'transactions',2,['tenant_id'=>$family,'user_id'=>1,'mode'=>'separate']);throw new RuntimeException('Cross-owner mutation allowed');}
 catch(RuntimeException $e){check(str_contains($e->getMessage(),'privados'),'member A cannot mutate B transaction');}
+$act=static function(int $member,array $form)use($family):void{
+    $payload=['_user'=>$member,'_tenant'=>$family]+$form;
+    $command=escapeshellarg(PHP_BINARY).' '.escapeshellarg(__DIR__.'/finance_action_cli.php').' '.escapeshellarg(json_encode($payload,JSON_THROW_ON_ERROR));
+    exec($command.' 2>&1',$lines,$status);
+    check($status===0,'finance action test process exits cleanly: '.($form['action']??'unknown').' / member '.$member);
+};
+$act(1,['action'=>'add_transaction','type'=>'expense','description'=>'Despesa A nova','category'=>'Teste','amount'=>'24','date'=>'2026-10-23']);
+$added=$pdo->query("SELECT id,owner_user_id FROM transactions WHERE description='Despesa A nova' LIMIT 1")->fetch();
+check($added && (int)$added['owner_user_id']===1,'new individual expense is owned by its creator');
+$act(2,['action'=>'delete_transaction','transaction_id'=>(int)$added['id']]);
+$q=$pdo->prepare('SELECT COUNT(*) FROM transactions WHERE id=?');$q->execute([(int)$added['id']]);
+check((int)$q->fetchColumn()===1,'other member cannot delete private expense');
+$billId=(int)$pdo->query("SELECT id FROM fixed_bills WHERE name='Conta A'")->fetchColumn();
+$act(1,['action'=>'toggle_bill','bill_id'=>$billId,'paid'=>'1']);
+$q=$pdo->prepare('SELECT id,paid FROM bill_payments WHERE tenant_id=? AND bill_id=? AND month=?');
+$q->execute([$family,$billId,'2026-10']);$pay=$q->fetch();
+check($pay && (int)$pay['paid']===1,'private bill payment recorded within family');
+$q=$pdo->prepare('SELECT owner_user_id FROM transactions WHERE tenant_id=? AND bill_payment_id=?');
+$q->execute([$family,(int)$pay['id']]);
+check((int)$q->fetchColumn()===1,'automated payment inherits private bill owner');
+$act(2,['action'=>'toggle_bill','bill_id'=>$billId,'paid'=>'0']);
+$q=$pdo->prepare('SELECT paid FROM bill_payments WHERE id=?');$q->execute([(int)$pay['id']]);
+check((int)$q->fetchColumn()===1,'other member cannot alter private bill payment');
+$act(1,['action'=>'toggle_bill','bill_id'=>$billId,'paid'=>'0']);
+$q=$pdo->prepare('SELECT COUNT(*) FROM transactions WHERE bill_payment_id=?');$q->execute([(int)$pay['id']]);
+check((int)$q->fetchColumn()===0,'bill owner can remove automatic payment movement');
 $_SESSION['user_id']=2;$_SESSION['tenant_id']=$family;
 $b2=monthly_budget_data($pdo,'2026-10');
 check(abs($b2['recurringIncomeTotal']-250)<0.001,'member B sees own and shared income');
@@ -88,5 +114,5 @@ check(count($c['bills'])===1,'second family sees only its bills');
 $_SESSION['user_id']=1;$_SESSION['tenant_id']=$family;
 $pdo->prepare("UPDATE tenants SET finance_mode='shared' WHERE id=?")->execute([$family]);
 $all=dashboard_data($pdo,'2026-10');
-check(count($all['transactions'])===3,'shared mode exposes all same-family entries');
+check(count($all['transactions'])===4,'shared mode exposes all same-family entries');
 echo "Finance isolation integration assertions complete.\n";
