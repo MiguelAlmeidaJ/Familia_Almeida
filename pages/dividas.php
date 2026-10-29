@@ -13,7 +13,7 @@ $defaultDate = $month === date('Y-m') ? date('Y-m-d') : $month . '-01';
 ?>
 <!doctype html>
 <html lang="pt-BR">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dívidas • Família Almeida</title><link rel="stylesheet" href="/assets/style.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dívidas • Família Almeida</title><link rel="stylesheet" href="/assets/style.css"><?php brand_head_tags(); ?></head>
 <body>
 <div class="shell">
 <?php render_sidebar('dividas', $csrf); ?>
