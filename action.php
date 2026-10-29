@@ -96,6 +96,7 @@ try {
                 throw new RuntimeException('Só é possível anexar notas a gastos.');
             }
 
+            finance_assert_owned_record($pdo,'transactions',$transactionId,$scope);
             $pdo->beginTransaction();
             save_receipts_for_transaction($pdo, $transactionId, (int) $user['id'], $receiptUploads);
             $pdo->commit();
@@ -123,6 +124,9 @@ try {
                 throw new RuntimeException('Comprovante não encontrado.');
             }
 
+            $ownerCheck=$pdo->prepare('SELECT transaction_id FROM transaction_receipts WHERE id=? AND tenant_id=?');
+            $ownerCheck->execute([$receiptId,$tenantId]);
+            finance_assert_owned_record($pdo,'transactions',(int)$ownerCheck->fetchColumn(),$scope);
             $delete = $pdo->prepare('DELETE FROM transaction_receipts WHERE id = ? AND tenant_id = ?');
             $delete->execute([$receiptId,$tenantId]);
             delete_receipt_files([$receipt]);
@@ -1095,6 +1099,7 @@ try {
             }
 
             finance_assert_transaction($pdo,$transactionId,$tenantId);
+            finance_assert_owned_record($pdo,'transactions',$transactionId,$scope);
             $receiptFiles = receipt_files_for_transaction($pdo, $transactionId);
 
             $pdo->beginTransaction();
