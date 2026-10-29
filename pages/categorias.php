@@ -6,7 +6,7 @@ require_once __DIR__ . '/../includes/categories.php';
 $user=require_auth();$pdo=db();$csrf=csrf_token();$flash=pull_flash();
 $ready=categories_ready($pdo);$groups=category_list($pdo);
 ?><!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Categorias • Família Almeida</title><link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/categories.css">
+<title>Categorias • Bemora</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/categories.css">
 <style>
 .category-page{max-width:920px;padding:32px 22px 70px;margin:auto}
 .category-page h1{font-size:32px;margin:0 0 8px}.category-page p{color:#607382}
@@ -18,7 +18,7 @@ $ready=categories_ready($pdo);$groups=category_list($pdo);
 .category-row:last-child{border:0}.category-row button{border:0;background:transparent;color:#b44141;cursor:pointer}
 .category-group{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media(max-width:680px){.category-group{grid-template-columns:1fr}}
-</style></head><body><div class="shell ref-shell"><?php render_sidebar('categorias',$csrf);?><main><?php render_topbar($user);?>
+</style><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"></head><body class="bemora-finance"><div class="shell ref-shell"><?php render_sidebar('categorias',$csrf);?><main><?php render_topbar($user);?>
 <div class="category-page"><p class="eyebrow">ORGANIZAÇÃO</p><h1>Categorias</h1>
 <p>Cadastre as categorias usadas nos ganhos e gastos. Ao registrar um lançamento, você também poderá criar uma nova diretamente pelo campo de busca.</p>
 <a href="/movimentacoes">← Voltar aos lançamentos</a>
