@@ -2,11 +2,13 @@
 declare(strict_types=1);
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/monthly_budget.php';
+require_once __DIR__ . '/includes/finance_scope.php';
 $user=require_family_access();
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {http_response_code(405);exit('Método não permitido.');}
 verify_csrf();
 $pdo=db();
-$tenantId=(int)$user['tenant_id'];
+$scope=finance_scope($pdo,$user);
+$tenantId=(int)$scope['tenant_id'];
 $month=valid_month($_POST['month'] ?? null);
 $back='/?month='.rawurlencode($month);
 try {
@@ -21,6 +23,7 @@ try {
  } elseif ($action === 'remove_income') {
     $id=filter_var($_POST['id'] ?? null,FILTER_VALIDATE_INT);
     if (!$id || $id<1) throw new RuntimeException('Receita inválida.');
+    finance_assert_owned_record($pdo,'recurring_incomes',(int)$id,$scope);
     $pdo->prepare('UPDATE recurring_incomes SET active=0 WHERE id=? AND tenant_id=?')->execute([$id,$tenantId]);
  } elseif ($action === 'save_allocation') {
     $category=trim((string)($_POST['category'] ?? ''));
@@ -43,6 +46,7 @@ try {
  } elseif ($action === 'remove_bill') {
     $id=filter_var($_POST['id'] ?? null,FILTER_VALIDATE_INT);
     if (!$id || $id<1) throw new RuntimeException('Conta inválida.');
+    finance_assert_owned_record($pdo,'fixed_bills',(int)$id,$scope);
     $pdo->prepare('UPDATE fixed_bills SET active=0 WHERE id=? AND tenant_id=?')->execute([$id,$tenantId]);
  } else throw new RuntimeException('Ação inválida.');
  flash('success','Orçamento atualizado.');
