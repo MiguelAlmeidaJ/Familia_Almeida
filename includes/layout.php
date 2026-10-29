@@ -7,7 +7,7 @@ require_once __DIR__ . '/branding.php';
 
 function nav_icon(string $name): string
 {
-    $bootstrapIcons = ['dashboard'=>'bi-grid-1x2-fill','movimentacoes'=>'bi-arrow-left-right','contas'=>'bi-receipt-cutoff','categorias'=>'bi-bookmarks','configuracoes'=>'bi-sliders2','logout'=>'bi-box-arrow-right','home'=>'bi-house','shield'=>'bi-shield-check','heart'=>'bi-heart','chevron'=>'bi-chevron-right','menu'=>'bi-list'];
+    $bootstrapIcons = ['dashboard'=>'bi-grid-1x2-fill','movimentacoes'=>'bi-arrow-left-right','contas'=>'bi-receipt-cutoff','categorias'=>'bi-bookmarks','configuracoes'=>'bi-sliders2','meu-perfil'=>'bi-person-circle','logout'=>'bi-box-arrow-right','home'=>'bi-house','shield'=>'bi-shield-check','heart'=>'bi-heart','chevron'=>'bi-chevron-right','menu'=>'bi-list'];
     if (isset($bootstrapIcons[$name])) return '<i class="bi ' . $bootstrapIcons[$name] . '" aria-hidden="true"></i>';
     $icons = [
         'dashboard' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg>',
@@ -39,6 +39,7 @@ function render_sidebar(string $active, string $csrf): void
         ['key' => 'movimentacoes', 'href' => '/movimentacoes', 'label' => 'Ganhos e gastos'],
         ['key' => 'contas', 'href' => '/contas', 'label' => 'Contas previstas'],
         ['key' => 'categorias', 'href' => '/categorias', 'label' => 'Categorias'],
+        ['key' => 'meu-perfil', 'href' => '/meu-perfil', 'label' => 'Meu perfil'],
     ];
 
     $user = function_exists('current_user') ? current_user() : null;
@@ -69,13 +70,13 @@ function render_sidebar(string $active, string $csrf): void
             </a>
         </nav>
 
-        <div class="sidebar-user ref-sidebar-user">
-            <div class="user-avatar"><?= e($initial) ?></div>
+        <a class="sidebar-user ref-sidebar-user" href="/meu-perfil" title="Editar meu perfil" style="text-decoration:none;color:inherit">
+            <div class="user-avatar"><?php if($user && !empty($user['avatar_path'])): ?><img src="/meu-perfil/foto?v=<?= e(substr((string)$user['avatar_path'],0,12)) ?>" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover"><?php else: ?><?= e($initial) ?><?php endif; ?></div>
             <div class="sidebar-user-copy">
                 <strong><?= e($user['name'] ?? 'Usuário') ?></strong>
-                <span>Minha conta Bemora</span>
+                <span>Ver meu perfil</span>
             </div>
-        </div>
+        </a>
 
         <form method="post" action="/sair" class="sidebar-logout">
             <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
