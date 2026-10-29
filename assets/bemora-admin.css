@@ -1,0 +1,18 @@
+/* Bemora administrative shell — phase 1 */
+:root{--ink:#20332F;--muted:#60766d;--line:#e0ebe5;--bg:#F7FAF8;--teal:#168F82}
+body{background:#F7FAF8!important;color:#20332F!important}
+.admin-side{background:#06463F!important}
+.admin-brand .brand-icon{padding:0!important;background:transparent!important;width:44px;height:44px;overflow:visible}
+.admin-brand .brand-icon img{width:42px;height:42px;object-fit:contain}
+.admin-brand strong{color:#fff;font-size:22px!important;letter-spacing:-.04em}
+.admin-nav a.active{background:#168F82!important;box-shadow:inset 3px 0 #34C9A1!important}
+.admin-nav a:hover{background:#13665c!important}
+.admin-nav i{font-size:18px;width:23px;text-align:center}
+.admin-avatar{background:#168F82}
+.admin-top h1,.panel h2{color:#06463F}
+.admin-main{background:radial-gradient(circle at 100% 0%,#e6f6ec,transparent 40%),#F7FAF8}
+.metric,.panel{border-color:#deebe5!important;box-shadow:0 9px 25px #06463f08!important}
+.metric strong{color:#06463F}
+.pill,.status{background:#e0f6e8;color:#066a51}
+.button{background:#06463F}.button.secondary{background:#e5f4ec;color:#06463F}
+.admin-tile:hover{border-color:#168F82}
