@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/../includes/auth.php';
-require_once __DIR__ . '/../includes/layout.php';
+require_once __DIR__ . '/../includes/admin_layout.php';
 require_once __DIR__ . '/../includes/migrations.php';
 
 $user = require_admin_access();
@@ -32,19 +32,8 @@ $diagnostics = database_diagnostics($pdo);
 $migrations = migration_status($pdo);
 $pendingCount = count(array_filter($migrations, fn(array $migration) => !$migration['applied']));
 ?>
-<!doctype html>
-<html lang="pt-BR">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Manutenção • Família Almeida</title><link rel="stylesheet" href="/assets/style.css"></head>
-<body>
-<div class="shell">
-<?php render_sidebar('manutencao', $csrf); ?>
-<main>
-<?php render_topbar($user, 'Sistema operacional'); ?>
-<div class="content">
-<div class="page-head-row">
-<?php page_header('CONFIGURAÇÕES', 'Manutenção do sistema', 'Diagnóstico, migrations e operações seguras de banco de dados.'); ?>
-<a class="secondary-link" href="/configuracoes">← Configurações</a>
-</div>
+<?php admin_shell_start('settings','Manutenção','Migrations e diagnóstico técnico da plataforma.'); ?>
+<div class="admin-maintenance">
 <?php if ($flash): ?><div class="alert <?= $flash['type'] === 'success' ? 'success' : '' ?>"><?= e($flash['message']) ?></div><?php endif; ?>
 
 <div class="grid4 maintenance-stats">
@@ -95,7 +84,4 @@ $pendingCount = count(array_filter($migrations, fn(array $migration) => !$migrat
 </div>
 </section>
 </div>
-</main>
-</div>
-</body>
-</html>
+<?php admin_shell_end(); ?>
