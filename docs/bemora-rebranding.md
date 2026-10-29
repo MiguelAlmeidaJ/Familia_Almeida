@@ -14,11 +14,12 @@ Identidade baseada no manual da marca (outubro de 2026):
 - Usar Bootstrap Icons no menu administrativo.
 - Não alterar regras financeiras nem executar migrations.
 
-## Etapa 2 — componentes financeiros
-- Padronizar visual com classes Bootstrap nos formulários, filtros, tabelas,
-  cards, modais, avisos e botões das telas de ganhos/gastos, contas e categorias.
-- Completar Bootstrap Icons na navegação do usuário.
-- Testar navegabilidade mobile e acessibilidade com zoom e teclado.
+## Etapa 2 — componentes financeiros (implementada no código)
+- Adicionado arquivo de estilo financeiro isolado `assets/bemora-finance.css`.
+- Bootstrap 5 e Bootstrap Icons carregados em Painel, Ganhos e Gastos, Contas Previstas, Categorias e Minha Conta.
+- Aplicadas classes Bootstrap nos controles principais, sem alterar ações financeiras.
+- Navegação de usuários passou a usar Bootstrap Icons.
+- Ainda requer inspeção visual no servidor em desktop/mobile e testes manuais de regressão.
 
 ## Etapa 3 — acabamento, PWA e revisão
 - Concluir telas de conta, admin/tenants, configurações e estados vazios.
