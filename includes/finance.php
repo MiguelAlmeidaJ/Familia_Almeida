@@ -84,6 +84,7 @@ function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false
                 ($paidOnReady ? ' p.paid_on ' : ' NULL AS paid_on ') .
             'FROM fixed_bills b
              LEFT JOIN bill_payments p ON p.bill_id = b.id AND p.tenant_id=b.tenant_id AND p.month = ?
+             WHERE b.tenant_id=?
              ORDER BY b.active DESC, b.due_day, b.name';
     }
 
@@ -303,7 +304,7 @@ function dashboard_analytics(PDO $pdo, string $month): array
             COALESCE(SUM(CASE WHEN type IN ("expense", "debt") THEN amount ELSE 0 END), 0) AS outflow,
             COALESCE(SUM(CASE WHEN type = "investment" THEN amount ELSE 0 END), 0) AS investment
          FROM transactions
-         WHERE occurred_on >= ? AND occurred_on < ?
+         WHERE tenant_id=? AND occurred_on >= ? AND occurred_on < ?
          GROUP BY DATE_FORMAT(occurred_on, "%Y-%m")
          ORDER BY month'
     );
