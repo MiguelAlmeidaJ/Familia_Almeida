@@ -25,12 +25,15 @@ if($familyAdmin){
  $q=$pdo->prepare('SELECT u.id,u.name FROM tenant_users tu JOIN users u ON u.id=tu.user_id WHERE tu.tenant_id=? ORDER BY u.name');$q->execute([$tenantId]);$members=$q->fetchAll();
  if($ownershipReady){
   foreach(['transaction'=>['transactions','description'],'bill'=>['fixed_bills','name'],'income'=>['recurring_incomes','name']] as $kind=>$meta){
-   $q=$pdo->prepare("SELECT id, `{$meta[1]}` AS label, owner_user_id FROM `{$meta[0]}` WHERE tenant_id=? ORDER BY id DESC LIMIT 30");
-   $q->execute([$tenantId]);
+   $isSeparate=($family['finance_mode']??'shared')==='separate';
+   $q=$pdo->prepare("SELECT id, `{$meta[1]}` AS label, owner_user_id FROM `{$meta[0]}` WHERE tenant_id=?" . ($isSeparate?' AND (owner_user_id IS NULL OR owner_user_id=?)':'') . " ORDER BY id DESC LIMIT 30");
+   $q->execute($isSeparate?[$tenantId,(int)$user['id']]:[$tenantId]);
    foreach($q->fetchAll() as $item)$ownedRecords[]=['type'=>$kind]+$item;
   }
  }
- $q=$pdo->prepare('SELECT b.id,b.name,r.user_id FROM fixed_bills b LEFT JOIN family_bill_responsibilities r ON r.fixed_bill_id=b.id AND r.tenant_id=b.tenant_id WHERE b.tenant_id=? ORDER BY b.name');$q->execute([$tenantId]);$bills=$q->fetchAll();
+ $isSeparate=($family['finance_mode']??'shared')==='separate';
+ $q=$pdo->prepare('SELECT b.id,b.name,r.user_id FROM fixed_bills b LEFT JOIN family_bill_responsibilities r ON r.fixed_bill_id=b.id AND r.tenant_id=b.tenant_id WHERE b.tenant_id=?' . ($isSeparate?' AND (b.owner_user_id IS NULL OR b.owner_user_id=?)':'') . ' ORDER BY b.name');
+ $q->execute($isSeparate?[$tenantId,(int)$user['id']]:[$tenantId]);$bills=$q->fetchAll();
 }
 ?><!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Minha conta • Bemora</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=3"><link rel="stylesheet" href="/assets/bemora-family-settings.css?v=1"></head><body class="bemora-finance"><div class="shell"><?php render_sidebar('minha-conta',$csrf); ?><main><?php render_topbar($user); ?><div class="content"><?php page_header('MINHA CONTA','Configurações','Dados pessoais e segurança do seu acesso.'); ?>
 <?php if($flash): ?><div class="alert <?= $flash['type']==='success'?'success':'' ?>"><?= e($flash['message']) ?></div><?php endif ?>
