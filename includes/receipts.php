@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/tenant.php';
+require_once __DIR__ . '/finance_scope.php';
 
 const RECEIPT_MAX_FILES = 5;
 const RECEIPT_MAX_BYTES = 8 * 1024 * 1024;
@@ -228,7 +229,7 @@ function receipts_for_month(PDO $pdo, string $month): array
         'SELECT r.id, r.transaction_id, r.original_name, r.mime_type, r.file_size, r.created_at
          FROM transaction_receipts r
          INNER JOIN transactions t ON t.id = r.transaction_id
-         WHERE t.tenant_id=? AND r.tenant_id=t.tenant_id AND t.occurred_on >= ? AND t.occurred_on < ?
+         WHERE t.tenant_id=? AND r.tenant_id=t.tenant_id AND t.occurred_on >= ? AND t.occurred_on < ?' . finance_read_owner_clause($pdo,'transactions','t') . '
          ORDER BY r.id'
     );
     $stmt->execute([require_tenant_id(),$start, $next]);
@@ -253,7 +254,7 @@ function receipt_files_for_transaction(PDO $pdo, int $transactionId): array
     $stmt = $pdo->prepare(
         'SELECT id, stored_name
          FROM transaction_receipts
-         WHERE transaction_id = ? AND tenant_id=?'
+         WHERE transaction_id = ? AND tenant_id=? AND EXISTS (SELECT 1 FROM transactions t WHERE t.id=transaction_receipts.transaction_id AND t.tenant_id=transaction_receipts.tenant_id' . finance_read_owner_clause($pdo,'transactions','t') . ')'
     );
     $stmt->execute([$transactionId,require_tenant_id()]);
 
