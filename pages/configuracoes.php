@@ -3,7 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/layout.php';
 
-$user = require_auth();
+$user = require_admin_access();
 $csrf = csrf_token();
 ?>
 <!doctype html>
