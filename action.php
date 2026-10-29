@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/finance.php';
+require_once __DIR__ . '/includes/finance_scope.php';
 require_once __DIR__ . '/includes/categories.php';
 require_once __DIR__ . '/includes/receipts.php';
 require_once __DIR__ . '/includes/shopping.php';
@@ -19,6 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 verify_csrf();
 
 $pdo = db();
+$scope = finance_scope($pdo,$user);
+$tenantId = $scope['tenant_id'];
 $action = (string) ($_POST['action'] ?? '');
 $month = valid_month($_POST['month'] ?? null);
 $returnTo = (string) ($_POST['return_to'] ?? '/');
@@ -62,10 +65,10 @@ try {
             $category = category_ensure($pdo, $category, $type === 'income' ? 'income' : 'expense');
 
             $stmt = $pdo->prepare(
-                'INSERT INTO transactions (created_by, type, description, category, amount, occurred_on)
-                 VALUES (?, ?, ?, ?, ?, ?)'
+                'INSERT INTO transactions (tenant_id, created_by, type, description, category, amount, occurred_on)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
             );
-            $stmt->execute([(int) $user['id'], $type, $description, $category, $amount, $date]);
+            $stmt->execute([$tenantId,(int) $user['id'], $type, $description, $category, $amount, $date]);
 
             $transactionId = (int) $pdo->lastInsertId();
             save_receipts_for_transaction($pdo, $transactionId, (int) $user['id'], $receiptUploads);
@@ -85,8 +88,8 @@ try {
                 throw new RuntimeException('Existe uma migration pendente para anexar notas. Execute em Configurações > Manutenção.');
             }
 
-            $stmt = $pdo->prepare('SELECT id, type FROM transactions WHERE id = ? LIMIT 1');
-            $stmt->execute([$transactionId]);
+            $stmt = $pdo->prepare('SELECT id, type FROM transactions WHERE id = ? AND tenant_id = ? LIMIT 1');
+            $stmt->execute([$transactionId,$tenantId]);
             $transaction = $stmt->fetch();
 
             if (!$transaction || $transaction['type'] !== 'expense') {
@@ -110,18 +113,18 @@ try {
             $stmt = $pdo->prepare(
                 'SELECT id, stored_name
                  FROM transaction_receipts
-                 WHERE id = ?
+                 WHERE id = ? AND tenant_id = ?
                  LIMIT 1'
             );
-            $stmt->execute([$receiptId]);
+            $stmt->execute([$receiptId,$tenantId]);
             $receipt = $stmt->fetch();
 
             if (!$receipt) {
                 throw new RuntimeException('Comprovante não encontrado.');
             }
 
-            $delete = $pdo->prepare('DELETE FROM transaction_receipts WHERE id = ?');
-            $delete->execute([$receiptId]);
+            $delete = $pdo->prepare('DELETE FROM transaction_receipts WHERE id = ? AND tenant_id = ?');
+            $delete->execute([$receiptId,$tenantId]);
             delete_receipt_files([$receipt]);
 
             flash('success', 'Nota removida.');
@@ -1091,11 +1094,12 @@ try {
                 throw new RuntimeException('Lançamento inválido.');
             }
 
+            finance_assert_transaction($pdo,$transactionId,$tenantId);
             $receiptFiles = receipt_files_for_transaction($pdo, $transactionId);
 
             $pdo->beginTransaction();
-            $stmt = $pdo->prepare('SELECT id, type, amount, debt_id, bill_payment_id FROM transactions WHERE id = ? FOR UPDATE');
-            $stmt->execute([$transactionId]);
+            $stmt = $pdo->prepare('SELECT id, type, amount, debt_id, bill_payment_id FROM transactions WHERE id = ? AND tenant_id = ? FOR UPDATE');
+            $stmt->execute([$transactionId,$tenantId]);
             $transaction = $stmt->fetch();
 
             if (!$transaction) {
@@ -1124,8 +1128,8 @@ try {
                 $stmt->execute([(float) $transaction['amount'], (int) $transaction['debt_id']]);
             }
 
-            $stmt = $pdo->prepare('DELETE FROM transactions WHERE id = ?');
-            $stmt->execute([$transactionId]);
+            $stmt = $pdo->prepare('DELETE FROM transactions WHERE id = ? AND tenant_id = ?');
+            $stmt->execute([$transactionId,$tenantId]);
             $pdo->commit();
             delete_receipt_files($receiptFiles);
             flash('success', 'Lançamento removido.');
