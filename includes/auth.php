@@ -46,6 +46,17 @@ function require_auth(): array
         $allowed = ['/system_admin.php','/admin/tenants.php','/admin/familia.php','/admin/configuracoes.php','/admin/branding_upload.php','/admin/family_action.php','/pages/configuracoes.php','/pages/manutencao.php'];
         if (!in_array($script,$allowed,true)) redirect_to('/system_admin.php');
     }
+    // Fail closed while the remaining legacy financial modules still lack
+    // complete tenant/owner predicates. Never serve another tenant's data.
+    if (empty($user['system_admin']) && !empty($user['tenant_id'])) {
+        $stmt=db()->prepare('SELECT slug, finance_mode FROM tenants WHERE id=? AND active=1 LIMIT 1');
+        $stmt->execute([(int)$user['tenant_id']]);
+        $family=$stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$family || $family['slug']!=='familia-almeida' || $family['finance_mode']!=='shared') {
+            http_response_code(403);
+            exit('Área financeira indisponível: o isolamento individual ainda está em implantação.');
+        }
+    }
     return $user;
 }
 
