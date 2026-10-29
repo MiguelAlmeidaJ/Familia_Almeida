@@ -892,7 +892,7 @@ try {
             $pdo->beginTransaction();
 
             $billStmt = $pdo->prepare(
-                'SELECT id, name, billing_type, amount, due_day, start_month, installment_total
+                'SELECT id, name, billing_type, amount, due_day, start_month, installment_total, owner_user_id
                  FROM fixed_bills WHERE id = ? AND tenant_id=? FOR UPDATE'
             );
             $billStmt->execute([$billId,$tenantId]);
@@ -976,8 +976,8 @@ try {
 
                 $transactionStmt = $pdo->prepare(
                     'INSERT INTO transactions
-                        (tenant_id,created_by, bill_payment_id, type, description, category, amount, occurred_on)
-                     VALUES (?, ?, ?, "expense", ?, "Contas recorrentes", ?, ?)
+                        (tenant_id,owner_user_id,created_by, bill_payment_id, type, description, category, amount, occurred_on)
+                     VALUES (?, ?, ?, ?, "expense", ?, "Contas recorrentes", ?, ?)
                      ON DUPLICATE KEY UPDATE
                         description = VALUES(description),
                         category = VALUES(category),
@@ -986,6 +986,7 @@ try {
                 );
                 $transactionStmt->execute([
                     $tenantId,
+                    $bill['owner_user_id'] ?? null,
                     (int) $user['id'],
                     $paymentId,
                     $description,
