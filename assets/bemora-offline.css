@@ -1,0 +1,9 @@
+/* Bemora: isolated PWA enhancements without changing offline state logic. */
+.shopping-mode-body{background:#F7FAF8;color:#20332F}
+.shopping-mode-header{background:#06463F;color:white}
+.shopping-mode-header small{display:flex;align-items:center;gap:9px;font-weight:750;letter-spacing:.08em}
+.shopping-mode-header h1{font-family:"Nunito Sans",Inter,system-ui,sans-serif}
+.shopping-mode-main{max-width:1000px;margin-inline:auto}
+.shopping-mode-unavailable,.shopping-mode-shell section{border-radius:16px}
+.shopping-mode-back:focus-visible,button:focus-visible{outline:3px solid #34C9A1;outline-offset:2px}
+@media(max-width:640px){.shopping-mode-main{padding-inline:12px}.shopping-mode-header{padding-inline:14px}}
