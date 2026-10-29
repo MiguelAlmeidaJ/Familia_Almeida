@@ -1,10 +1,18 @@
 {
-  "name": "Família Almeida — Lista de Compras",
-  "short_name": "Compras Almeida",
+  "name": "Bemora — Compras",
+  "short_name": "Bemora",
   "start_url": "/compras/offline",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f4f7f8",
-  "theme_color": "#10343c",
-  "description": "Lista de compras da Família Almeida com modo offline sem autenticação."
+  "background_color": "#F7FAF8",
+  "theme_color": "#06463F",
+  "description": "Bemora: seu dinheiro em ordem. Sua vida mais leve. Lista de compras com acesso offline.",
+  "icons": [
+    {
+      "src": "/assets/bemora-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
 }
