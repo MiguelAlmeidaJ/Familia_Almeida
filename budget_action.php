@@ -39,11 +39,11 @@ try {
     $day=filter_var($_POST['due_day'] ?? null,FILTER_VALIDATE_INT);
     if ($name==='' || strlen($name)>120 || !is_finite($amount) || $amount<=0 || $amount>9999999999 || !$day || $day<1 || $day>31) throw new RuntimeException('Preencha conta, valor e vencimento válidos.');
     $stmt=$pdo->prepare("INSERT INTO fixed_bills(tenant_id,name,billing_type,amount,due_day,active) VALUES (?,?,'fixed',?,?,1)");
-    $stmt->execute([$name,$amount,$day]);
+    $stmt->execute([$tenantId,$name,$amount,$day]);
  } elseif ($action === 'remove_bill') {
     $id=filter_var($_POST['id'] ?? null,FILTER_VALIDATE_INT);
     if (!$id || $id<1) throw new RuntimeException('Conta inválida.');
-    $pdo->prepare('UPDATE fixed_bills SET active=0 WHERE id=? AND tenant_id=?')->execute([$id]);
+    $pdo->prepare('UPDATE fixed_bills SET active=0 WHERE id=? AND tenant_id=?')->execute([$id,$tenantId]);
  } else throw new RuntimeException('Ação inválida.');
  flash('success','Orçamento atualizado.');
 } catch(Throwable $e) {
