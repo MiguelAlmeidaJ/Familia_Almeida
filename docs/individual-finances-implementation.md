@@ -49,3 +49,9 @@ Arquivos legados que eventualmente permaneçam no repositório devem ser tratado
 - `includes/monthly_budget.php`: receitas recorrentes, alocações, despesas, pagamentos e saldos passaram a calcular apenas registros da família autenticada.
 - Não foram reativados cartões, estoque ou compras. O escopo vigente permanece Painel, Ganhos e Gastos, Contas Previstas, Categorias e Configurações.
 - **Ainda não liberar finanças individuais**: falta impor `owner_user_id` em cada leitura e gravação, classificar registros antigos, auditar outras gravações em `action.php` e testes automatizados contra acesso cruzado. Atualização em produção depende de validação PHP/SQL com base de homologação.
+
+## Etapa de titularidade — cadastro e preparação de registros
+- Configurações da família (somente `family_admin`) agora permite atribuir titular para lançamentos, contas previstas e receitas recorrentes.
+- A escolha `Compartilhado` mantém `owner_user_id=NULL`; outras escolhas exigem associação do usuário ao mesmo tenant, com registro bloqueado em transação e rollback no erro.
+- A listagem de atribuição apresenta até 30 registros recentes por tipo e exige a migration 015. A responsabilidade por uma conta permanece distinta de titularidade.
+- **Importante:** essa operação prepara dados, mas NÃO os torna privados enquanto a família está em modo compartilhado. O modo individual segue bloqueado até que o filtro de proprietário esteja presente em TODAS as rotas e seja testado com membros diferentes.
