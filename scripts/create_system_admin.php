@@ -38,11 +38,6 @@ try {
         $stmt->execute([$name,$email,password_hash($password,PASSWORD_DEFAULT)]);
         $id = (int)$pdo->lastInsertId();
     }
-    // Temporary legacy membership maintains compatibility with the existing UI.
-    // It must be replaced with a system-admin-only landing page before go-live.
-    $stmt = $pdo->prepare("INSERT IGNORE INTO tenant_users(tenant_id,user_id,role)
-        SELECT id,?, 'family_admin' FROM tenants WHERE slug='familia-almeida'");
-    $stmt->execute([(int)$id]);
     $pdo->commit();
     echo "Administrador criado/atualizado. ID: {$id}\n";
 } catch (Throwable $e) {
