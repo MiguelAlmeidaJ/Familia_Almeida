@@ -35,14 +35,23 @@ try {
     $amount=(float)str_replace(',', '.', (string)($_POST['amount'] ?? '0'));
     if ($category==='' || strlen($category)>100 || !is_finite($amount) || $amount<0 || $amount>9999999999) throw new RuntimeException('Preencha categoria e valor válido.');
     $pdo->beginTransaction();
-    $owner=$scope['mode']==='separate'?(int)$user['id']:0;
-    $stmt=$pdo->prepare('INSERT INTO monthly_allocations(tenant_id,month,category,owner_user_id,amount) VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE amount=VALUES(amount)');
-    $stmt->execute([$tenantId,$month,$category,$owner,$amount]);
+    if(finance_separate_schema_ready($pdo)){
+      $owner=$scope['mode']==='separate'?(int)$user['id']:0;
+      $stmt=$pdo->prepare('INSERT INTO monthly_allocations(tenant_id,month,category,owner_user_id,amount) VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE amount=VALUES(amount)');
+      $stmt->execute([$tenantId,$month,$category,$owner,$amount]);
+    }else{
+      $stmt=$pdo->prepare('INSERT INTO monthly_allocations(tenant_id,month,category,amount) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE amount=VALUES(amount)');
+      $stmt->execute([$tenantId,$month,$category,$amount]);
+    }
     $pdo->commit();
  } elseif ($action === 'remove_allocation') {
     $category=trim((string)($_POST['category'] ?? ''));
-    $owner=$scope['mode']==='separate'?(int)$user['id']:0;
-    $pdo->prepare('DELETE FROM monthly_allocations WHERE tenant_id=? AND month=? AND category=? AND owner_user_id=?')->execute([$tenantId,$month,$category,$owner]);
+    if(finance_separate_schema_ready($pdo)){
+      $owner=$scope['mode']==='separate'?(int)$user['id']:0;
+      $pdo->prepare('DELETE FROM monthly_allocations WHERE tenant_id=? AND month=? AND category=? AND owner_user_id=?')->execute([$tenantId,$month,$category,$owner]);
+    }else{
+      $pdo->prepare('DELETE FROM monthly_allocations WHERE tenant_id=? AND month=? AND category=?')->execute([$tenantId,$month,$category]);
+    }
  } elseif ($action === 'save_bill') {
     $name=trim((string)($_POST['name'] ?? ''));
     $amount=(float)str_replace(',', '.', (string)($_POST['amount'] ?? '0'));
