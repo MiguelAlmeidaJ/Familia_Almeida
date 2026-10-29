@@ -21,11 +21,12 @@ Identidade baseada no manual da marca (outubro de 2026):
 - Navegação de usuários passou a usar Bootstrap Icons.
 - Ainda requer inspeção visual no servidor em desktop/mobile e testes manuais de regressão.
 
-## Etapa 3 — acabamento, PWA e revisão
-- Concluir telas de conta, admin/tenants, configurações e estados vazios.
-- Revisar responsividade e contraste em todas as páginas, inclusive arquivos offline.
-- Atualizar manifest e assets do PWA sem perder dados locais.
-- Testes visuais comparativos e regressão de fluxos financeiros.
+## Etapa 3 — acabamento, PWA e revisão (publicada; validação no servidor pendente)
+- Atualizados ícones e aparência de Minha Conta e Configurações de administração.
+- Adicionado CSS de acabamento responsivo para telas financeiras e administração.
+- Atualizados manifest, título e identidade da lista offline; cache de recursos estáticos versionado.
+- IndexedDB e fila de sincronização mantidos nos nomes legados deliberadamente para preservar compras pendentes.
+- Revisão visual e testes completos de regressão ainda precisam ser feitos na hospedagem com sessões reais.
 
 ## Antes de publicar
 - Executar verificações PHP e conferir interface em desktop/mobile.
