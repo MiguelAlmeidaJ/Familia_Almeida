@@ -45,3 +45,6 @@
 .family-name-suggestions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .family-suggestion{border:1px solid #a9d3b9;border-radius:9px;background:#eaf7ed;color:#06463F;padding:7px 12px;cursor:pointer;font-weight:700;font-size:12px}
 .family-suggestion:hover{background:#d8f1e2}
+
+.invite-limit-hint{display:flex;align-items:flex-start;gap:9px;color:#316a55;background:#edf8f1;border:1px solid #d4eadd;padding:11px 13px;border-radius:10px;font-size:12px;line-height:1.5;margin-top:3px}
+.invite-limit-hint .bi{font-size:15px;color:#168F82;flex-shrink:0}
