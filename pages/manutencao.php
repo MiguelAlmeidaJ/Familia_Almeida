@@ -4,7 +4,7 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/layout.php';
 require_once __DIR__ . '/../includes/migrations.php';
 
-$user = require_auth();
+$user = require_admin_access();
 $csrf = csrf_token();
 $pdo = db();
 
