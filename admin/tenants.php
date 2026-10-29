@@ -24,7 +24,7 @@ admin_shell_start('tenants','Famílias','Gerencie famílias, convites e cadastro
 <div class="table-wrap"><table><thead><tr><th>Família</th><th>Membros</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
 <?php foreach($tenants as $t): ?><tr><td><strong><?= e($t['name']) ?></strong><br><small><?= e($t['slug']) ?></small></td><td><?= (int)$t['members'] ?></td><td><span class="member"><?= e(['active'=>'Ativa','archived'=>'Arquivada','maintenance'=>'Manutenção','pending'=>'Pendente'][$t['status']]??$t['status']) ?></span></td>
 <td><div class="family-row-actions">
-<button type="button" class="family-icon-button" data-edit-family="<?= (int)$t['id'] ?>" title="Editar família" aria-label="Editar família"><i class="bi bi-pencil-square" aria-hidden="true"></i></button>
+<a href="/admin/familia?id=<?= (int)$t['id'] ?>" class="family-icon-button" title="Gerenciar família" aria-label="Gerenciar família"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
 <?php foreach(['archive'=>['Arquivar','bi-archive'],'maintenance'=>['Colocar em manutenção','bi-tools'],'activate'=>['Ativar','bi-check-circle']] as $action=>$config): ?>
 <form method="post" action="/admin/family_action.php" onsubmit="return confirm('<?= e($config[0]) ?> esta família?')"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="<?= e($action) ?>"><input type="hidden" name="id" value="<?= (int)$t['id'] ?>"><button class="family-icon-button <?= e($action) ?>" type="submit" title="<?= e($config[0]) ?>" aria-label="<?= e($config[0]) ?>"><i class="bi <?= e($config[1]) ?>" aria-hidden="true"></i></button></form>
 <?php endforeach; ?></div>
