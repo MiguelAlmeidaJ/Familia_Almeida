@@ -57,3 +57,11 @@ html.sidebar-collapsed .sidebar.ref-sidebar .ref-nav .nav-icon{width:24px!import
 html.sidebar-collapsed .sidebar.ref-sidebar .ref-sidebar-user{justify-content:center!important;padding:13px 0!important}
 html.sidebar-collapsed .sidebar.ref-sidebar .sidebar-logout .modern-logout{width:48px!important;height:44px!important;min-height:44px!important;padding:0!important;justify-content:center!important;margin:0 auto!important}
 @media(max-width:900px){html.sidebar-collapsed .sidebar.ref-sidebar .ref-brand-icon{display:flex!important}html.sidebar-collapsed .sidebar.ref-sidebar .ref-brand-favicon{display:none!important}.sidebar.ref-sidebar .ref-collapse{display:none!important}}
+
+/* Collapse control is located in the top header, not the sidebar. */
+.sidebar.ref-sidebar .ref-sidebar-head .ref-collapse{display:none!important}
+.ref-topbar .bemora-header-collapse{position:static!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 38px!important;width:38px!important;height:38px!important;min-width:38px!important;background:#f3faf6!important;color:#06463f!important;border:1px solid #d8e8dd!important;border-radius:10px!important;cursor:pointer!important;margin:0 12px 0 0!important}
+.ref-topbar .bemora-header-collapse:hover{background:#e4f5ec!important}
+.ref-topbar .bemora-header-collapse i{font-size:20px!important;line-height:1!important}
+html.sidebar-collapsed .ref-topbar .bemora-header-collapse i{transform:rotate(180deg)}
+@media(max-width:900px){.ref-topbar .bemora-header-collapse{display:none!important}}
