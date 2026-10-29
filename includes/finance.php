@@ -83,7 +83,7 @@ function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false
                 COALESCE(p.paid, 0) AS paid,' .
                 ($paidOnReady ? ' p.paid_on ' : ' NULL AS paid_on ') .
             'FROM fixed_bills b
-             LEFT JOIN bill_payments p ON p.bill_id = b.id AND p.month = ?
+             LEFT JOIN bill_payments p ON p.bill_id = b.id AND p.tenant_id=b.tenant_id AND p.month = ?
              ORDER BY b.active DESC, b.due_day, b.name';
     }
 
@@ -198,7 +198,7 @@ function dashboard_data(PDO $pdo, string $month): array
          GROUP BY g.id, g.category, g.monthly_limit
          ORDER BY g.category'
     );
-    $stmt->execute([$start, $next]);
+    $stmt->execute([$start, $next,require_tenant_id()]);
     $goals = $stmt->fetchAll();
     foreach ($goals as &$goal) {
         $goal['monthly_limit'] = (float) $goal['monthly_limit'];
@@ -237,7 +237,7 @@ function monthly_transaction_totals(PDO $pdo, string $month): array
          FROM transactions
          WHERE tenant_id=? AND occurred_on >= ? AND occurred_on < ?'
     );
-    $stmt->execute([$start, $next]);
+    $stmt->execute([require_tenant_id(),$start, $next]);
     $row = $stmt->fetch() ?: [];
 
     return [
@@ -265,7 +265,7 @@ function dashboard_analytics(PDO $pdo, string $month): array
             COALESCE(SUM(CASE WHEN type IN ("expense", "debt") THEN amount ELSE 0 END), 0) AS outflow,
             COALESCE(SUM(CASE WHEN type = "investment" THEN amount ELSE 0 END), 0) AS investment
          FROM transactions
-         WHERE occurred_on >= ? AND occurred_on < ?
+         WHERE tenant_id=? AND occurred_on >= ? AND occurred_on < ?
          GROUP BY occurred_on
          ORDER BY occurred_on'
     );
