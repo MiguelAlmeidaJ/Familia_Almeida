@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/includes/bootstrap.php';
+require_once __DIR__.'/includes/family_names.php';
 $token=(string)($_GET['token']??$_POST['token']??'');
 $valid=preg_match('/^[a-f0-9]{64}$/D',$token)===1;
 $invitation=null;$error='';
@@ -13,7 +14,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
  if(!$invitation){$error='Convite expirado ou já utilizado.';}
  else{
   try{
-   $name=trim((string)($_POST['family_name']??''));$count=filter_var($_POST['member_count']??0,FILTER_VALIDATE_INT);
+   [$suffix,$name,$nameKey]=family_name_parts((string)($_POST['family_name']??''));$count=filter_var($_POST['member_count']??0,FILTER_VALIDATE_INT);
    $admin=filter_var($_POST['family_admin']??-1,FILTER_VALIDATE_INT);
    if(mb_strlen($name)<3||mb_strlen($name)>160)throw new RuntimeException('Nome da família deve ter entre 3 e 160 caracteres.');
    if(!$count||$count<1||$count>(int)$invitation['max_members'])throw new RuntimeException('Quantidade de membros inválida.');
@@ -30,9 +31,8 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    $pdo=db();$pdo->beginTransaction();
    $check=$pdo->prepare("SELECT id FROM family_invitations WHERE id=? AND token_hash=? AND used_at IS NULL AND revoked_at IS NULL AND expires_at>NOW() FOR UPDATE");
    $check->execute([(int)$invitation['id'],hash('sha256',$token)]);if(!$check->fetch())throw new RuntimeException('Convite já utilizado.');
-   $key=mb_strtolower($name);
-   $check=$pdo->prepare('SELECT 1 FROM tenants WHERE name_key=? LIMIT 1');$check->execute([$key]);
-   if($check->fetchColumn())throw new RuntimeException('Este nome de família já está cadastrado.');
+   $key=$nameKey;
+   if(family_name_taken($pdo,$key))throw new RuntimeException('Esse nome de família já existe. Escolha uma das sugestões disponíveis.');
    $check=$pdo->prepare('SELECT 1 FROM users WHERE email=? LIMIT 1');
    foreach($emails as $email){$check->execute([$email]);if($check->fetchColumn())throw new RuntimeException('Um dos e-mails já possui cadastro. Use outro e-mail.');}
    $check=$pdo->prepare("INSERT INTO family_registrations(invitation_id,family_name,family_name_key,member_count,admin_member,members_json) VALUES(?,?,?,?,?,?)");
@@ -69,7 +69,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 <div class="invite-step" data-indicator="2"><span class="invite-step-number">3</span><span>Administrador</span></div>
 </nav>
 <section class="step" data-step="0"><h3 class="invite-section-title">Conheça sua família</h3><div class="invite-form-grid">
-<div class="invite-field wide"><label for="family_name">Nome da família</label><input id="family_name" name="family_name" maxlength="160" minlength="3" required placeholder="Ex.: Família Oliveira"></div>
+<div class="invite-field wide"><label for="family_name">Nome da família</label><div class="family-name-input"><span>Família</span><input id="family_name" name="family_name" maxlength="150" minlength="2" required placeholder="Ex.: Oliveira" autocomplete="off" aria-describedby="family-name-feedback"></div><div id="family-name-feedback" class="family-name-feedback" aria-live="polite"></div><div id="family-name-suggestions" class="family-name-suggestions"></div></div>
 <div class="invite-field"><label for="member_count">Quantidade de membros</label><input id="member_count" name="member_count" type="number" min="1" max="<?= (int)$invitation['max_members'] ?>" value="1" required></div>
 </div><p class="invite-help">O nome da família precisa ser único na plataforma.</p></section>
 <section class="step" data-step="1" hidden><h3 class="invite-section-title">Quem faz parte da família?</h3><p class="invite-subtitle">Preencha uma aba para cada pessoa. Os dados serão utilizados para criar os acessos após aprovação.</p><div class="member-tabs" id="member-tabs" role="tablist" aria-label="Membros"></div><div id="member-fields"></div></section>
@@ -79,7 +79,24 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 <script>
 (()=>{
 const max=<?= (int)$invitation['max_members'] ?>,form=document.getElementById('join-form'),count=document.getElementById('member_count'),fields=document.getElementById('member-fields'),tabs=document.getElementById('member-tabs'),options=document.getElementById('admin-options'),admin=document.getElementById('family-admin');
+const nameInput=document.getElementById('family_name'),nameFeedback=document.getElementById('family-name-feedback'),nameSuggestions=document.getElementById('family-name-suggestions');let availability=null,checkController=null,checkTimer=null;
 const steps=[...document.querySelectorAll('[data-step]')],indicators=[...document.querySelectorAll('[data-indicator]')];let step=0,selected=0;
+function checkName(){
+ const value=nameInput.value.trim();availability=null;nameSuggestions.replaceChildren();nameFeedback.textContent='';nameInput.classList.remove('is-invalid','is-valid');
+ if(value.length<2)return;
+ checkController?.abort();checkController=new AbortController();
+ fetch('/family_name_check.php?token='+encodeURIComponent(document.querySelector('input[name="token"]').value)+'&name='+encodeURIComponent(value),{signal:checkController.signal,cache:'no-store',referrerPolicy:'no-referrer'})
+ .then(r=>{if(!r.ok)throw new Error('Não foi possível verificar o nome.');return r.json()})
+ .then(data=>{
+  if(nameInput.value.trim()!==value)return;
+  availability=data.available===true;
+  nameInput.classList.toggle('is-invalid',!availability);nameInput.classList.toggle('is-valid',availability);
+  if(availability){nameFeedback.textContent='Nome disponível: '+data.display_name;return;}
+  nameFeedback.textContent='Esse nome de família já existe. Experimente:';
+  (data.suggestions||[]).forEach(s=>{const button=document.createElement('button');button.type='button';button.className='family-suggestion';button.textContent=s;button.addEventListener('click',()=>{nameInput.value=s;checkName()});nameSuggestions.append(button)});
+ }).catch(e=>{if(e.name!=='AbortError'){availability=null;nameFeedback.textContent='Não foi possível verificar o nome. Tente novamente.'}});
+}
+nameInput.addEventListener('input',()=>{clearTimeout(checkTimer);checkController?.abort();availability=null;nameInput.classList.remove('is-invalid','is-valid');nameFeedback.textContent='';nameSuggestions.replaceChildren();checkTimer=setTimeout(checkName,350)});
 function size(){return Math.min(max,Math.max(1,Number(count.value)||1))}
 function build(){
  const n=size();while(fields.children.length<n){const i=fields.children.length,d=document.createElement('div');d.className='member-fields';d.dataset.index=i;d.id='person-panel-'+i;d.setAttribute('role','tabpanel');
@@ -103,7 +120,7 @@ function adminOptions(){
  const label=document.createElement('label');label.className='admin-choice';const radio=document.createElement('input');radio.type='radio';radio.name='admin_choice';radio.value=String(i);radio.checked=Number(admin.value)===i;radio.addEventListener('change',()=>{admin.value=String(i)});const title=document.createElement('strong');title.textContent=name;label.append(radio,title);options.append(label);
  });
 }
-function validateFirst(){for(const input of steps[0].querySelectorAll('input'))if(!input.reportValidity())return false;return true}
+function validateFirst(){for(const input of steps[0].querySelectorAll('input'))if(!input.reportValidity())return false;if(availability!==true){nameInput.classList.add('is-invalid');nameFeedback.textContent=availability===false?'Esse nome de família já existe. Escolha uma sugestão.':'Verifique a disponibilidade do nome antes de continuar.';nameInput.focus();return false;}return true}
 function validateMembers(){for(const [i,panel] of [...fields.children].entries()){for(const input of panel.querySelectorAll('input,select')){if(!input.checkValidity()){selected=i;renderMembers();input.reportValidity();return false}}}return true}
 function show(){steps.forEach((panel,i)=>{panel.hidden=i!==step});indicators.forEach((indicator,i)=>{indicator.classList.toggle('active',i===step);indicator.classList.toggle('done',i<step);if(i===step)indicator.setAttribute('aria-current','step');else indicator.removeAttribute('aria-current')});document.getElementById('back').hidden=step===0;document.getElementById('next').hidden=step===2;document.getElementById('send').hidden=step!==2;if(step===1)renderMembers();if(step===2)adminOptions()}
 document.getElementById('next').addEventListener('click',()=>{if(step===0){if(!validateFirst())return;build()}else if(step===1&&!validateMembers())return;step=Math.min(2,step+1);show()});
