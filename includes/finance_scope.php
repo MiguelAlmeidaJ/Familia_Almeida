@@ -51,3 +51,28 @@ function finance_assert_owned_record(PDO $pdo,string $table,int $id,array $scope
         throw new RuntimeException('Você não pode alterar dados privados de outro membro.');
     }
 }
+
+/**
+ * Server-only owner predicate, suitable for appending to an existing WHERE.
+ * This deliberately does not unlock separate mode in auth.php.
+ */
+function finance_read_owner_clause(PDO $pdo,string $table,string $alias=''):string {
+    $allowed=['transactions','fixed_bills','recurring_incomes','monthly_allocations','spending_goals','debts'];
+    if(!in_array($table,$allowed,true))throw new InvalidArgumentException('Tabela financeira inválida.');
+    if($alias!==''&&!preg_match('/^[a-z][a-z0-9_]*$/i',$alias))throw new InvalidArgumentException('Alias inválido.');
+    $userId=(int)($_SESSION['user_id']??0);
+    if($userId<=0)throw new RuntimeException('Sessão necessária.');
+    $tenantId=require_tenant_id();
+    $check=$pdo->prepare("SELECT t.finance_mode FROM tenants t INNER JOIN tenant_users tu ON tu.tenant_id=t.id WHERE tu.user_id=? AND t.id=? AND t.active=1");
+    $check->execute([$userId,$tenantId]);
+    $mode=$check->fetchColumn();
+    if($mode===false)throw new RuntimeException('Família não autorizada.');
+    if($mode==='shared')return '';
+    if($mode!=='separate')throw new RuntimeException('Modo financeiro inválido.');
+    $column=$pdo->prepare("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name=? AND column_name='owner_user_id'");
+    $column->execute([$table]);
+    if(!(int)$column->fetchColumn())throw new RuntimeException('Titularidade não configurada nesta tabela.');
+    $prefix=$alias!==''?$alias.'.':'';
+    // IDs are server-derived integers, not raw request text.
+    return " AND ({$prefix}owner_user_id IS NULL OR {$prefix}owner_user_id={$userId})";
+}
