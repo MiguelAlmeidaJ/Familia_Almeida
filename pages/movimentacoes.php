@@ -119,7 +119,7 @@ $averageDay = $expenseDays > 0 ? ((float) $data['totals']['expense'] / $expenseD
                 <input type="hidden" name="month" value="<?= e($month) ?>">
 
                 <label>Tipo
-                    <select name="type" id="transaction-type" required>
+                    <select class="form-select" name="type" id="transaction-type" required>
                         <option value="expense">Gasto</option>
                         <option value="income">Entrada</option>
                         <option value="investment">Investimento</option>
@@ -127,25 +127,25 @@ $averageDay = $expenseDays > 0 ? ((float) $data['totals']['expense'] / $expenseD
                 </label>
 
                 <label>Descrição
-                    <input name="description" maxlength="160" placeholder="Ex.: Compra no supermercado" required>
+                    <input class="form-control" name="description" maxlength="160" placeholder="Ex.: Compra no supermercado" required>
                 </label>
 
                 <div class="movement-form-grid">
                     <label>Categoria
                         <span class="smart-category" id="smart-category">
-                            <input name="category" id="category-input" maxlength="100" placeholder="Buscar ou criar categoria..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="category-options" required>
+                            <input class="form-control" name="category" id="category-input" maxlength="100" placeholder="Buscar ou criar categoria..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="category-options" required>
                             <span class="smart-category-arrow" aria-hidden="true">⌄</span>
                             <span class="smart-category-options" id="category-options" role="listbox" hidden></span>
                         </span>
                         <small class="smart-category-hint">Selecione uma existente ou digite para criar.</small>
                     </label>
                     <label>Valor (R$)
-                        <input type="number" name="amount" min="0.01" step="0.01" placeholder="0,00" required>
+                        <input class="form-control" type="number" name="amount" min="0.01" step="0.01" placeholder="0,00" required>
                     </label>
                 </div>
 
                 <label>Data
-                    <input type="date" name="date" value="<?= e($defaultDate) ?>" required>
+                    <input class="form-control" type="date" name="date" value="<?= e($defaultDate) ?>" required>
                 </label>
 
                 <div class="receipt-upload-field" id="receipt-upload-field">
@@ -161,7 +161,7 @@ $averageDay = $expenseDays > 0 ? ((float) $data['totals']['expense'] / $expenseD
                     <small>Até 5 arquivos por gasto. JPG, PNG, WEBP, HEIC ou PDF, com até 8 MB cada.</small>
                 </div>
 
-                <button class="ref-green-button movement-save-button" type="submit">Salvar lançamento</button>
+                <button class="ref-green-button movement-save-button btn btn-primary" type="submit">Salvar lançamento</button>
             </form>
         </article>
 
@@ -269,7 +269,7 @@ $averageDay = $expenseDays > 0 ? ((float) $data['totals']['expense'] / $expenseD
                                 <input type="hidden" name="action" value="delete_transaction">
                                 <input type="hidden" name="month" value="<?= e($month) ?>">
                                 <input type="hidden" name="transaction_id" value="<?= $transactionId ?>">
-                                <button class="movement-delete-button" type="submit">Excluir</button>
+                                <button class="movement-delete-button btn btn-sm btn-outline-danger" type="submit">Excluir</button>
                             </form>
                         <?php endif; ?>
                     </div>
