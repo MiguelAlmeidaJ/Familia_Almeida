@@ -48,7 +48,7 @@ function render_sidebar(string $active, string $csrf): void
         <div class="ref-sidebar-head">
             <a class="ref-brand" href="/">
                 <span class="ref-brand-icon"><?php if(brand_asset_url('logo')): ?><img src="<?= e(brand_asset_url('logo')) ?>" alt="Bemora"><?php else: ?><strong>bemora</strong><?php endif; ?></span>
-                <span class="ref-brand-copy"><small>FINANÇAS COM LEVEZA</small></span>
+                <span class="ref-brand-copy"><small>Área financeira</small></span>
             </a>
             <button class="sidebar-toggle ref-collapse" id="sidebarToggle" type="button" aria-label="Recolher menu" aria-expanded="true">
                 <?= nav_icon('chevron') ?>
@@ -71,17 +71,11 @@ function render_sidebar(string $active, string $csrf): void
             </a>
         </nav>
 
-        <div class="ref-sidebar-message">
-            <span><?= nav_icon('heart') ?></span>
-            <small>Organizar o presente.</small>
-            <strong>Cuidar do nosso futuro.</strong>
-        </div>
-
         <div class="sidebar-user ref-sidebar-user">
             <div class="user-avatar"><?= e($initial) ?></div>
             <div class="sidebar-user-copy">
-                <strong>Bemora</strong>
-                <span>Minha conta</span>
+                <strong><?= e($user['name'] ?? 'Usuário') ?></strong>
+                <span>Minha conta Bemora</span>
             </div>
         </div>
 
