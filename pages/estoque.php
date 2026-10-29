@@ -88,7 +88,7 @@ function inventory_status(array $item): array
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Estoque • Família Almeida</title>
     <link rel="stylesheet" href="/assets/style.css">
-</head>
+<?php brand_head_tags(); ?></head>
 <body>
 <div class="shell ref-shell">
     <?php render_sidebar('estoque', $csrf); ?>
