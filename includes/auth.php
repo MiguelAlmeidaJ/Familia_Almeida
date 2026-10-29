@@ -43,3 +43,13 @@ function require_auth(): array
     }
     return $user;
 }
+
+function require_admin_access(): array
+{
+    $user = require_auth();
+    if (empty($user['system_admin'])) {
+        http_response_code(403);
+        exit('Acesso restrito ao administrador do sistema.');
+    }
+    return $user;
+}
