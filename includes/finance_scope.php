@@ -34,6 +34,15 @@ function finance_owner_predicate(string $alias, bool $individual):string {
 function finance_assert_owned_record(PDO $pdo,string $table,int $id,array $scope):void {
     $allowed=['transactions','fixed_bills','recurring_incomes'];
     if(!in_array($table,$allowed,true)||$id<1)throw new RuntimeException('Registro inválido.');
+    $col=$pdo->prepare("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name=? AND column_name='owner_user_id'");
+    $col->execute([$table]);
+    if(!(int)$col->fetchColumn()){
+        if($scope['mode']!=='shared')throw new RuntimeException('Migração de titularidade pendente.');
+        $q=$pdo->prepare("SELECT 1 FROM `{$table}` WHERE id=? AND tenant_id=?");
+        $q->execute([$id,(int)$scope['tenant_id']]);
+        if(!$q->fetchColumn())throw new RuntimeException('Registro não encontrado nesta família.');
+        return;
+    }
     $sql="SELECT owner_user_id FROM `{$table}` WHERE id=? AND tenant_id=?";
     $q=$pdo->prepare($sql);$q->execute([$id,(int)$scope['tenant_id']]);
     $owner=$q->fetchColumn();
