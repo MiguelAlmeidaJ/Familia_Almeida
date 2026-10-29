@@ -44,7 +44,7 @@ try{
   $info=@getimagesizefromstring($bytes);
   if(!$info||$info[0]!==1080||$info[1]!==1080||$info['mime']!=='image/jpeg')
    throw new RuntimeException('A foto deve ter exatamente 1080 × 1080 pixels em JPEG.');
-  $dir=dirname(__DIR__,2).'/bemora-private/avatars';
+  $dir=dirname(__DIR__).'/storage/avatars';
   if(!is_dir($dir)&&!mkdir($dir,0750,true)&&!is_dir($dir))throw new RuntimeException('Pasta de fotos indisponível.');
   $filename=bin2hex(random_bytes(24)).'.jpg';
   $destination=$dir.'/'.$filename;
