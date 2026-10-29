@@ -44,8 +44,8 @@ function render_sidebar(string $active, string $csrf): void
     <aside class="sidebar ref-sidebar" id="sidebar">
         <div class="ref-sidebar-head">
             <a class="ref-brand" href="/">
-                <span class="ref-brand-icon"><?= nav_icon('home') ?></span>
-                <span class="ref-brand-copy"><small>FAMÍLIA</small><strong>Almeida.</strong></span>
+                <span class="ref-brand-icon"><img src="/assets/bemora-icon.svg" alt="" width="40" height="40"></span>
+                <span class="ref-brand-copy"><small>FINANÇAS</small><strong>bemora</strong></span>
             </a>
             <button class="sidebar-toggle ref-collapse" id="sidebarToggle" type="button" aria-label="Recolher menu" aria-expanded="true">
                 <?= nav_icon('chevron') ?>
@@ -77,8 +77,8 @@ function render_sidebar(string $active, string $csrf): void
         <div class="sidebar-user ref-sidebar-user">
             <div class="user-avatar"><?= e($initial) ?></div>
             <div class="sidebar-user-copy">
-                <strong>Família Almeida</strong>
-                <span>Finanças da família</span>
+                <strong>Bemora</strong>
+                <span>Minha conta</span>
             </div>
         </div>
 
@@ -113,7 +113,7 @@ function render_topbar(array $user, string $context = 'Espaço privado'): void
             <button class="mobile-menu-toggle" id="mobileSidebarToggle" type="button" aria-label="Abrir menu" aria-expanded="false">
                 <?= nav_icon('menu') ?>
             </button>
-            <span class="ref-topbar-title">Nosso planejamento financeiro</span>
+            <span class="ref-topbar-title">Seu dinheiro em ordem. Sua vida mais leve.</span>
         </div>
 
         <div class="topbar-month" aria-label="Mês do planejamento">
