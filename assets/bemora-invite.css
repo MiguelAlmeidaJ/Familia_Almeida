@@ -48,3 +48,21 @@
 
 .invite-limit-hint{display:flex;align-items:flex-start;gap:9px;color:#316a55;background:#edf8f1;border:1px solid #d4eadd;padding:11px 13px;border-radius:10px;font-size:12px;line-height:1.5;margin-top:3px}
 .invite-limit-hint .bi{font-size:15px;color:#168F82;flex-shrink:0}
+
+/* Center the Bemora logo on the invitation and confirmation screens. */
+.invite-shell > .invite-brand {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  margin: 0 auto 30px;
+}
+.invite-brand .invite-logo {
+  display: block;
+  width: auto;
+  max-width: min(80vw, 340px);
+  max-height: 100px;
+  margin: 0 auto;
+  object-fit: contain;
+}
