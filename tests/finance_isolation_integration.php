@@ -45,7 +45,16 @@ $category->execute([$family]);$category->execute([$other]);
 check(true,'categories and allocations unique keys isolated by tenant and owner');
 
 $_SESSION['user_id']=1;$_SESSION['tenant_id']=$family;
+check(finance_separate_schema_ready($pdo),'individual mode migration readiness gate');
+$scope=finance_scope($pdo,['id'=>1,'tenant_id'=>$family]);
+check($scope['mode']==='separate' && $scope['user_id']===1,'individual mode resolves authenticated family membership');
+$receiptInsert=$pdo->prepare("INSERT INTO transaction_receipts(tenant_id,transaction_id,uploaded_by,original_name,stored_name,mime_type,file_size) VALUES(?,?,?,'nota.pdf',?,'application/pdf',12)");
+$receiptInsert->execute([$family,1,1,'member-a.pdf']);
+$receiptInsert->execute([$family,2,2,'member-b.pdf']);
+$receiptInsert->execute([$family,3,1,'shared.pdf']);
 $a=dashboard_data($pdo,'2026-10');
+$notes=receipts_for_month($pdo,'2026-10');
+check(count($notes)===2,'member A cannot list private receipts of B');
 check(count($a['transactions'])===2,'member A does not read member B transactions');
 check(abs($a['totals']['income']-150)<0.001,'member A totals exclude member B and other tenant');
 check(count($a['bills'])===2,'member A cannot see private bills of B');
