@@ -61,3 +61,9 @@ Arquivos legados que eventualmente permaneçam no repositório devem ser tratado
 - `action.php`: exclusão de lançamentos e anexação/exclusão de comprovantes passam também pela verificação de titularidade.
 - `budget_action.php`: desativar receita recorrente ou conta prevista verifica a propriedade.
 - **Estado:** preparação de autorização, NÃO liberação do modo individual. Ainda faltam filtros de `owner_user_id` em todas as consultas consolidadas, criação/edição e validação de índices/chaves de referências, além de testes end-to-end. Não remover o bloqueio atual de `finance_mode=separate`.
+
+## Camada de visibilidade de leitura (continuação)
+- `finance_read_owner_clause()` valida vínculo entre sessão e tenant e produz o predicado `owner_user_id IS NULL OR owner_user_id = usuário` apenas no modo individual; no modo compartilhado preserva todas as linhas do tenant.
+- Aplicado às listagens de lançamentos, contas previstas, atividade recente e diversos agregados de receitas e despesas em `includes/finance.php`, `includes/monthly_budget.php` e `index.php`.
+- O modo individual **continua bloqueado** em `includes/auth.php` e `includes/finance_scope.php`. O código de leitura é preparatório; não atesta privacidade completa. Há consultas auxiliares, gravações e comprovantes ainda a auditar com testes de dois usuários e dois tenants.
+- Não publicar em produção sem validação de sintaxe PHP, esquema migrado 015, integração dos cálculos e testes contra acesso cruzado.
