@@ -1,0 +1,38 @@
+name: Finance tenant and owner integration
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  mysql-isolation:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testing
+          MYSQL_DATABASE: bemora_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -ptesting"
+          --health-interval=10s --health-timeout=5s --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql, mbstring
+      - name: Bootstrap MySQL schema
+        run: mysql --protocol=TCP -h127.0.0.1 -uroot -ptesting bemora_test < schema.sql
+      - name: Create local test configuration
+        run: |
+          cat > config.php <<'PHP'
+          <?php
+          return [
+            'db'=>['host'=>'127.0.0.1','port'=>3306,'name'=>'bemora_test','user'=>'root','pass'=>'testing','charset'=>'utf8mb4'],
+            'app'=>['name'=>'Bemora Tests','install_key'=>'integration-tests-only'],
+          ];
+          PHP
+      - name: Verify tenant and individual finance isolation
+        run: php tests/finance_isolation_integration.php
