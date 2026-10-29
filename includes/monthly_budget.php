@@ -31,7 +31,7 @@ function monthly_budget_data(PDO $pdo, string $month): array {
     foreach ($stmt->fetchAll() as $r) {
         $spent[strtolower(trim((string)$r['category']))] = (float)$r['spent'];
     }
-    $stmt = $pdo->prepare('SELECT category, amount FROM monthly_allocations WHERE tenant_id=? AND month = ? ORDER BY category' . finance_read_owner_clause($pdo,'monthly_allocations') . ');
+    $stmt = $pdo->prepare('SELECT category, amount FROM monthly_allocations WHERE tenant_id=? AND month = ?' . finance_read_owner_clause($pdo,'monthly_allocations') . ' ORDER BY category');
     $stmt->execute([require_tenant_id(),$month]);
     $allocations = $stmt->fetchAll();
     $allocated = array_sum(array_map(static fn($r) => (float)$r['amount'], $allocations));
