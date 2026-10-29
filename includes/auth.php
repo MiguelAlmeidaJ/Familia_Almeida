@@ -52,9 +52,28 @@ function require_auth(): array
         $stmt=db()->prepare('SELECT slug, finance_mode FROM tenants WHERE id=? AND active=1 LIMIT 1');
         $stmt->execute([(int)$user['tenant_id']]);
         $family=$stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$family || $family['slug']!=='familia-almeida' || $family['finance_mode']!=='shared') {
+        if(!$family || $family['slug']!=='familia-almeida' ||
+           !in_array($family['finance_mode'],['shared','separate'],true)){
             http_response_code(403);
-            exit('Área financeira indisponível: o isolamento individual ainda está em implantação.');
+            exit('Família não autorizada nesta versão do Bemora.');
+        }
+        if($family['finance_mode']==='separate'){
+            require_once __DIR__.'/finance_scope.php';
+            if(!finance_separate_schema_ready(db())){
+                http_response_code(503);
+                exit('Execute as migrations 015 e 016 para acessar as finanças individuais.');
+            }
+            // Whitelist only the active, ownership-audited module entrypoints.
+            // Legacy PHP endpoints are unavailable even when accessed directly.
+            $script=str_replace('\\\\','/',(string)($_SERVER['SCRIPT_NAME']??''));
+            $allowed=['/index.php','/action.php','/budget_action.php','/categories_action.php',
+                '/receipt.php','/pages/movimentacoes.php','/pages/contas.php',
+                '/pages/categorias.php','/pages/minha_conta.php',
+                '/pages/family_settings_action.php','/logout.php','/convite-familia.php'];
+            if(!in_array($script,$allowed,true)){
+                http_response_code(403);
+                exit('Funcionalidade indisponível no modo de finanças individuais.');
+            }
         }
     }
     return $user;
