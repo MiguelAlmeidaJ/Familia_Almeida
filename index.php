@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/monthly_budget.php';
+require_once __DIR__ . '/includes/finance_scope.php';
 require_once __DIR__ . '/includes/layout.php';
 
 $user = require_family_access();
@@ -16,7 +17,7 @@ $monthNames = [1=>'Janeiro',2=>'Fevereiro',3=>'Março',4=>'Abril',5=>'Maio',6=>'
 $label = $monthNames[(int)$date->format('n')] . ' de ' . $date->format('Y');
 if ($ready) {
     $stmt = $pdo->prepare("SELECT description,category,type,amount,occurred_on
-      FROM transactions WHERE tenant_id=? AND type IN ('income','expense') AND occurred_on >= ? AND occurred_on < ?
+      FROM transactions WHERE tenant_id=? AND type IN ('income','expense') AND occurred_on >= ? AND occurred_on < ?" . finance_read_owner_clause($pdo,'transactions') . "
       ORDER BY occurred_on DESC,id DESC LIMIT 6");
     $stmt->execute([(int)$user['tenant_id'],$month.'-01',$date->modify('+1 month')->format('Y-m-d')]);
     $recent = $stmt->fetchAll();
