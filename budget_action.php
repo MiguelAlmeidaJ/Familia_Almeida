@@ -18,8 +18,13 @@ try {
     $name=trim((string)($_POST['name'] ?? ''));
     $amount=(float)str_replace(',', '.', (string)($_POST['amount'] ?? '0'));
     if ($name==='' || strlen($name)>160 || !is_finite($amount) || $amount<=0 || $amount>9999999999) throw new RuntimeException('Informe uma receita e um valor válido.');
-    $stmt=$pdo->prepare('INSERT INTO recurring_incomes(tenant_id,name,amount) VALUES (?,?,?)');
-    $stmt->execute([$tenantId,$name,$amount]);
+    if($scope['mode']==='separate'){
+      $stmt=$pdo->prepare('INSERT INTO recurring_incomes(tenant_id,owner_user_id,name,amount) VALUES (?,?,?,?)');
+      $stmt->execute([$tenantId,(int)$user['id'],$name,$amount]);
+    }else{
+      $stmt=$pdo->prepare('INSERT INTO recurring_incomes(tenant_id,name,amount) VALUES (?,?,?)');
+      $stmt->execute([$tenantId,$name,$amount]);
+    }
  } elseif ($action === 'remove_income') {
     $id=filter_var($_POST['id'] ?? null,FILTER_VALIDATE_INT);
     if (!$id || $id<1) throw new RuntimeException('Receita inválida.');
@@ -30,19 +35,26 @@ try {
     $amount=(float)str_replace(',', '.', (string)($_POST['amount'] ?? '0'));
     if ($category==='' || strlen($category)>100 || !is_finite($amount) || $amount<0 || $amount>9999999999) throw new RuntimeException('Preencha categoria e valor válido.');
     $pdo->beginTransaction();
-    $stmt=$pdo->prepare('INSERT INTO monthly_allocations(tenant_id,month,category,amount) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE amount=VALUES(amount)');
-    $stmt->execute([$tenantId,$month,$category,$amount]);
+    $owner=$scope['mode']==='separate'?(int)$user['id']:0;
+    $stmt=$pdo->prepare('INSERT INTO monthly_allocations(tenant_id,month,category,owner_user_id,amount) VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE amount=VALUES(amount)');
+    $stmt->execute([$tenantId,$month,$category,$owner,$amount]);
     $pdo->commit();
  } elseif ($action === 'remove_allocation') {
     $category=trim((string)($_POST['category'] ?? ''));
-    $pdo->prepare('DELETE FROM monthly_allocations WHERE tenant_id=? AND month=? AND category=?')->execute([$tenantId,$month,$category]);
+    $owner=$scope['mode']==='separate'?(int)$user['id']:0;
+    $pdo->prepare('DELETE FROM monthly_allocations WHERE tenant_id=? AND month=? AND category=? AND owner_user_id=?')->execute([$tenantId,$month,$category,$owner]);
  } elseif ($action === 'save_bill') {
     $name=trim((string)($_POST['name'] ?? ''));
     $amount=(float)str_replace(',', '.', (string)($_POST['amount'] ?? '0'));
     $day=filter_var($_POST['due_day'] ?? null,FILTER_VALIDATE_INT);
     if ($name==='' || strlen($name)>120 || !is_finite($amount) || $amount<=0 || $amount>9999999999 || !$day || $day<1 || $day>31) throw new RuntimeException('Preencha conta, valor e vencimento válidos.');
-    $stmt=$pdo->prepare("INSERT INTO fixed_bills(tenant_id,name,billing_type,amount,due_day,active) VALUES (?,?,'fixed',?,?,1)");
-    $stmt->execute([$tenantId,$name,$amount,$day]);
+    if($scope['mode']==='separate'){
+      $stmt=$pdo->prepare("INSERT INTO fixed_bills(tenant_id,owner_user_id,name,billing_type,amount,due_day,active) VALUES (?, ?, ?,'fixed',?,?,1)");
+      $stmt->execute([$tenantId,(int)$user['id'],$name,$amount,$day]);
+    }else{
+      $stmt=$pdo->prepare("INSERT INTO fixed_bills(tenant_id,name,billing_type,amount,due_day,active) VALUES (?,?,'fixed',?,?,1)");
+      $stmt->execute([$tenantId,$name,$amount,$day]);
+    }
  } elseif ($action === 'remove_bill') {
     $id=filter_var($_POST['id'] ?? null,FILTER_VALIDATE_INT);
     if (!$id || $id<1) throw new RuntimeException('Conta inválida.');
