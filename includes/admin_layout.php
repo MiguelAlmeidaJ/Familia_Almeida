@@ -8,7 +8,7 @@ function admin_shell_start(string $active,string $title,string $description): vo
  <aside class="admin-side"><a class="admin-brand" href="/system_admin.php"><span class="brand-icon"><?php if(brand_asset_url('logo')): ?><img src="<?= e(brand_asset_url('logo')) ?>" alt="Bemora"><?php else: ?><strong>bemora</strong><?php endif; ?></span><span class="admin-brand-subtitle">Administração</span></a>
  <span class="admin-side-label">WORKSPACE</span><nav class="admin-nav" aria-label="Menu administrativo">
  <a href="/system_admin.php" class="<?= $active==='panel'?'active':'' ?>" <?= $active==='panel'?'aria-current="page"':'' ?>><i class="bi bi-grid-1x2" aria-hidden="true"></i>Painel</a>
- <a href="/admin/tenants" class="<?= $active==='tenants'?'active':'' ?>" <?= $active==='tenants'?'aria-current="page"':'' ?>><i class="bi bi-people" aria-hidden="true"></i>Tenants</a>
+ <a href="/admin/tenants" class="<?= $active==='tenants'?'active':'' ?>" <?= $active==='tenants'?'aria-current="page"':'' ?>><i class="bi bi-people" aria-hidden="true"></i>Famílias</a>
  <a href="/admin/configuracoes" class="<?= $active==='settings'?'active':'' ?>" <?= $active==='settings'?'aria-current="page"':'' ?>><i class="bi bi-gear" aria-hidden="true"></i>Configurações</a>
  </nav><div class="admin-side-bottom"><div class="admin-profile"><div class="admin-avatar"><?= e(strtoupper(substr((string)$u['name'],0,1))) ?></div><div><strong><?= e($u['name']) ?></strong><small>Administrador do sistema</small></div></div>
  <form method="post" action="/sair"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><button class="admin-logout" type="submit">↪ Sair da conta</button></form></div></aside>
