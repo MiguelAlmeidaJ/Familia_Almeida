@@ -1,11 +1,14 @@
-const CACHE_NAME = 'familia-almeida-shopping-v5';
+const CACHE_NAME = 'bemora-shopping-v6';
 const OFFLINE_SHOPPING_PAGE = '/compras-offline.html';
 const STATIC_PATHS = new Set([
   '/compras-offline.html',
   '/assets/style.css',
   '/assets/shopping.js',
   '/assets/shopping-offline.js',
-  '/manifest.webmanifest'
+  '/manifest.webmanifest',
+  '/assets/bemora-icon.svg',
+  '/assets/bemora.css',
+  '/assets/bemora-offline.css'
 ]);
 
 self.addEventListener('install', (event) => {
@@ -21,7 +24,7 @@ self.addEventListener('activate', (event) => {
     caches.keys()
       .then((keys) => Promise.all(
         keys
-          .filter((key) => key.startsWith('familia-almeida-shopping-') && key !== CACHE_NAME)
+          .filter((key) => (key.startsWith('familia-almeida-shopping-') || key.startsWith('bemora-shopping-')) && key !== CACHE_NAME)
           .map((key) => caches.delete(key))
       ))
       .then(() => self.clients.claim())
