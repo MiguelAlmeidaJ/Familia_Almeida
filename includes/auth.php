@@ -31,6 +31,8 @@ function current_user(): ?array
         $row['tenant_id'] = $ctx['tenant_id'];
         $row['system_admin'] = $ctx['system_admin'];
     }
+    $avatar=db()->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='users' AND column_name='avatar_path'")->fetchColumn();
+    if((int)$avatar){$a=db()->prepare('SELECT avatar_path FROM users WHERE id=?');$a->execute([(int)$row['id']]);$row['avatar_path']=$a->fetchColumn()?:null;}
     $user = $row;
     return $user;
 }
