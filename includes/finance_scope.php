@@ -21,3 +21,24 @@ function finance_assert_transaction(PDO $pdo,int $transactionId,int $tenantId):v
     $q->execute([$transactionId,$tenantId]);
     if(!$q->fetchColumn())throw new RuntimeException('Lançamento não encontrado nesta família.');
 }
+
+/**
+ * Ownership visibility policy for future individual mode.
+ * NULL ownership represents explicitly shared household records.
+ * The caller must have authenticated tenant membership.
+ */
+function finance_owner_predicate(string $alias, bool $individual):string {
+    if(!preg_match('/^[a-z][a-z0-9_]*$/i',$alias))throw new InvalidArgumentException('Alias inválido.');
+    return $individual ? " AND ({$alias}.owner_user_id IS NULL OR {$alias}.owner_user_id = ?)" : '';
+}
+function finance_assert_owned_record(PDO $pdo,string $table,int $id,array $scope):void {
+    $allowed=['transactions','fixed_bills','recurring_incomes'];
+    if(!in_array($table,$allowed,true)||$id<1)throw new RuntimeException('Registro inválido.');
+    $sql="SELECT owner_user_id FROM `{$table}` WHERE id=? AND tenant_id=?";
+    $q=$pdo->prepare($sql);$q->execute([$id,(int)$scope['tenant_id']]);
+    $owner=$q->fetchColumn();
+    if($owner===false)throw new RuntimeException('Registro não encontrado nesta família.');
+    if($scope['mode']==='separate' && $owner!==null && (int)$owner!==(int)$scope['user_id']) {
+        throw new RuntimeException('Você não pode alterar dados privados de outro membro.');
+    }
+}
