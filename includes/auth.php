@@ -41,6 +41,11 @@ function require_auth(): array
     if (!$user) {
         redirect_to('/login');
     }
+    if (!empty($user['system_admin']) && empty($user['tenant_id'])) {
+        $script = str_replace('\\\\','/',(string)($_SERVER['SCRIPT_NAME'] ?? ''));
+        $allowed = ['/system_admin.php','/admin/tenants.php','/admin/configuracoes.php','/pages/configuracoes.php','/pages/manutencao.php'];
+        if (!in_array($script,$allowed,true)) redirect_to('/system_admin.php');
+    }
     return $user;
 }
 
