@@ -51,9 +51,6 @@ function render_sidebar(string $active, string $csrf): void
                 <span class="ref-brand-favicon"><?php if(brand_asset_url('favicon')): ?><img src="<?= e(brand_asset_url('favicon')) ?>" alt="Bemora"><?php else: ?><span aria-hidden="true">B</span><?php endif; ?></span>
                 <span class="ref-brand-copy"><small>Área financeira</small></span>
             </a>
-            <button class="sidebar-toggle ref-collapse" id="sidebarToggle" type="button" aria-label="Recolher menu" aria-expanded="true">
-                <i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i>
-            </button>
         </div>
 
         <nav class="side-nav ref-nav" aria-label="Menu principal">
@@ -108,6 +105,7 @@ function render_topbar(array $user, string $context = 'Espaço privado'): void
     ?>
     <header class="topbar ref-topbar">
         <div class="topbar-left">
+            <button class="sidebar-toggle ref-collapse bemora-header-collapse" id="sidebarToggle" type="button" aria-label="Recolher menu" aria-expanded="true"><i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i></button>
             <button class="mobile-menu-toggle" id="mobileSidebarToggle" type="button" aria-label="Abrir menu" aria-expanded="false">
                 <?= nav_icon('menu') ?>
             </button>
