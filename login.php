@@ -52,14 +52,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Entrar • Bemora</title><?php brand_head_tags(); ?>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/bemora-login.css?v=1">
 </head>
 <body>
 <main class="login-screen">
     <section class="login-card">
         <div class="brand brand-dark">
             <div class="brandmark"><?php if(brand_asset_url('logo')): ?><img src="<?= e(brand_asset_url('logo')) ?>" alt="Bemora"><?php else: ?><strong>bemora</strong><?php endif; ?></div>
-            <div class="brandcopy"><b>bemora</b><strong>by Anoar</strong><small>FINANÇAS COM LEVEZA</small></div>
+            
         </div>
 
         <div class="login-copy">
@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <form method="post" class="login-form">
             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
             <label>E-mail<input type="email" name="email" autocomplete="email" required></label>
-            <label>Senha<input type="password" name="password" autocomplete="current-password" required></label>
+            <label for="login-password">Senha</label><div class="login-password-wrap"><input id="login-password" type="password" name="password" autocomplete="current-password" required><button type="button" id="login-password-toggle" class="login-password-toggle" aria-label="Mostrar senha" aria-pressed="false" aria-controls="login-password"><i class="bi bi-eye" aria-hidden="true"></i></button></div>
 
             <?php if ($error): ?>
                 <div class="form-error"><?= e($error) ?></div>
@@ -81,5 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
     </section>
 </main>
+<script>
+(()=>{const input=document.getElementById('login-password'),button=document.getElementById('login-password-toggle');if(!input||!button)return;button.addEventListener('click',()=>{const show=input.type==='password';input.type=show?'text':'password';button.setAttribute('aria-pressed',String(show));button.setAttribute('aria-label',show?'Ocultar senha':'Mostrar senha');button.querySelector('i').className=show?'bi bi-eye-slash':'bi bi-eye';input.focus({preventScroll:true})})})();
+</script>
 </body>
 </html>
