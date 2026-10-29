@@ -1,9 +1,10 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/../includes/auth.php';
-require_once __DIR__ . '/../includes/layout.php';
+require_once __DIR__ . '/../includes/admin_layout.php';
 
 $user = require_admin_access();
+redirect_to('/admin/configuracoes');
 $csrf = csrf_token();
 ?>
 <!doctype html>
