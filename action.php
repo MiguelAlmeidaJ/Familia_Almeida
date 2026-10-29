@@ -891,8 +891,9 @@ try {
 
             $pdo->beginTransaction();
 
+            $hasBillOwner=db_column_exists($pdo,'fixed_bills','owner_user_id');
             $billStmt = $pdo->prepare(
-                'SELECT id, name, billing_type, amount, due_day, start_month, installment_total, owner_user_id
+                'SELECT id, name, billing_type, amount, due_day, start_month, installment_total' . ($hasBillOwner?',owner_user_id':'') . '
                  FROM fixed_bills WHERE id = ? AND tenant_id=? FOR UPDATE'
             );
             $billStmt->execute([$billId,$tenantId]);
@@ -974,25 +975,19 @@ try {
                     ? $bill['name'] . ' — Parcela ' . $installmentNumber . '/' . (int) $bill['installment_total']
                     : $bill['name'];
 
-                $transactionStmt = $pdo->prepare(
-                    'INSERT INTO transactions
-                        (tenant_id,owner_user_id,created_by, bill_payment_id, type, description, category, amount, occurred_on)
-                     VALUES (?, ?, ?, ?, "expense", ?, "Contas recorrentes", ?, ?)
-                     ON DUPLICATE KEY UPDATE
-                        description = VALUES(description),
-                        category = VALUES(category),
-                        amount = VALUES(amount),
-                        occurred_on = VALUES(occurred_on)'
-                );
-                $transactionStmt->execute([
-                    $tenantId,
-                    $bill['owner_user_id'] ?? null,
-                    (int) $user['id'],
-                    $paymentId,
-                    $description,
-                    $monthlyAmount,
-                    $paymentDate,
-                ]);
+                $hasOwner=$hasBillOwner && db_column_exists($pdo,'transactions','owner_user_id');
+                $transactionStmt=$pdo->prepare($hasOwner
+                    ? 'INSERT INTO transactions (tenant_id,owner_user_id,created_by,bill_payment_id,type,description,category,amount,occurred_on)
+                       VALUES (?,?,?,?,"expense",?,"Contas recorrentes",?,?)
+                       ON DUPLICATE KEY UPDATE owner_user_id=VALUES(owner_user_id),description=VALUES(description),
+                       category=VALUES(category),amount=VALUES(amount),occurred_on=VALUES(occurred_on)'
+                    : 'INSERT INTO transactions (tenant_id,created_by,bill_payment_id,type,description,category,amount,occurred_on)
+                       VALUES (?,?,?,"expense",?,"Contas recorrentes",?,?)
+                       ON DUPLICATE KEY UPDATE description=VALUES(description),category=VALUES(category),
+                       amount=VALUES(amount),occurred_on=VALUES(occurred_on)');
+                $parameters=[$tenantId,(int)$user['id'],$paymentId,$description,$monthlyAmount,$paymentDate];
+                if($hasOwner)array_splice($parameters,1,0,[$bill['owner_user_id']??null]);
+                $transactionStmt->execute($parameters);
 
                 flash('success', 'Conta paga e lançada automaticamente nas movimentações.');
             } else {
