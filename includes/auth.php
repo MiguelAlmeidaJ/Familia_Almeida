@@ -43,7 +43,7 @@ function require_auth(): array
     }
     if (!empty($user['system_admin']) && empty($user['tenant_id'])) {
         $script = str_replace('\\\\','/',(string)($_SERVER['SCRIPT_NAME'] ?? ''));
-        $allowed = ['/system_admin.php','/admin/tenants.php','/admin/configuracoes.php','/admin/branding_upload.php','/admin/family_action.php','/pages/configuracoes.php','/pages/manutencao.php'];
+        $allowed = ['/system_admin.php','/admin/tenants.php','/admin/familia.php','/admin/configuracoes.php','/admin/branding_upload.php','/admin/family_action.php','/pages/configuracoes.php','/pages/manutencao.php'];
         if (!in_array($script,$allowed,true)) redirect_to('/system_admin.php');
     }
     return $user;
