@@ -1,0 +1,69 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__.'/../includes/auth.php';
+require_once __DIR__.'/../includes/finance.php';
+require_once __DIR__.'/../includes/monthly_budget.php';
+require_once __DIR__.'/../includes/finance_scope.php';
+require_once __DIR__.'/../includes/receipts.php';
+require_once __DIR__.'/../includes/migrations.php';
+
+function check(bool $ok,string $message):void {
+ if(!$ok)throw new RuntimeException('TEST FAILURE: '.$message);
+ echo "[PASS] {$message}\n";
+}
+$pdo=db();
+$pdo->exec("INSERT INTO users(name,email,password_hash) VALUES
+('Membro A','a@example.test','test'),('Membro B','b@example.test','test'),('Membro C','c@example.test','test')");
+$migrations=run_pending_migrations($pdo);
+check(in_array('20261029_016_finance_owner_keys',$migrations,true),'migrations 001-016 succeeded');
+$family=(int)$pdo->query("SELECT id FROM tenants WHERE slug='familia-almeida'")->fetchColumn();
+$pdo->exec("INSERT INTO tenants(name,slug,finance_mode) VALUES('Outra familia','outra-familia','separate')");
+$other=(int)$pdo->lastInsertId();
+$pdo->prepare("DELETE FROM tenant_users WHERE tenant_id=? AND user_id=3")->execute([$family]);
+$pdo->prepare("INSERT INTO tenant_users(tenant_id,user_id,role) VALUES(?,3,'member')")->execute([$other]);
+$pdo->prepare("UPDATE tenants SET finance_mode='separate' WHERE id=?")->execute([$family]);
+$transaction=$pdo->prepare("INSERT INTO transactions(tenant_id,owner_user_id,created_by,type,description,category,amount,occurred_on) VALUES(?,?,?,'income',?,'Salario',?,'2026-10-20')");
+$transaction->execute([$family,1,1,'Privado A',100]);
+$transaction->execute([$family,2,2,'Privado B',200]);
+$transaction->execute([$family,null,1,'Compartilhado',50]);
+$transaction->execute([$other,3,3,'Outra familia',900]);
+$bill=$pdo->prepare("INSERT INTO fixed_bills(tenant_id,owner_user_id,name,billing_type,amount,due_day) VALUES(?,? ,?,'fixed',?,10)");
+$bill->execute([$family,1,'Conta A',20]);
+$bill->execute([$family,2,'Conta B',30]);
+$bill->execute([$family,null,'Conta compartilhada',10]);
+$bill->execute([$other,3,'Conta externa',1000]);
+$income=$pdo->prepare("INSERT INTO recurring_incomes(tenant_id,owner_user_id,name,amount) VALUES(?,?,?,?)");
+$income->execute([$family,1,'Receita A',100]);
+$income->execute([$family,2,'Receita B',200]);
+$income->execute([$family,null,'Receita compartilhada',50]);
+$income->execute([$other,3,'Receita externa',1000]);
+$alloc=$pdo->prepare("INSERT INTO monthly_allocations(tenant_id,month,category,owner_user_id,amount) VALUES(?,'2026-10','Mercado',?,?)");
+$alloc->execute([$family,1,10]);$alloc->execute([$family,2,20]);$alloc->execute([$family,0,5]);
+$alloc->execute([$other,3,100]);
+$category=$pdo->prepare("INSERT INTO categories(tenant_id,name,type) VALUES(?,'Teste','expense')");
+$category->execute([$family]);$category->execute([$other]);
+check(true,'categories and allocations unique keys isolated by tenant and owner');
+
+$_SESSION['user_id']=1;$_SESSION['tenant_id']=$family;
+$a=dashboard_data($pdo,'2026-10');
+check(count($a['transactions'])===2,'member A does not read member B transactions');
+check(abs($a['totals']['income']-150)<0.001,'member A totals exclude member B and other tenant');
+check(count($a['bills'])===2,'member A cannot see private bills of B');
+$b=monthly_budget_data($pdo,'2026-10');
+check(abs($b['recurringIncomeTotal']-150)<0.001,'member A recurring income excludes B');
+check(abs($b['allocated']-15)<0.001,'member A budget allocations exclude B');
+try{finance_assert_owned_record($pdo,'transactions',2,['tenant_id'=>$family,'user_id'=>1,'mode'=>'separate']);throw new RuntimeException('Cross-owner mutation allowed');}
+catch(RuntimeException $e){check(str_contains($e->getMessage(),'privados'),'member A cannot mutate B transaction');}
+$_SESSION['user_id']=2;$_SESSION['tenant_id']=$family;
+$b2=monthly_budget_data($pdo,'2026-10');
+check(abs($b2['recurringIncomeTotal']-250)<0.001,'member B sees own and shared income');
+check(abs($b2['allocated']-25)<0.001,'member B sees own and shared allocations');
+$_SESSION['user_id']=3;$_SESSION['tenant_id']=$other;
+$c=monthly_budget_data($pdo,'2026-10');
+check(abs($c['recurringIncomeTotal']-1000)<0.001,'second family sees only its income');
+check(count($c['bills'])===1,'second family sees only its bills');
+$_SESSION['user_id']=1;$_SESSION['tenant_id']=$family;
+$pdo->prepare("UPDATE tenants SET finance_mode='shared' WHERE id=?")->execute([$family]);
+$all=dashboard_data($pdo,'2026-10');
+check(count($all['transactions'])===3,'shared mode exposes all same-family entries');
+echo "Finance isolation integration assertions complete.\n";
