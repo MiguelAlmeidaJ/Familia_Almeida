@@ -1,0 +1,18 @@
+/* Phase 3: responsive and accessible finishes shared by finance and admin */
+:root{color-scheme:light}
+html{scroll-behavior:smooth}
+button,input,select,textarea{font-family:Inter,system-ui,sans-serif}
+button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:3px solid #168F82!important;outline-offset:3px}
+.bemora-finance :is(.card,.budget-card,.category-card){box-shadow:0 8px 28px rgba(6,70,63,.045)}
+.bemora-finance :is(.card,.budget-card,.category-card):focus-within{border-color:#89cbbb}
+.bemora-finance :is(input,select,textarea){accent-color:#168F82}
+.bemora-finance .alert{border:1px solid #deebe5;padding:12px 16px}
+.bemora-finance .alert.success{color:#06463F;background:#eaf7ef}
+.admin-shell .panel,.admin-shell .metric{overflow-wrap:anywhere}
+.admin-shell .table-wrap{overflow:auto;max-width:100%}
+.admin-shell table{min-width:580px}
+.admin-shell .admin-tiles{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+@media(max-width:950px){.admin-shell .admin-main{width:100%;max-width:100%;min-width:0}}
+@media(max-width:700px){.bemora-finance .dashboard-visual-grid,.bemora-finance .dashboard-bottom-grid{grid-template-columns:1fr}.bemora-finance .budget-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.bemora-finance .category-form{display:grid;grid-template-columns:1fr;align-items:stretch}.admin-shell .admin-top{align-items:flex-start}.admin-shell .metrics{gap:10px}}
+@media(max-width:420px){.bemora-finance .budget-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
