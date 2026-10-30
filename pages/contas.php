@@ -71,7 +71,7 @@ function fixed_bill_subtitle(array $bill): string
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Contas fixas • Bemora</title>
+    <title>Contas previstas • Bemora</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="/assets/style.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=3"></head>
 <body class="bemora-finance">
@@ -85,8 +85,8 @@ function fixed_bill_subtitle(array $bill): string
             <section class="ref-dashboard-heading fixed-reference-heading">
                 <div>
                     <p class="eyebrow">CADA ESCOLHA CONTA</p>
-                    <h1>Contas fixas</h1>
-                    <p>As despesas que fazem parte da rotina da família.</p>
+                    <h1>Contas previstas</h1>
+                    <p>Acompanhe compromissos recorrentes, valores variáveis e parcelas ao longo dos meses.</p>
                 </div>
 
                 
@@ -126,13 +126,11 @@ function fixed_bill_subtitle(array $bill): string
             <section class="card fixed-reference-card">
                 <header class="fixed-reference-card-head">
                     <div>
-                        <h2>Despesas fixas</h2>
-                        <p>Valores e vencimentos são reaproveitados nos próximos meses. Pagamentos não.</p>
+                        <h2>Compromissos do mês</h2>
+                        <p>Organize vencimentos, confirme pagamentos e acompanhe o que ainda falta pagar.</p>
                     </div>
 
-                    <button class="ref-green-button fixed-add-button btn btn-primary" type="button" onclick="openNewBill()">
-                        ＋&nbsp; Adicionar conta
-                    </button>
+
                 </header>
 
                 <div class="fixed-reference-list">
@@ -232,7 +230,7 @@ function fixed_bill_subtitle(array $bill): string
                 </div>
 
                 <footer class="fixed-reference-footer">
-                    Contas variáveis, como água, luz e cartão, podem ter um valor diferente em cada mês.
+                    Contas variáveis, como água e luz, podem ter valores diferentes a cada mês.
                     Compras parceladas encerram automaticamente depois da última parcela.
                 </footer>
             </section>
@@ -277,13 +275,16 @@ function fixed_bill_subtitle(array $bill): string
             <?php endif; ?>
 
             <footer class="ref-page-footer fixed-reference-page-footer">
-                <span>Família Almeida&nbsp;&nbsp; / &nbsp;&nbsp;Um mês de cada vez.</span>
+                <span>Contas previstas&nbsp;&nbsp; / &nbsp;&nbsp;Planejamento mensal da família.</span>
                 <span>Dados salvos na sua conta</span>
             </footer>
         </div>
     </main>
 </div>
 
+<button type="button" class="bemora-bill-fab" onclick="openNewBill()" title="Adicionar conta prevista" aria-label="Adicionar conta prevista" aria-haspopup="dialog" aria-controls="bill-dialog"><i class="bi bi-receipt-cutoff" aria-hidden="true"></i></button>
+<link rel="stylesheet" href="/assets/bemora-bills-refresh.css?v=1">
+<script src="/assets/bemora-bills-refresh.js?v=1" defer></script>
 <dialog id="bill-dialog" class="fixed-reference-dialog">
     <form method="post" action="/acao" class="fixed-reference-dialog-form recurring-form" id="billForm">
         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
@@ -294,8 +295,8 @@ function fixed_bill_subtitle(array $bill): string
 
         <div class="fixed-reference-dialog-head">
             <div>
-                <h3 id="bill-dialog-title">Nova conta fixa</h3>
-                <p id="bill-dialog-subtitle">Configure o valor e o dia de vencimento.</p>
+                <h3 id="bill-dialog-title">Nova conta prevista</h3>
+                <p id="bill-dialog-subtitle">Defina o vencimento e como esta conta se repete.</p>
             </div>
             <button type="button" onclick="document.getElementById('bill-dialog').close()">×</button>
         </div>
@@ -335,7 +336,7 @@ function fixed_bill_subtitle(array $bill): string
             </div>
         </div>
 
-        <div class="billing-form-hint" data-hint></div>
+        <div class="billing-form-hint" data-hint role="status"></div><p class="bemora-bill-form-note"><i class="bi bi-info-circle"></i> Cadastrar uma conta não significa pagá-la. Cada mês possui seu próprio controle de pagamento.</p>
 
         <div class="fixed-reference-dialog-actions">
             <button class="fixed-cancel-button" type="button" onclick="document.getElementById('bill-dialog').close()">Cancelar</button>
@@ -415,8 +416,8 @@ function openNewBill() {
 
     document.getElementById('bill-action').value = 'add_bill';
     document.getElementById('bill-id').value = '';
-    document.getElementById('bill-dialog-title').textContent = 'Nova conta fixa';
-    document.getElementById('bill-dialog-subtitle').textContent = 'Configure o valor e o dia de vencimento.';
+    document.getElementById('bill-dialog-title').textContent = 'Nova conta prevista';
+    document.getElementById('bill-dialog-subtitle').textContent = 'Defina o vencimento e como esta conta se repete.';
     document.getElementById('bill-type').value = 'fixed';
     document.getElementById('bill-day').value = '10';
     document.getElementById('bill-start').value = '<?= e($month) ?>';
@@ -435,7 +436,7 @@ function openBillEditor(id, name, type, amount, dueDay, startMonth, installmentT
     document.getElementById('bill-day').value = dueDay;
     document.getElementById('bill-start').value = startMonth || '<?= e($month) ?>';
     document.getElementById('bill-total').value = installmentTotal || 10;
-    document.getElementById('bill-dialog-title').textContent = 'Editar conta fixa';
+    document.getElementById('bill-dialog-title').textContent = 'Editar conta prevista';
     document.getElementById('bill-dialog-subtitle').textContent = 'Atualize os dados da recorrência sem perder o histórico.';
 
     syncBillingForm();
