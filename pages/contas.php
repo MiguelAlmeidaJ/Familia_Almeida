@@ -126,7 +126,7 @@ function fixed_bill_subtitle(array $bill): string
             <section class="card fixed-reference-card">
                 <header class="fixed-reference-card-head">
                     <div>
-                        <h2>Compromissos do mês</h2>
+                        <h2>Contas do mês</h2>
                         <p>Organize vencimentos, confirme pagamentos e acompanhe o que ainda falta pagar.</p>
                     </div>
 
@@ -136,7 +136,7 @@ function fixed_bill_subtitle(array $bill): string
                 <div class="fixed-reference-list">
                     <?php if ($currentBills): ?>
                         <?php foreach ($currentBills as $bill): ?>
-                            <div class="fixed-reference-row <?= $bill['paid'] ? 'is-paid' : '' ?>">
+                            <div class="fixed-reference-row <?= $bill['paid'] ? 'is-paid' : '' ?>" data-due-date="<?= e(sprintf('%s-%02d', $month, min((int)$bill['due_day'], (int)$currentDate->format('t')))) ?>">
                                 <div class="fixed-reference-day">
                                     <small>DIA</small>
                                     <strong><?= str_pad((string) $bill['due_day'], 2, '0', STR_PAD_LEFT) ?></strong>
