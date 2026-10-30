@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $roleStmt->execute([(int)$user['id']]);
                     if ($roleStmt->fetchColumn() === 'system_admin') redirect_to('/system_admin.php');
                 }
-                redirect_to('/');
+                redirect_to('/painel');
             }
 
             $error = 'E-mail ou senha inválidos.';
