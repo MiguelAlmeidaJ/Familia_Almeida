@@ -63,6 +63,7 @@ function fixed_bill_subtitle(array $bill): string
         return 'Parcela ' . (int) $bill['installment_number'] . '/' . (int) $bill['installment_total'];
     }
 
+    if(($bill['due_mode']??'fixed')==='business')return 'Dia útil: '.(['first'=>'1º','fifth'=>'5º','penultimate'=>'penúltimo','last'=>'último'][$bill['business_day_rule']??'']??'definido');
     return 'Vence dia ' . (int) $bill['due_day'];
 }
 ?>
@@ -439,6 +440,7 @@ function openNewBill() {
     document.getElementById('bill-total').value = '10';
 
     syncBillingForm();
+    document.getElementById('bill-due-mode').dispatchEvent(new Event('change'));
     document.getElementById('bill-dialog').showModal();
 }
 
@@ -469,7 +471,7 @@ function openMonthlyAmount(id, name, amount) {
 
 syncBillingForm();
 </script>
-<script src="/assets/bemora-bill-inputs.js?v=1" defer></script>
+<script src="/assets/bemora-bill-inputs.js?v=2" defer></script>
 <link rel="stylesheet" href="/assets/bemora-bill-inputs.css?v=1">
 </body>
 </html>
