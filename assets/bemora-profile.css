@@ -11,3 +11,16 @@
 .profile-password-fields input{min-height:45px;border:1px solid #dbe7e0;border-radius:11px}
 @media(max-width:800px){.profile-password-fields{grid-template-columns:1fr}}
 @media(max-width:600px){.profile-security-heading{align-items:flex-start;flex-direction:column}.profile-security-heading .btn{width:100%}}
+
+/* Password change is a true modal, not an expandable card. */
+.profile-password-dialog{position:fixed;inset:0;margin:auto;width:min(480px,calc(100vw - 28px));max-height:calc(100vh - 35px);overflow-y:auto;border:0;border-radius:20px;padding:28px;background:#fff;box-shadow:0 24px 80px rgba(8,46,34,.23);color:#184b3f}
+.profile-password-dialog::backdrop{background:rgba(6,32,27,.6)}
+.profile-password-dialog-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;border-bottom:1px solid #e3eee9;padding-bottom:18px;margin-bottom:21px}
+.profile-password-dialog-head h2{font-size:21px;font-weight:750;margin:0 0 7px;color:#0c5548}
+.profile-password-dialog-head p{font-size:13px;margin:0;color:#73847c;line-height:1.5}
+.profile-password-close{border:0;background:#eef5f1;border-radius:10px;height:35px;width:35px;color:#55756a}
+.profile-password-dialog .profile-password-fields{grid-template-columns:1fr;gap:15px}
+.profile-password-dialog #profile-password-panel{border:0;margin:0;padding:0}
+.profile-password-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:24px}
+.profile-password-actions button{border-radius:10px;font-weight:650}
+@media(max-width:540px){.profile-password-dialog{padding:22px}.profile-password-actions button{flex:1}}
