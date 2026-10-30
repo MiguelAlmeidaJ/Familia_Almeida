@@ -201,7 +201,7 @@ function fixed_bill_subtitle(array $bill): string
                                     <button
                                         type="button"
                                         class="fixed-icon-action"
-                                        title="Editar"
+                                        title="Editar conta" aria-label="Editar conta"
                                         onclick='openBillEditor(
                                             <?= (int) $bill["id"] ?>,
                                             <?= json_encode($bill["name"], JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
@@ -213,13 +213,21 @@ function fixed_bill_subtitle(array $bill): string
                                         )'
                                     >✎</button>
 
+                                    <form method="post" action="/acao" onsubmit="return confirm('Arquivar esta conta? O histórico de pagamentos será preservado.')">
+                                        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                                        <input type="hidden" name="return_to" value="/contas">
+                                        <input type="hidden" name="action" value="archive_bill">
+                                        <input type="hidden" name="month" value="<?= e($month) ?>">
+                                        <input type="hidden" name="bill_id" value="<?= (int)$bill['id'] ?>">
+                                        <button type="submit" class="fixed-icon-action" title="Arquivar conta" aria-label="Arquivar conta <?= e($bill['name']) ?>"><i class="bi bi-archive"></i></button>
+                                    </form>
                                     <form method="post" action="/acao" onsubmit="return confirm('Excluir esta conta definitivamente? Pagamentos e movimentações gerados por ela também serão removidos.')">
                                         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                                         <input type="hidden" name="return_to" value="/contas">
                                         <input type="hidden" name="action" value="delete_bill">
                                         <input type="hidden" name="month" value="<?= e($month) ?>">
                                         <input type="hidden" name="bill_id" value="<?= (int) $bill['id'] ?>">
-                                        <button class="fixed-icon-action danger btn btn-sm btn-outline-danger" type="submit" title="Excluir">⌫</button>
+                                        <button class="fixed-icon-action danger btn btn-sm btn-outline-danger" type="submit" title="Excluir definitivamente" aria-label="Excluir conta definitivamente"><i class="bi bi-trash3"></i></button>
                                     </form>
                                 </div>
                             </div>
