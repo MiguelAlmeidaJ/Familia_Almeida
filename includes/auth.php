@@ -54,7 +54,7 @@ function require_auth(): array
         $stmt=db()->prepare('SELECT slug, finance_mode FROM tenants WHERE id=? AND active=1 LIMIT 1');
         $stmt->execute([(int)$user['tenant_id']]);
         $family=$stmt->fetch(PDO::FETCH_ASSOC);
-        if(!$family || $family['slug']!=='familia-almeida' ||
+        if(!$family || ($family['slug']!=='familia-almeida' && getenv('BEMORA_MULTI_TENANT_RELEASE')!=='1') ||
            !in_array($family['finance_mode'],['shared','separate'],true)){
             http_response_code(403);
             exit('Família não autorizada nesta versão do Bemora.');
