@@ -17,6 +17,13 @@ $pdo->exec("INSERT INTO users(name,email,password_hash) VALUES
 ('Membro A','a@example.test','test'),('Membro B','b@example.test','test'),('Membro C','c@example.test','test')");
 $migrations=run_pending_migrations($pdo);
 check(in_array('20261029_016_finance_owner_keys',$migrations,true),'migrations 001-016 succeeded');
+check(in_array('20261030_019_bill_due_modes',$migrations,true),'business-day mode migration installed');
+check(bill_due_date('2027-02',31)==='2027-02-28','fixed day 31 clamps to February 28');
+check(bill_due_date('2028-02',31)==='2028-02-29','leap-year day 31 clamps to February 29');
+check(bill_business_date('2026-10','first')==='2026-10-01','first business day October 2026');
+check(bill_business_date('2026-10','fifth')==='2026-10-07','fifth business day October 2026');
+check(bill_business_date('2026-10','last')==='2026-10-30','last business day October 2026');
+check(bill_business_date('2026-10','penultimate')==='2026-10-29','penultimate business day October 2026');
 $family=(int)$pdo->query("SELECT id FROM tenants WHERE slug='familia-almeida'")->fetchColumn();
 $pdo->exec("INSERT INTO tenants(name,slug,finance_mode) VALUES('Outra familia','outra-familia','separate')");
 $other=(int)$pdo->lastInsertId();
