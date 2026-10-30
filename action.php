@@ -22,6 +22,17 @@ verify_csrf();
 $pdo = db();
 $scope = finance_scope($pdo,$user);
 $tenantId = $scope['tenant_id'];
+function bemora_bill_amount($raw): float {
+    $value=trim((string)$raw);
+    $value=preg_replace('/^R\\$\\s*/u','',$value);
+    $value=preg_replace('/\\s+/u','',$value);
+    if(str_contains($value,','))$value=str_replace(',','.',str_replace('.','',$value));
+    if(!preg_match('/^\\d+(?:\\.\\d{1,2})?$/D',$value))throw new RuntimeException('Valor monetário inválido.');
+    $amount=(float)$value;
+    if(!is_finite($amount)||$amount>9999999999.99)throw new RuntimeException('Valor fora do limite permitido.');
+    return $amount;
+}
+
 $action = (string) ($_POST['action'] ?? '');
 $activeActions=['add_transaction','add_receipts','delete_receipt','delete_transaction','add_bill','update_bill','archive_bill','restore_bill','delete_bill','set_bill_month_amount','toggle_bill'];
 if(!in_array($action,$activeActions,true)){http_response_code(404);exit('Funcionalidade descontinuada.');}
@@ -651,8 +662,9 @@ try {
         case 'add_bill':
             $name = trim((string) ($_POST['name'] ?? ''));
             $billingType = (string) ($_POST['billing_type'] ?? 'fixed');
-            $amount = (float) str_replace(',', '.', (string) ($_POST['amount'] ?? '0'));
-            $dueDay = (int) ($_POST['due_day'] ?? 0);
+            $amount = bemora_bill_amount($_POST['amount'] ?? '0');
+            $dueDay = filter_var($_POST['due_day'] ?? null,FILTER_VALIDATE_INT,['options'=>['min_range'=>1,'max_range'=>31]]);
+            $dueBusinessDay=isset($_POST['due_business_day']) && $_POST['due_business_day']==='1' ? 1 : 0;
             $startMonth = trim((string) ($_POST['start_month'] ?? ''));
             $installmentTotal = (int) ($_POST['installment_total'] ?? 0);
 
@@ -660,7 +672,7 @@ try {
                 throw new RuntimeException('Tipo de conta recorrente inválido.');
             }
 
-            if ($name === '' || $dueDay < 1 || $dueDay > 31 || $amount < 0) {
+            if ($name === '' || $dueDay === false || $amount < 0) {
                 throw new RuntimeException('Dados da conta recorrente inválidos.');
             }
 
@@ -680,10 +692,11 @@ try {
                 $installmentTotal = 0;
             }
 
+            if(!db_column_exists($pdo,'fixed_bills','due_business_day'))throw new RuntimeException('Execute a migration 018 em Manutenção.');
             $personal=$scope['mode']==='separate';
             $stmt = $pdo->prepare($personal
-                ? 'INSERT INTO fixed_bills (tenant_id,owner_user_id,name,billing_type,amount,due_day,start_month,installment_total) VALUES (?,?,?,?,?,?,?,?)'
-                : 'INSERT INTO fixed_bills (tenant_id,name,billing_type,amount,due_day,start_month,installment_total) VALUES (?,?,?,?,?,?,?)');
+                ? 'INSERT INTO fixed_bills (tenant_id,owner_user_id,name,billing_type,amount,due_day,start_month,installment_total,due_business_day) VALUES (?,?,?,?,?,?,?,?,?)'
+                : 'INSERT INTO fixed_bills (tenant_id,name,billing_type,amount,due_day,start_month,installment_total,due_business_day) VALUES (?,?,?,?,?,?,?,?)');
             $parameters=[
                 $tenantId,
                 $name,
@@ -692,6 +705,7 @@ try {
                 $dueDay,
                 $startMonth !== '' ? $startMonth : null,
                 $installmentTotal > 0 ? $installmentTotal : null,
+                $dueBusinessDay,
             ];
             if($personal)array_splice($parameters,1,0,[(int)$user['id']]);
             $stmt->execute($parameters);
@@ -703,8 +717,9 @@ try {
             $billId = (int) ($_POST['bill_id'] ?? 0);
             $name = trim((string) ($_POST['name'] ?? ''));
             $billingType = (string) ($_POST['billing_type'] ?? 'fixed');
-            $amount = (float) str_replace(',', '.', (string) ($_POST['amount'] ?? '0'));
-            $dueDay = (int) ($_POST['due_day'] ?? 0);
+            $amount = bemora_bill_amount($_POST['amount'] ?? '0');
+            $dueDay = filter_var($_POST['due_day'] ?? null,FILTER_VALIDATE_INT,['options'=>['min_range'=>1,'max_range'=>31]]);
+            $dueBusinessDay=isset($_POST['due_business_day']) && $_POST['due_business_day']==='1' ? 1 : 0;
             $startMonth = trim((string) ($_POST['start_month'] ?? ''));
             $installmentTotal = (int) ($_POST['installment_total'] ?? 0);
 
@@ -712,7 +727,7 @@ try {
                 throw new RuntimeException('Conta recorrente inválida.');
             }
 
-            if ($name === '' || $dueDay < 1 || $dueDay > 31 || $amount < 0) {
+            if ($name === '' || $dueDay === false || $amount < 0) {
                 throw new RuntimeException('Dados da conta recorrente inválidos.');
             }
 
@@ -729,10 +744,11 @@ try {
                 $installmentTotal = 0;
             }
 
+            if(!db_column_exists($pdo,'fixed_bills','due_business_day'))throw new RuntimeException('Execute a migration 018 em Manutenção.');
             finance_assert_owned_record($pdo,'fixed_bills',$billId,$scope);
             $stmt = $pdo->prepare(
                 'UPDATE fixed_bills
-                 SET name = ?, billing_type = ?, amount = ?, due_day = ?, start_month = ?, installment_total = ?
+                 SET name = ?, billing_type = ?, amount = ?, due_day = ?, start_month = ?, installment_total = ?, due_business_day = ?
                  WHERE id = ? AND tenant_id=?'
             );
             $stmt->execute([
@@ -742,6 +758,7 @@ try {
                 $dueDay,
                 $startMonth !== '' ? $startMonth : null,
                 $installmentTotal > 0 ? $installmentTotal : null,
+                $dueBusinessDay,
                 $billId,
                 $tenantId,
             ]);
@@ -812,7 +829,7 @@ try {
 
         case 'set_bill_month_amount':
             $billId = (int) ($_POST['bill_id'] ?? 0);
-            $amount = (float) str_replace(',', '.', (string) ($_POST['amount'] ?? '0'));
+            $amount = bemora_bill_amount($_POST['amount'] ?? '0');
 
             if ($billId <= 0 || $amount <= 0) {
                 throw new RuntimeException('Informe um valor válido para o mês.');
@@ -893,7 +910,7 @@ try {
 
             $hasBillOwner=db_column_exists($pdo,'fixed_bills','owner_user_id');
             $billStmt = $pdo->prepare(
-                'SELECT id, name, billing_type, amount, due_day, start_month, installment_total' . ($hasBillOwner?',owner_user_id':'') . '
+                'SELECT id, name, billing_type, amount, due_day, start_month, installment_total, due_business_day' . ($hasBillOwner?',owner_user_id':'') . '
                  FROM fixed_bills WHERE id = ? AND tenant_id=? FOR UPDATE'
             );
             $billStmt->execute([$billId,$tenantId]);
