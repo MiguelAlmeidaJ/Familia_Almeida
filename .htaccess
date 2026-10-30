@@ -27,6 +27,10 @@ DirectoryIndex index.php
 
     # Rotas amigáveis
     RewriteRule ^painel/?$ pages/painel.php [L,QSA]
+    RewriteRule ^checkout/?$ checkout.php [L,QSA]
+    RewriteRule ^checkout/iniciar/?$ checkout_action.php [L,QSA]
+    RewriteRule ^checkout/aguardando/?$ checkout_status.php [L,QSA]
+    RewriteRule ^api/asaas/webhook/?$ asaas_webhook.php [L,QSA]
     RewriteRule ^login/?$ login.php [L,QSA]
     RewriteRule ^instalar/?$ install.php [L,QSA]
     RewriteRule ^acao/?$ action.php [L,QSA]
