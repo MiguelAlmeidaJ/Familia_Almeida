@@ -45,6 +45,8 @@ DirectoryIndex index.php
     RewriteRule ^metas/?$ pages/metas.php [L,QSA]
     RewriteRule ^dividas/?$ pages/dividas.php [L,QSA]
     RewriteRule ^configuracoes/?$ pages/configuracoes.php [L,QSA]
+    RewriteRule ^membros/?$ pages/membros.php [L,QSA]
+    RewriteRule ^membros/acao/?$ pages/membros_action.php [L,QSA]
     RewriteRule ^meu-perfil/?$ pages/meu_perfil.php [L,QSA]
     RewriteRule ^meu-perfil/acao/?$ pages/profile_action.php [L,QSA]
     RewriteRule ^meu-perfil/foto/?$ pages/profile_avatar.php [L,QSA]
