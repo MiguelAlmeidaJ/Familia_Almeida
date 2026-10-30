@@ -78,6 +78,7 @@ function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false
                 "fixed" AS billing_type,
                 b.amount AS base_amount,
                 b.due_day,
+                0 AS due_business_day,
                 NULL AS start_month,
                 NULL AS installment_total,
                 b.active,
