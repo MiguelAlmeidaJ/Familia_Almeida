@@ -8,3 +8,6 @@ storage/receipts/*
 !storage/receipts/.gitignore
 
 /vendor/
+
+/storage/avatars/*
+!/storage/avatars/.gitignore
