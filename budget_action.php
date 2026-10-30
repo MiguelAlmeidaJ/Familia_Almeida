@@ -29,7 +29,8 @@ try {
     $id=filter_var($_POST['id'] ?? null,FILTER_VALIDATE_INT);
     if (!$id || $id<1) throw new RuntimeException('Receita inválida.');
     finance_assert_owned_record($pdo,'recurring_incomes',(int)$id,$scope);
-    $pdo->prepare('UPDATE recurring_incomes SET active=0 WHERE id=? AND tenant_id=?')->execute([$id,$tenantId]);
+    $end=(new DateTimeImmutable(max(date('Y-m'),$month).'-01'))->modify('-1 month')->format('Y-m');
+    $pdo->prepare('UPDATE recurring_incomes SET active=0,ended_month=? WHERE id=? AND tenant_id=?')->execute([$end,$id,$tenantId]);
  } elseif ($action === 'save_allocation') {
     $category=trim((string)($_POST['category'] ?? ''));
     $amount=(float)str_replace(',', '.', (string)($_POST['amount'] ?? '0'));
