@@ -45,7 +45,7 @@ if ($ready) {
 <title>Painel • Bemora</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=1">
 <link rel="stylesheet" href="/assets/budget-dashboard.css?v=2">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=3"><link rel="stylesheet" href="/assets/bemora-dashboard-evolution.css?v=1"></head>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=3"><link rel="stylesheet" href="/assets/bemora-dashboard-evolution.css?v=2"></head>
 <body class="bemora-finance">
 <div class="shell ref-shell"><?php render_sidebar('dashboard',$csrf); ?>
 <main><?php render_topbar($user); ?>
@@ -97,11 +97,11 @@ $ratio=$data['billTotal']>0?min(100,100*(float)$bill['amount']/(float)$data['bil
 </section>
 <section class="budget-card bemora-dashboard-trend">
 <div class="dashboard-section-head"><div><h2><i class="bi bi-graph-up-arrow"></i> Sua evolução financeira</h2><p>Compare as receitas, contas e o saldo projetado dos últimos seis meses.</p></div><a href="/relatorios?mes=<?= e($month) ?>" class="bemora-report-link">Abrir relatórios <i class="bi bi-arrow-right"></i></a></div>
-<div class="bemora-dashboard-trend-bars">
+<div class="bemora-dashboard-trend-bars" id="bemora-dashboard-trend-bars">
 <?php $miniMax=max(1,...array_map(static fn($r)=>max(0,(float)$r['income'],(float)$r['bills']+(float)$r['expenses']),$miniTrend)); foreach($miniTrend as $item): ?>
-<div class="bemora-dashboard-trend-month"><div class="bemora-dashboard-trend-columns"><span class="income" style="height:<?= number_format(max(2,100*$item['income']/$miniMax),2,'.','') ?>%" title="Receitas: <?= e(money($item['income'])) ?>"></span><span class="expense" style="height:<?= number_format(max(2,100*($item['bills']+$item['expenses'])/$miniMax),2,'.','') ?>%" title="Contas e gastos: <?= e(money($item['bills']+$item['expenses'])) ?>"></span></div><small><?= e(substr($item['month'],5,2).'/'.substr($item['month'],2,2)) ?></small></div>
+<button type="button" class="bemora-dashboard-trend-month" data-month="<?= e($item['month']) ?>" data-income="<?= e((string)$item['income']) ?>" data-costs="<?= e((string)($item['bills']+$item['expenses'])) ?>" data-balance="<?= e((string)$item['balance']) ?>" aria-label="Ver valores de <?= e($item['month']) ?>"><div class="bemora-dashboard-trend-columns"><span class="income" style="height:<?= number_format(max(2,100*$item['income']/$miniMax),2,'.','') ?>%" title="Receitas: <?= e(money($item['income'])) ?>"></span><span class="expense" style="height:<?= number_format(max(2,100*($item['bills']+$item['expenses'])/$miniMax),2,'.','') ?>%" title="Contas e gastos: <?= e(money($item['bills']+$item['expenses'])) ?>"></span></div><small><?= e(substr($item['month'],5,2).'/'.substr($item['month'],2,2)) ?></small></button>
 <?php endforeach; ?>
-</div><div class="bemora-dashboard-trend-legend"><span><i class="income"></i> Receitas</span><span><i class="expense"></i> Contas e gastos</span></div></section>
+</div><p id="bemora-dashboard-trend-detail" class="bemora-dashboard-trend-detail" aria-live="polite">Selecione um mês para consultar os valores.</p><div class="bemora-dashboard-trend-legend"><span><i class="income"></i> Receitas</span><span><i class="expense"></i> Contas e gastos</span></div></section>
 <section class="dashboard-bottom-grid">
 <article class="budget-card dashboard-stat-panel">
 <div class="dashboard-section-head"><div><h2>Resumo do mês</h2><p>Valores previstos, sem depender de confirmação de pagamento.</p></div></div>
@@ -130,5 +130,5 @@ $ratio=$data['billTotal']>0?min(100,100*(float)$bill['amount']/(float)$data['bil
 <?php endif; ?>
 </div>
 </main></div>
-<script src="/assets/budget-dashboard.js?v=2" defer></script>
+<script src="/assets/budget-dashboard.js?v=2" defer></script><script src="/assets/bemora-dashboard-evolution.js?v=1" defer></script>
 </body></html>
