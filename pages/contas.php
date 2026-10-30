@@ -290,7 +290,7 @@ function fixed_bill_subtitle(array $bill): string
     </main>
 </div>
 
-<button type="button" class="bemora-bill-fab" onclick="openNewBill()" title="Adicionar conta prevista" aria-label="Adicionar conta prevista" aria-haspopup="dialog" aria-controls="bill-dialog"><i class="bi bi-receipt-cutoff" aria-hidden="true"></i></button>
+
 <link rel="stylesheet" href="/assets/bemora-bills-refresh.css?v=1">
 <script src="/assets/bemora-bills-refresh.js?v=1" defer></script>
 <dialog id="bill-dialog" class="fixed-reference-dialog">
