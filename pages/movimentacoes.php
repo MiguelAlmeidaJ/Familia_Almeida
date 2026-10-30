@@ -82,7 +82,7 @@ $averageDay = $expenseDays > 0 ? ((float) $data['totals']['expense'] / $expenseD
         <div>
             <p class="eyebrow">ENTRADAS E SAÍDAS</p>
             <h1>Lançamentos</h1>
-            <p>Registre as compras e guarde as notas para saber exatamente quanto foi gasto em cada dia.</p>
+            <p>Acompanhe as entradas, despesas e investimentos da família. Registre novas movimentações pelo botão flutuante.</p>
         </div>
 
         
@@ -101,76 +101,18 @@ $averageDay = $expenseDays > 0 ? ((float) $data['totals']['expense'] / $expenseD
 
     <section class="movements-summary-grid">
         <article><span>Entradas</span><strong><?= money($data['totals']['income']) ?></strong><small>inclui renda mensal prevista do perfil</small></article>
-        <article><span>Gastos</span><strong><?= money($data['totals']['expense']) ?></strong><small><?= $expenseDays ?> dia(s) com compras</small></article>
+        <article><span>Gastos</span><strong><?= money($data['totals']['expense']) ?></strong><small><?= $expenseDays ?> dia(s) com despesas</small></article>
         <article><span>Média por dia</span><strong><?= money($averageDay) ?></strong><small>considerando dias com gastos</small></article>
         <article class="receipt-stat"><span>Notas anexadas</span><strong><?= $totalReceipts ?></strong><small>imagens e PDFs guardados</small></article>
     </section>
 
-    <section class="movements-main-grid">
-        <article class="card movement-entry-card">
-            <div class="movement-card-heading">
-                <div><p class="eyebrow">NOVO LANÇAMENTO</p><h2>Registrar movimento</h2><a href="/categorias" class="category-manage-link">Gerenciar categorias →</a></div>
-            </div>
-
-            <form method="post" action="/acao" enctype="multipart/form-data" class="movement-entry-form" id="transaction-form">
-                <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-                <input type="hidden" name="return_to" value="/movimentacoes">
-                <input type="hidden" name="action" value="add_transaction">
-                <input type="hidden" name="month" value="<?= e($month) ?>">
-
-                <label>Tipo
-                    <select class="form-select" name="type" id="transaction-type" required>
-                        <option value="expense">Gasto</option>
-                        <option value="income">Entrada</option>
-                        <option value="investment">Investimento</option>
-                    </select>
-                </label>
-
-                <label>Descrição
-                    <input class="form-control" name="description" maxlength="160" placeholder="Ex.: Compra no supermercado" required>
-                </label>
-
-                <div class="movement-form-grid">
-                    <label>Categoria
-                        <span class="smart-category" id="smart-category">
-                            <input class="form-control" name="category" id="category-input" maxlength="100" placeholder="Buscar ou criar categoria..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="category-options" required>
-                            <span class="smart-category-arrow" aria-hidden="true">⌄</span>
-                            <span class="smart-category-options" id="category-options" role="listbox" hidden></span>
-                        </span>
-                        <small class="smart-category-hint">Selecione uma existente ou digite para criar.</small>
-                    </label>
-                    <label>Valor (R$)
-                        <input class="form-control" type="number" name="amount" min="0.01" step="0.01" placeholder="0,00" required>
-                    </label>
-                </div>
-
-                <label>Data
-                    <input class="form-control" type="date" name="date" value="<?= e($defaultDate) ?>" required>
-                </label>
-
-                <div class="receipt-upload-field" id="receipt-upload-field">
-                    <label>Nota / comprovante <span>opcional</span>
-                        <input
-                            type="file"
-                            name="receipt_files[]"
-                            accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,.pdf"
-                            multiple
-                            <?= $receiptsReady ? '' : 'disabled' ?>
-                        >
-                    </label>
-                    <small>Até 5 arquivos por gasto. JPG, PNG, WEBP, HEIC ou PDF, com até 8 MB cada.</small>
-                </div>
-
-                <button class="ref-green-button movement-save-button btn btn-primary" type="submit">Salvar lançamento</button>
-            </form>
-        </article>
-
+    <section class="movements-main-grid bemora-movements-overview">
         <article class="card daily-spending-card">
             <div class="movement-card-heading">
                 <div>
                     <p class="eyebrow">GASTOS POR DIA</p>
-                    <h2>Quanto gastamos em cada dia</h2>
-                    <p>Compras e despesas registradas em <?= e($monthLabel) ?>.</p>
+                    <h2>Despesas por dia</h2>
+                    <p>Despesas registradas em <?= e($monthLabel) ?>.</p>
                 </div>
                 <span class="largest-day-badge">Maior dia: <?= money($largestDay) ?></span>
             </div>
@@ -206,11 +148,13 @@ $averageDay = $expenseDays > 0 ? ((float) $data['totals']['expense'] / $expenseD
         <header class="movement-history-head">
             <div>
                 <p class="eyebrow">HISTÓRICO</p>
-                <h2>Movimentações do mês</h2>
+                <h2>Histórico de lançamentos</h2>
             </div>
             <span><?= count($data['transactions']) ?> lançamento(s)</span>
         </header>
 
+        <div class="bemora-history-tools"><label class="bemora-history-search"><i class="bi bi-search"></i><input id="bemora-history-search" type="search" placeholder="Buscar descrição, categoria ou membro" aria-label="Buscar lançamentos"></label><label class="bemora-history-filter"><span>Tipo</span><select id="bemora-history-type" aria-label="Filtrar por tipo"><option value="all">Todos</option><option value="income">Ganhos</option><option value="expense">Gastos</option><option value="investment">Investimentos</option></select></label></div>
+        <p class="bemora-filter-empty" id="bemora-filter-empty" hidden>Nenhum lançamento corresponde aos filtros.</p>
         <div class="movement-history-list">
         <?php if ($data['transactions']): ?>
             <?php foreach ($data['transactions'] as $transaction): ?>
@@ -218,7 +162,7 @@ $averageDay = $expenseDays > 0 ? ((float) $data['totals']['expense'] / $expenseD
                 $transactionId = (int) $transaction['id'];
                 $transactionReceipts = $receiptsByTransaction[$transactionId] ?? [];
                 ?>
-                <article class="movement-history-row">
+                <article class="movement-history-row" data-transaction-type="<?= e($transaction['type']) ?>">
                     <div class="movement-history-icon <?= e($transaction['type']) ?>"><?= $transaction['type'] === 'income' ? '↙' : '↗' ?></div>
 
                     <div class="movement-history-copy">
@@ -287,12 +231,14 @@ $averageDay = $expenseDays > 0 ? ((float) $data['totals']['expense'] / $expenseD
     </section>
 
     <footer class="ref-page-footer movements-page-footer">
-        <span>Família Almeida&nbsp;&nbsp; / &nbsp;&nbsp;Cada comprovante conta uma parte da história do mês.</span>
+        <span>Lançamentos financeiros&nbsp;&nbsp; / &nbsp;&nbsp;Organize os registros da sua família.</span>
         <span><?= e(ucfirst($monthLabel)) ?></span>
     </footer>
 </div>
 </main>
 </div>
+<link rel="stylesheet" href="/assets/bemora-movements-refresh.css?v=1">
+<script src="/assets/bemora-movements-refresh.js?v=1" defer></script>
 
 <dialog id="receipt-dialog" class="fixed-reference-dialog fixed-reference-small-dialog">
     <form method="post" action="/acao" enctype="multipart/form-data" class="fixed-reference-dialog-form">
