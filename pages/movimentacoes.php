@@ -100,7 +100,7 @@ $averageDay = $expenseDays > 0 ? ((float) $data['totals']['expense'] / $expenseD
     <?php endif; ?>
 
     <section class="movements-summary-grid">
-        <article><span>Entradas</span><strong><?= money($data['totals']['income']) ?></strong><small>recebido no mês</small></article>
+        <article><span>Entradas</span><strong><?= money($data['totals']['income']) ?></strong><small>inclui renda mensal prevista do perfil</small></article>
         <article><span>Gastos</span><strong><?= money($data['totals']['expense']) ?></strong><small><?= $expenseDays ?> dia(s) com compras</small></article>
         <article><span>Média por dia</span><strong><?= money($averageDay) ?></strong><small>considerando dias com gastos</small></article>
         <article class="receipt-stat"><span>Notas anexadas</span><strong><?= $totalReceipts ?></strong><small>imagens e PDFs guardados</small></article>
@@ -260,7 +260,9 @@ $averageDay = $expenseDays > 0 ? ((float) $data['totals']['expense'] / $expenseD
                             >＋ Nota</button>
                         <?php endif; ?>
 
-                        <?php if (!empty($transaction['bill_payment_id'])): ?>
+                        <?php if (!empty($transaction['virtual_income'])): ?>
+                            <span class="auto-transaction-badge">Renda mensal · Meu perfil</span>
+                        <?php elseif (!empty($transaction['bill_payment_id'])): ?>
                             <span class="auto-transaction-badge">Automática</span>
                         <?php else: ?>
                             <form method="post" action="/acao" onsubmit="return confirm('Remover este lançamento?')">
