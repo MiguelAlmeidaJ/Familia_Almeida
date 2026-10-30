@@ -68,3 +68,8 @@
 .profile-help{background:#f7faf8;border-radius:10px;padding:12px 14px!important;line-height:1.7!important}
 .profile-help i{color:#0e8c71;margin-right:5px}
 @media(max-width:760px){.income-effective-panel{flex-wrap:wrap}.profile-effective-date{flex-basis:100%}.income-effective-copy{flex-basis:calc(100% - 60px)}.income-source-fields{grid-template-columns:1fr!important}.income-source-label{gap:6px}.income-source-status{font-size:9px}}
+
+/* Income dates follow the month selected in the global header. */
+.income-period-note{display:flex;align-items:flex-start;gap:9px;margin:14px 0 18px!important;padding:11px 13px!important;background:#f1f8f4;color:#487768;font-size:12px;line-height:1.55;border:1px solid #dcece1;border-radius:10px}
+.income-period-note i{color:#0d8e71;font-size:15px;margin-top:1px}
+.income-period-note strong{color:#116b53}
