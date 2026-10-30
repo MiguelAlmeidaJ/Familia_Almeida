@@ -8,7 +8,7 @@ $q=$pdo->prepare('SELECT name,email,phone,avatar_path FROM users WHERE id=?');$q
 $q=$pdo->prepare('SELECT id,job_title,salary,payday FROM user_income_sources WHERE user_id=? ORDER BY id');$q->execute([$id]);$sources=$q->fetchAll();
 $hasAvatar=!empty($profile['avatar_path']);
 ?><!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Meu perfil • Bemora</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=3"><link rel="stylesheet" href="/assets/bemora-profile.css?v=2"></head>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=3"><link rel="stylesheet" href="/assets/bemora-profile.css?v=3"></head>
 <body class="bemora-finance"><div class="shell ref-shell"><?php render_sidebar('meu-perfil',$csrf); ?><main><?php render_topbar($user,'Seu espaço pessoal'); ?>
 <div class="content bemora-profile"><?php page_header('SUA CONTA','Meu perfil','Suas informações pessoais e suas fontes de renda, em um só lugar.'); ?>
 <?php if($flash): ?><div class="alert <?= ($flash['type']??'')==='success'?'alert-success':'alert-danger' ?>"><?= e($flash['message']) ?></div><?php endif; ?>
@@ -41,20 +41,23 @@ $hasAvatar=!empty($profile['avatar_path']);
 </section></div>
 <section class="profile-panel profile-security-panel">
 <div class="profile-security-heading"><div><h2><i class="bi bi-shield-lock"></i> Segurança da conta</h2><p>Atualize sua senha sempre que precisar proteger seu acesso.</p></div>
-<button type="button" class="btn btn-outline-success" id="profile-password-toggle" aria-expanded="false" aria-controls="profile-password-panel"><i class="bi bi-key"></i> Alterar senha</button></div>
-<form method="post" action="/meu-perfil/acao" id="profile-password-panel" hidden>
+<button type="button" class="btn btn-outline-success" id="profile-password-toggle" aria-haspopup="dialog" aria-controls="profile-password-dialog"><i class="bi bi-key"></i> Alterar senha</button></div>
+</section>
+<dialog id="profile-password-dialog" class="profile-password-dialog" aria-labelledby="profile-password-title">
+<div class="profile-password-dialog-head"><div><h2 id="profile-password-title"><i class="bi bi-shield-lock"></i> Alterar senha</h2><p>Escolha uma senha com pelo menos 12 caracteres.</p></div><button type="button" class="profile-password-close" id="profile-password-close" aria-label="Fechar"><i class="bi bi-x-lg"></i></button></div>
+<form method="post" action="/meu-perfil/acao" id="profile-password-panel">
 <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="change_password">
 <div class="profile-password-fields">
 <label>Senha atual<input type="password" name="current_password" class="form-control" autocomplete="current-password" required></label>
 <label>Nova senha<input type="password" name="new_password" class="form-control" autocomplete="new-password" minlength="12" required></label>
-<label>Confirmar nova senha<input type="password" name="confirm_password" class="form-control" autocomplete="new-password" minlength="12" required></label></div>
-<p class="profile-help">Utilize uma senha com pelo menos 12 caracteres.</p>
-<button class="btn btn-success" type="submit"><i class="bi bi-check-lg"></i> Salvar nova senha</button>
-</form></section>
+<label>Confirmar nova senha<input type="password" name="confirm_password" class="form-control" autocomplete="new-password" minlength="12" required></label>
+</div>
+<div class="profile-password-actions"><button type="button" class="btn btn-outline-secondary" id="profile-password-cancel">Cancelar</button><button class="btn btn-success" type="submit"><i class="bi bi-check-lg"></i> Salvar nova senha</button></div>
+</form></dialog>
 </div></main></div>
 <dialog id="profile-crop-dialog" class="profile-crop-dialog"><form method="dialog"><button class="profile-crop-close" aria-label="Fechar" value="cancel"><i class="bi bi-x-lg"></i></button></form><h2>Ajustar foto</h2><p>Arraste a imagem para enquadrar o rosto e ajuste o zoom.</p>
 <div class="crop-viewport" id="crop-viewport"><img id="crop-image" alt="Prévia da imagem selecionada" draggable="false"></div>
 <label class="crop-zoom-label">Zoom <input id="crop-zoom" type="range" min="1" max="3" value="1" step=".01"></label>
 <form method="post" action="/meu-perfil/acao" id="profile-avatar-form"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="save_avatar"><input type="hidden" name="avatar_image" id="avatar-image-data"><div class="crop-actions"><button class="btn btn-outline-secondary" type="button" id="crop-cancel">Cancelar</button><button class="btn btn-success" id="crop-save" type="submit">Salvar foto 1080 × 1080</button></div></form></dialog>
 <template id="income-source-template"><div class="income-source-row"><div class="income-source-title"><strong>Fonte de renda</strong><button type="button" class="source-remove" aria-label="Remover fonte"><i class="bi bi-trash3"></i></button></div><div class="income-source-fields"><label>Emprego ou atividade<input name="job_title[]" class="form-control" maxlength="120" required placeholder="Ex.: Autônomo"></label><label>Salário / renda mensal (R$)<input name="salary[]" class="form-control" inputmode="decimal" required placeholder="R$ 1.500,00"></label><label>Dia de recebimento<input name="payday[]" class="form-control" type="number" min="1" max="31" required placeholder="Ex.: 15"></label></div></div></template>
-<script src="/assets/bemora-profile.js?v=2" defer></script></body></html>
+<script src="/assets/bemora-profile.js?v=3" defer></script></body></html>
