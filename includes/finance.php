@@ -53,6 +53,7 @@ function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false
             'SELECT
                 b.id,
                 b.name,
+                b.created_at AS bill_created_at,
                 b.billing_type,
                 b.amount AS base_amount,
                 b.due_day,
@@ -76,6 +77,7 @@ function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false
             'SELECT
                 b.id,
                 b.name,
+                b.created_at AS bill_created_at,
                 "fixed" AS billing_type,
                 b.amount AS base_amount,
                 b.due_day,
@@ -103,6 +105,8 @@ function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false
     $bills = [];
 
     foreach ($rows as $row) {
+        // Historical reports must not project bills into months before their creation.
+        if(substr((string)$row['bill_created_at'],0,7)>$month)continue;
         $active = (bool) $row['active'];
         $billingType = (string) ($row['billing_type'] ?: 'fixed');
         $scheduleStatus = 'current';
