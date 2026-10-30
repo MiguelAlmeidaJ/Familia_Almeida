@@ -28,8 +28,8 @@ function bemora_report_month(PDO $pdo,string $month,array $scope,string $view):a
  $stmt->execute([$tenant,$start,$end]);
  $income=0.0;$expenses=0.0;
  foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $r){if($r['type']==='income')$income=(float)$r['total'];else $expenses=(float)$r['total'];}
- $stmt=$pdo->prepare('SELECT COALESCE(SUM(amount),0) FROM recurring_incomes WHERE tenant_id=? AND owner_user_id IS NULL AND active=1 AND DATE_FORMAT(created_at,\'%Y-%m\')<=?');
- $stmt->execute([$tenant,$month]);$income+=(float)$stmt->fetchColumn();
+ $stmt=$pdo->prepare('SELECT COALESCE(SUM(amount),0) FROM recurring_incomes WHERE tenant_id=? AND owner_user_id IS NULL AND DATE_FORMAT(created_at,\'%Y-%m\')<=? AND (ended_month IS NULL OR ended_month>=?)');
+ $stmt->execute([$tenant,$month,$month]);$income+=(float)$stmt->fetchColumn();
  // Select bills with an explicit tenant/owner predicate. Use the common recurring-bill engine
  // for applicability, installments and variable monthly amounts, then filter shared owner IDs.
  $sharedBills=$pdo->prepare('SELECT id FROM fixed_bills WHERE tenant_id=? AND owner_user_id IS NULL');
