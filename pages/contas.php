@@ -74,7 +74,7 @@ function fixed_bill_subtitle(array $bill): string
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Contas previstas • Bemora</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="/assets/style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=3"></head>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=3"><link rel="stylesheet" href="/assets/bemora-bills-modern.css?v=1"></head>
 <body class="bemora-finance">
 <div class="shell ref-shell">
     <?php render_sidebar('contas', $csrf); ?>
@@ -137,10 +137,10 @@ function fixed_bill_subtitle(array $bill): string
                 <div class="fixed-reference-list">
                     <?php if ($currentBills): ?>
                         <?php foreach ($currentBills as $bill): ?>
-                            <div class="fixed-reference-row <?= $bill['paid'] ? 'is-paid' : '' ?>" data-due-date="<?= e($bill['due_date']) ?>">
+                            <div class="fixed-reference-row <?= $bill['paid'] ? 'is-paid' : '' ?> <?= $bill['billing_type']==='variable'?'is-variable':'' ?>" data-due-date="<?= e($bill['due_date']) ?>">
                                 <div class="fixed-reference-day">
                                     <small>DIA</small>
-                                    <strong><?= str_pad((string) $bill['due_day'], 2, '0', STR_PAD_LEFT) ?></strong>
+                                    <strong><?= e((new DateTimeImmutable($bill['due_date']))->format('d')) ?></strong>
                                 </div>
 
                                 <div class="fixed-reference-copy">
@@ -163,9 +163,12 @@ function fixed_bill_subtitle(array $bill): string
                                     <?php endif; ?>
                                 </div>
 
+                                <?php if ($bill['billing_type']==='variable'): ?>
+                                <button type="button" class="bemora-month-value-button" title="Corrigir valor de <?= e($monthLabel) ?>" onclick='openMonthlyAmount(<?= (int)$bill['id'] ?>, <?= json_encode($bill['name'],JSON_HEX_APOS|JSON_HEX_QUOT) ?>, <?= json_encode($bill['amount_due']??0) ?>)'><i class="bi bi-pencil-square"></i> <?= $bill['needs_amount']?'Informar valor':'Editar valor do mês' ?></button>
+                                <?php endif; ?>
                                 <div class="fixed-reference-actions">
                                     <?php if (!$bill['paid']): ?>
-                                        <?php if ($bill['needs_amount']): ?>
+                                        <?php if ($bill['needs_amount'] && $bill['billing_type']!=='variable'): ?>
                                             <button
                                                 type="button"
                                                 class="fixed-text-action emphasis"
@@ -176,6 +179,8 @@ function fixed_bill_subtitle(array $bill): string
                                                     <?= json_encode($bill["billing_type"]) ?>
                                                 )'
                                             >Definir valor</button>
+                                        <?php elseif ($bill['needs_amount']): ?>
+                                            <span class="bemora-pending-amount">Aguardando valor</span>
                                         <?php else: ?>
                                             <form method="post" action="/acao">
                                                 <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
@@ -295,7 +300,7 @@ function fixed_bill_subtitle(array $bill): string
 </div>
 
 
-<link rel="stylesheet" href="/assets/bemora-bills-refresh.css?v=1">
+<link rel="stylesheet" href="/assets/bemora-bills-refresh.css?v=2">
 <script src="/assets/bemora-bills-refresh.js?v=1" defer></script>
 <dialog id="bill-dialog" class="fixed-reference-dialog">
     <form method="post" action="/acao" class="fixed-reference-dialog-form recurring-form" id="billForm">
@@ -370,13 +375,13 @@ function fixed_bill_subtitle(array $bill): string
         <div class="fixed-reference-dialog-head">
             <div>
                 <h3 id="monthly-bill-title">Valor do mês</h3>
-                <p>Este valor vale somente para <?= e($monthLabel) ?>.</p>
+                <p>Este valor pertence a <?= e($monthLabel) ?>. Outros meses não serão alterados.</p>
             </div>
             <button type="button" onclick="document.getElementById('monthly-amount-dialog').close()">×</button>
         </div>
 
         <label>Valor (R$)
-            <input type="number" name="amount" id="monthly-bill-amount" min="0.01" step="0.01" required>
+            <input type="text" name="amount" id="monthly-bill-amount" class="bemora-money" inputmode="numeric" maxlength="16" placeholder="0,00" required>
         </label>
 
         <div class="fixed-reference-dialog-actions">
@@ -465,13 +470,13 @@ function openBillEditor(id, name, type, amount, dueDay, startMonth, installmentT
 function openMonthlyAmount(id, name, amount) {
     document.getElementById('monthly-bill-id').value = id;
     document.getElementById('monthly-bill-title').textContent = name;
-    document.getElementById('monthly-bill-amount').value = Number(amount) > 0 ? amount : '';
+    document.getElementById('monthly-bill-amount').value = Number(amount) > 0 ? Number(amount).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
     document.getElementById('monthly-amount-dialog').showModal();
 }
 
 syncBillingForm();
 </script>
-<script src="/assets/bemora-bill-inputs.js?v=3" defer></script>
+<script src="/assets/bemora-bill-inputs.js?v=3" defer></script><script src="/assets/bemora-monthly-amount.js?v=1" defer></script>
 <link rel="stylesheet" href="/assets/bemora-bill-inputs.css?v=3">
 </body>
 </html>
