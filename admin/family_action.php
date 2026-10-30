@@ -22,13 +22,16 @@ try{
     $appUrl='https://familia.anoar.com.br';
    }
    $link=$appUrl.'/convite-familia.php?token='.$token;
-   $from=(string)config('mail','from','');
-   if(!filter_var($from,FILTER_VALIDATE_EMAIL) || preg_match('/[\\r\\n]/',$from))$from='naoresponda@anoar.com.br';
-   $subject='Convite para criar sua familia no Bemora';
-   $body="Ola!\\n\\nVoce recebeu um convite para criar uma familia no Bemora.\\n\\nAcesse: ".$link."\\n\\nO link e de uso unico e expira em 72 horas.\\n\\nSe nao esperava esta mensagem, ignore-a.";
-   $headers=['From: Bemora <'.$from.'>','Content-Type: text/plain; charset=UTF-8','X-Mailer: Bemora'];
-   $sent=@mail($recipient,$subject,$body,implode("\\r\\n",$headers));
-   $message.=$sent?' Convite enviado para o e-mail informado.':' O servidor não confirmou o envio do e-mail; copie o link exibido abaixo.';
+   $subject='Convite para criar sua família no Bemora';
+   $body="Olá!\n\nVocê recebeu um convite para criar sua família no Bemora.\n\nAcesse: ".$link."\n\nO link é de uso único e expira em 72 horas.\n\nSe não esperava esta mensagem, ignore-a.";
+   try{
+    require_once __DIR__.'/../includes/mailer.php';
+    bemora_send_email($recipient,$subject,$body);
+    $message.=' Convite entregue ao servidor SMTP para o e-mail informado.';
+   }catch(Throwable $mailError){
+    error_log('Bemora: falha ao encaminhar convite via SMTP.');
+    $message.=' Não foi possível enviar o e-mail via SMTP. Copie o link exibido abaixo.';
+   }
   }
   flash('success',$message);
  } elseif(in_array($action,['archive','maintenance','activate','rename','set_limit','set_admin'],true)){
