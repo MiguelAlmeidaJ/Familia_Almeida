@@ -27,7 +27,7 @@ $activeActions=['add_transaction','add_receipts','delete_receipt','delete_transa
 if(!in_array($action,$activeActions,true)){http_response_code(404);exit('Funcionalidade descontinuada.');}
 $month = valid_month($_POST['month'] ?? null);
 $returnTo = (string) ($_POST['return_to'] ?? '/');
-$allowedReturns = ['/', '/movimentacoes', '/contas', '/metas', '/dividas', '/compras', '/estoque'];
+$allowedReturns = ['/', '/movimentacoes', '/contas', '/categorias', '/membros', '/meu-perfil', '/minha-conta'];
 if (!in_array($returnTo, $allowedReturns, true)) {
     $returnTo = '/';
 }
