@@ -20,7 +20,7 @@ try{
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/bemora-landing.css?v=2">
+<link rel="stylesheet" href="/assets/bemora-landing.css?v=3">
 </head><body id="inicio">
 <header class="site-header"><div class="site-container navigation">
 <a class="site-brand" href="/" aria-label="Bemora, início"><img src="/assets/brand/logo.png" alt="Bemora by Anoar"></a>
@@ -50,22 +50,45 @@ try{
 <section id="como-funciona" class="section steps"><div class="site-container steps-grid"><div><span class="eyebrow">SIMPLES DESDE O PRIMEIRO DIA</span><h2>Comece com o que você tem.<br><em>Construa com tranquilidade.</em></h2><p>Nada de sistemas complicados. O Bemora ajuda você a enxergar o presente e se preparar para o futuro.</p><a href="#contato" class="text-link">Quero começar <span>↗</span></a></div><div class="steps-list"><div><span>01</span><article><h3>Entre no seu espaço</h3><p>Acesse seu ambiente pessoal ou familiar com segurança.</p></article></div><div><span>02</span><article><h3>Organize sua rotina financeira</h3><p>Cadastre fontes de renda, contas previstas e movimentações.</p></article></div><div><span>03</span><article><h3>Acompanhe sua evolução</h3><p>Veja indicadores e relatórios para tomar decisões com mais confiança.</p></article></div></div></div></section>
 <section class="section statement"><div class="site-container statement-inner"><span>✳</span><p>Organizar o dinheiro não precisa ser complicado. <em>Precisa fazer sentido para a sua vida.</em></p><small>BEMORA · BY ANOAR</small></div></section>
 <?php if($publicPlans): ?>
-<section id="planos" class="section landing-pricing"><div class="site-container"><div class="section-heading"><span class="eyebrow">ESCOLHA SEU CAMINHO</span><h2>Um plano para<br><em>cada momento da vida.</em></h2><p>Escolha a opção que combina com sua rotina e fale com a equipe para contratar.</p></div>
+<?php
+$plansByCycle=['monthly'=>[],'semiannual'=>[],'annual'=>[]];
+foreach($publicPlans as $offer){
+ if(isset($plansByCycle[$offer['billing_cycle']]))$plansByCycle[$offer['billing_cycle']][]=$offer;
+}
+foreach($plansByCycle as &$offers)usort($offers,static fn($a,$b)=>(int)$a['max_members']<=>(int)$b['max_members'] ?: (float)$a['price']<=>(float)$b['price']);
+unset($offers);
+$initialCycle=array_key_first(array_filter($plansByCycle,static fn($offers)=>count($offers)>0))??'monthly';
+?>
+<section id="planos" class="section landing-pricing"><div class="site-container">
+<div class="landing-pricing-heading"><div class="section-heading"><span class="eyebrow">PLANOS BEMORA</span><h2>Um plano para<br><em>cada momento da vida.</em></h2><p>Do seu espaço individual à família toda. Escolha a modalidade que combina com você.</p></div>
+<div class="landing-pricing-benefit"><span aria-hidden="true">✳</span><p>Organização financeira com a liberdade de escolher como e com quem cuidar do seu dinheiro.</p></div></div>
+<div class="landing-billing-switch" role="tablist" aria-label="Modalidade de contratação">
+<?php foreach(['monthly'=>'Mensal','semiannual'=>'Semestral','annual'=>'Anual'] as $cycleKey=>$cycleName): ?>
+<button type="button" role="tab" id="billing-tab-<?= $cycleKey ?>" aria-controls="billing-panel-<?= $cycleKey ?>" aria-selected="<?= $cycleKey===$initialCycle?'true':'false' ?>" tabindex="<?= $cycleKey===$initialCycle?'0':'-1' ?>" data-billing-tab="<?= $cycleKey ?>" <?= !$plansByCycle[$cycleKey]?'disabled':'' ?>><?= $cycleName ?></button>
+<?php endforeach; ?>
+</div>
+<?php foreach(['monthly'=>'Mensal','semiannual'=>'Semestral','annual'=>'Anual'] as $cycleKey=>$cycleName): ?>
+<div role="tabpanel" id="billing-panel-<?= $cycleKey ?>" aria-labelledby="billing-tab-<?= $cycleKey ?>" data-billing-panel="<?= $cycleKey ?>" <?= $cycleKey!==$initialCycle?'hidden':'' ?>>
+<div class="landing-billing-caption"><span><?= $cycleKey==='monthly'?'Flexibilidade para organizar cada mês.':($cycleKey==='semiannual'?'Seis meses para acompanhar sua evolução.':'Um ano para viver com mais tranquilidade.') ?></span><span><?= count($plansByCycle[$cycleKey]) ?> <?= count($plansByCycle[$cycleKey])===1?'opção disponível':'opções disponíveis' ?></span></div>
 <div class="landing-pricing-grid">
-<?php foreach($publicPlans as $plan): $promoted=bemora_plan_promo_active($plan); $finalPrice=$promoted?(float)$plan['promo_price']:(float)$plan['price']; $cycle=bemora_plan_cycles()[$plan['billing_cycle']]??'Plano'; ?>
+<?php foreach($plansByCycle[$cycleKey] as $plan): $promoted=bemora_plan_promo_active($plan);$finalPrice=$promoted?(float)$plan['promo_price']:(float)$plan['price']; ?>
 <article class="landing-plan-card">
-<div class="landing-plan-upper"><span class="landing-plan-cycle"><?= htmlspecialchars($cycle,ENT_QUOTES,'UTF-8') ?></span><?php if($promoted): ?><span class="landing-plan-offer">Oferta por tempo limitado</span><?php endif; ?></div>
+<div class="landing-plan-upper"><span class="landing-plan-cycle"><?= (int)$plan['max_members']===1?'Para você':((int)$plan['max_members']===2?'Para o casal':'Para a família') ?></span><?php if($promoted): ?><span class="landing-plan-offer">Oferta especial</span><?php endif; ?></div>
 <h3><?= htmlspecialchars($plan['name'],ENT_QUOTES,'UTF-8') ?></h3>
-<div class="landing-plan-price"><?php if($promoted): ?><del><?= htmlspecialchars(bemora_plan_price((float)$plan['price']),ENT_QUOTES,'UTF-8') ?></del><?php endif; ?><strong><?= htmlspecialchars(bemora_plan_price($finalPrice),ENT_QUOTES,'UTF-8') ?></strong><span>/ <?= htmlspecialchars(strtolower($cycle),ENT_QUOTES,'UTF-8') ?></span></div>
-<p class="landing-plan-members">Para até <?= (int)$plan['max_members'] ?> <?= (int)$plan['max_members']===1?'pessoa':'pessoas' ?></p>
+<div class="landing-plan-price"><?php if($promoted): ?><del><?= htmlspecialchars(bemora_plan_price((float)$plan['price']),ENT_QUOTES,'UTF-8') ?></del><?php endif; ?><strong><?= htmlspecialchars(bemora_plan_price($finalPrice),ENT_QUOTES,'UTF-8') ?></strong><span>/ <?= htmlspecialchars(strtolower($cycleName),ENT_QUOTES,'UTF-8') ?></span></div>
+<p class="landing-plan-members"><span aria-hidden="true">♧</span> Até <?= (int)$plan['max_members'] ?> <?= (int)$plan['max_members']===1?'pessoa':'pessoas' ?></p>
 <div class="landing-plan-details"><?= nl2br(htmlspecialchars($plan['details'],ENT_QUOTES,'UTF-8')) ?></div>
-<?php if($promoted): ?><p class="landing-plan-expires">Condição promocional válida até <?= htmlspecialchars(date('d/m/Y H:i',strtotime((string)$plan['promo_ends_at'])),ENT_QUOTES,'UTF-8') ?></p><?php endif; ?>
-<a class="button button-dark landing-plan-cta" href="https://wa.me/5532984075039?text=<?= rawurlencode('Olá! Quero contratar o plano '.$plan['name'].' ('.$cycle.') do Bemora.') ?>" target="_blank" rel="noopener noreferrer">Quero este plano <span>↗</span></a>
+<?php if($promoted): ?><p class="landing-plan-expires">Oferta válida até <?= htmlspecialchars(date('d/m/Y H:i',strtotime((string)$plan['promo_ends_at'])),ENT_QUOTES,'UTF-8') ?></p><?php endif; ?>
+<a class="button button-dark landing-plan-cta" href="https://wa.me/5532984075039?text=<?= rawurlencode('Olá! Quero contratar o plano '.$plan['name'].' ('.$cycleName.') do Bemora.') ?>" target="_blank" rel="noopener noreferrer">Escolher este plano <span aria-hidden="true">↗</span></a>
 </article>
-<?php endforeach; ?></div><p class="landing-plan-legal">Os valores apresentados são por período contratado. A contratação e o pagamento são combinados com a equipe comercial; não há cobrança automática pelo site neste momento.</p></div></section>
+<?php endforeach; ?>
+</div></div>
+<?php endforeach; ?>
+<p class="landing-plan-legal">Valores por período contratado. Atendimento e contratação pelo WhatsApp comercial. O pagamento não é processado automaticamente pelo site.</p>
+</div></section>
 <?php endif; ?>
 <section id="duvidas" class="section faq"><div class="site-container faq-grid"><div><span class="eyebrow">AINDA TEM DÚVIDAS?</span><h2>Estamos aqui<br><em>para simplificar.</em></h2><p>Algumas respostas para começar com tranquilidade.</p></div><div class="faq-list"><details><summary>O Bemora é para uma pessoa ou para famílias?<span>+</span></summary><p>Para os dois! Você pode organizar suas finanças pessoais, em casal ou com a família, conforme o ambiente configurado.</p></details><details><summary>Posso separar minhas finanças das outras pessoas?<span>+</span></summary><p>Sim. O Bemora oferece opções para informações financeiras compartilhadas e individuais, conforme a configuração da sua família.</p></details><details><summary>Preciso instalar algum programa?<span>+</span></summary><p>Não. O Bemora funciona pelo navegador, no computador ou no celular.</p></details><details><summary>Como posso conhecer os planos?<span>+</span></summary><p>Entre em contato com nossa equipe comercial pelo WhatsApp para conhecer as condições de contratação disponíveis.</p></details></div></div></section>
 <section id="contato" class="cta-section"><div class="site-container cta-box"><div class="cta-flower">✳</div><span class="eyebrow">COMECE UMA NOVA RELAÇÃO COM O SEU DINHEIRO</span><h2>Mais organização.<br><em>Mais leveza todos os dias.</em></h2><p>Converse com a nossa equipe e descubra como o Bemora pode fazer parte da sua rotina.</p><a class="button button-white" href="https://wa.me/5532984075039?text=Ol%C3%A1%21%20Quero%20conhecer%20o%20Bemora." target="_blank" rel="noopener noreferrer">Falar com o comercial <span>↗</span></a><small>Atendimento pelo WhatsApp · (32) 98407-5039</small></div></section>
 </main>
 <footer class="footer"><div class="site-container footer-main"><div><a href="/"><img src="/assets/brand/logo.png" alt="Bemora by Anoar"></a><p>Seu dinheiro em ordem.<br>Sua vida mais leve.</p></div><div><strong>Navegação</strong><a href="#recursos">Funcionalidades</a><a href="#para-quem">Para quem é</a><a href="#como-funciona">Como funciona</a><a href="#planos">Planos</a><a href="/login">Acessar conta</a></div><div><strong>Fale com a gente</strong><a href="https://wa.me/5532984075039" target="_blank" rel="noopener noreferrer">WhatsApp: (32) 98407-5039</a><a href="mailto:bemora@anoar.com.br">bemora@anoar.com.br</a></div></div><div class="site-container footer-bottom"><span>© <?= date('Y') ?> Bemora. Todos os direitos reservados.</span><span>Um produto <a href="https://anoar.com.br" target="_blank" rel="noopener noreferrer">Anoar</a> ♡</span></div></footer>
-<script src="/assets/bemora-landing.js?v=1" defer></script></body></html>
+<script src="/assets/bemora-landing.js?v=2" defer></script></body></html>
