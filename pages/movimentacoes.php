@@ -276,16 +276,6 @@ $averageDay = $expenseDays > 0 ? ((float) $data['totals']['expense'] / $expenseD
 </dialog>
 
 <script>
-const transactionType = document.getElementById('transaction-type');
-const receiptUploadField = document.getElementById('receipt-upload-field');
-
-function syncReceiptField() {
-    receiptUploadField.hidden = transactionType.value !== 'expense';
-}
-
-transactionType.addEventListener('change', syncReceiptField);
-syncReceiptField();
-
 function openReceiptDialog(transactionId, description) {
     document.getElementById('receipt-transaction-id').value = transactionId;
     document.getElementById('receipt-dialog-description').textContent = 'Anexar comprovante a: ' + description;
@@ -293,6 +283,6 @@ function openReceiptDialog(transactionId, description) {
 }
 </script>
 <script>window.familiaCategories = <?= json_encode($categories, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
-<script src="/assets/categories.js" defer></script>
+
 </body>
 </html>
