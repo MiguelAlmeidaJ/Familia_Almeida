@@ -24,6 +24,12 @@ try{
  if($sub!=='' && in_array($event,['PAYMENT_CONFIRMED','PAYMENT_RECEIVED'],true)){
   $q=$pdo->prepare('SELECT * FROM subscription_orders WHERE asaas_subscription_id=? FOR UPDATE');$q->execute([$sub]);$order=$q->fetch(PDO::FETCH_ASSOC);
   if($order && $order['status']!=='paid' && $order['status']!=='completed'){
+   $paymentId=(string)($payment['id']??'');
+   if(!preg_match('/^[a-zA-Z0-9_\\-]{3,100}$/D',$paymentId))throw new RuntimeException('Identificador de pagamento inválido.');
+   $verified=bemora_asaas_request('GET','/payments/'.rawurlencode($paymentId));
+   if(!in_array((string)($verified['status']??''),['CONFIRMED','RECEIVED'],true)
+      ||(string)($verified['subscription']??'')!==$sub)throw new RuntimeException('Cobrança ainda não confirmada pela API.');
+   $payment=$verified;
    if((string)($payment['customer']??'')!==(string)$order['asaas_customer_id'])throw new RuntimeException('Cliente da cobrança não corresponde ao pedido.');
    if(abs((float)($payment['value']??0)-(float)$order['amount'])>0.01)throw new RuntimeException('Valor de pagamento divergente.');
    // A paid subscription never creates a tenant directly. Buyer must finish
