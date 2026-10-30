@@ -8,11 +8,13 @@ function bemora_email_escape(string $value):string {
 
 function bemora_email_layout(string $eyebrow,string $headline,string $message,string $actionLabel='',string $actionUrl='',string $footerNote=''):string {
     $e='bemora_email_escape';
-    $base=rtrim((string)config('app','base_url','https://bemora.com.br'),'/');
-    if(!preg_match('~^https://[a-z0-9.-]+(?::[0-9]+)?$~i',$base))$base='https://bemora.com.br';
-    $logoPath=__DIR__.'/../assets/brand/logo.png';
-    $logo=is_file($logoPath)
-        ? '<img src="'.$e($base.'/assets/brand/logo.png').'" width="190" alt="Bemora by Anoar" style="display:block;width:190px;max-width:100%;height:auto;border:0;margin:0 auto">'
+    $logoPng=dirname(__DIR__).'/assets/brand/logo.png';
+    $logoWebp=dirname(__DIR__).'/assets/brand/logo.webp';
+    $hasLogo=is_file($logoPng)||is_file($logoWebp);
+    // The image is sent as an inline CID attachment by PHPMailer, avoiding
+    // remote image blocking and mismatched base URLs in email clients.
+    $logo=$hasLogo
+        ? '<img src="cid:bemora-brand-logo" width="190" alt="Bemora by Anoar" style="display:block;width:190px;max-width:100%;height:auto;border:0;margin:0 auto">'
         : '<span style="color:#064c40;font-size:32px;font-weight:800;letter-spacing:-1.7px">bemora</span><span style="display:block;color:#809289;font-size:11px">by Anoar</span>';
     $messageHtml=nl2br($e($message));
     $actionHtml='';
