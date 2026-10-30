@@ -146,6 +146,11 @@ check(abs($d['totals']['income']-2000)<0.001,'member A monthly gains include pro
 check(count(array_filter($d['transactions'],static fn($x)=>!empty($x['virtual_income'])))===1,'profile income appears without stored transaction');
 $bm=monthly_budget_data($pdo,'2026-10');
 check(abs($bm['profileIncomeTotal']-1850)<0.001,'profile earnings included in monthly forecast once');
+$salaryId=(int)$pdo->query("SELECT id FROM user_income_sources WHERE user_id=1 ORDER BY id DESC LIMIT 1")->fetchColumn();
+$pdo->prepare("INSERT INTO user_income_source_versions(source_id,user_id,valid_from,job_title,salary,payday) VALUES(?,1,'2026-11','Emprego principal',2200,15)")->execute([$salaryId]);
+check(abs(monthly_budget_data($pdo,'2026-10')['profileIncomeTotal']-1850)<0.001,'salary change in November does not rewrite October');
+check(abs(monthly_budget_data($pdo,'2026-11')['profileIncomeTotal']-2200)<0.001,'November salary revision applies forward');
+
 $_SESSION['user_id']=2;$_SESSION['tenant_id']=$family;
 check(abs(monthly_budget_data($pdo,'2026-10')['profileIncomeTotal']-600)<0.001,'member B sees only own profile income');
 $_SESSION['user_id']=1;$_SESSION['tenant_id']=$family;
