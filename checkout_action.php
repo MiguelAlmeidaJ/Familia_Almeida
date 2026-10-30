@@ -16,6 +16,10 @@ try{
  if(mb_strlen($name)<3||mb_strlen($name)>120||!filter_var($email,FILTER_VALIDATE_EMAIL)||!in_array(strlen($doc),[11,14],true)||strlen($phone)<10||strlen($phone)>13)throw new RuntimeException('Revise os dados do responsável.');
  $q=$pdo->prepare('SELECT id FROM users WHERE email=? LIMIT 1');$q->execute([$email]);if($q->fetchColumn())throw new RuntimeException('Este e-mail já possui cadastro. Entre em contato com o suporte para contratar uma nova assinatura.');
  $promo=bemora_plan_promo_active($plan);$amount=$promo?(float)$plan['promo_price']:(float)$plan['price'];
+ $quoted=(string)($_POST['quoted_amount']??'');
+ if(!preg_match('/^\\d+\\.\\d{2}$/D',$quoted)||abs((float)$quoted-$amount)>0.001)throw new RuntimeException('O preço deste plano foi atualizado. Confira o valor exibido antes de prosseguir.');
+ if(time()-(int)($_SESSION['last_checkout_created_at']??0)<60)throw new RuntimeException('Aguarde um minuto antes de iniciar outra contratação.');
+ $_SESSION['last_checkout_created_at']=time();
  $publicToken=bin2hex(random_bytes(32));$hash=hash('sha256',$publicToken);
  $pdo->prepare('INSERT INTO subscription_orders(public_token_hash,plan_id,plan_name,billing_cycle,max_members,amount,buyer_name,buyer_email,buyer_cpf_cnpj,buyer_phone) VALUES (?,?,?,?,?,?,?,?,?,?)')->execute([$hash,(int)$plan['id'],$plan['name'],$plan['billing_cycle'],(int)$plan['max_members'],$amount,$name,$email,$doc,$phone]);
  $orderId=(int)$pdo->lastInsertId();
