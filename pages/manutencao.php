@@ -18,6 +18,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($action === 'optimize_tables') {
             $optimized = optimize_database_tables($pdo);
             flash('success', count($optimized) . ' tabelas otimizadas.');
+        } elseif ($action === 'test_smtp') {
+            $destination=trim((string)($_POST['test_email']??''));
+            if(!filter_var($destination,FILTER_VALIDATE_EMAIL)||strlen($destination)>254||preg_match('/[\\r\\n]/',$destination)){
+                throw new RuntimeException('Informe um e-mail de destino válido.');
+            }
+            $last=(int)($_SESSION['last_smtp_test_at']??0);
+            if(time()-$last<60)throw new RuntimeException('Aguarde pelo menos 60 segundos entre testes SMTP.');
+            $_SESSION['last_smtp_test_at']=time();
+            require_once __DIR__.'/../includes/mailer.php';
+            $body="Olá!\n\nEste é um teste de envio SMTP do Bemora, iniciado pela área de Manutenção.\n\nData e hora: ".date('d/m/Y H:i:s')."\n\nSe você recebeu esta mensagem, o servidor SMTP aceitou o envio. A entrega depende também do serviço de e-mail.\n\nBemora · By Anoar";
+            bemora_send_email($destination,'Bemora — teste de envio SMTP',$body);
+            flash('success','Servidor SMTP aceitou o e-mail de teste destinado a '.$destination.'. Confira a caixa de entrada e o spam.');
         } else {
             flash('error', 'Ação de manutenção inválida.');
         }
@@ -32,7 +44,7 @@ $diagnostics = database_diagnostics($pdo);
 $migrations = migration_status($pdo);
 $pendingCount = count(array_filter($migrations, fn(array $migration) => !$migration['applied']));
 ?>
-<?php admin_shell_start('settings','Manutenção','Migrations e diagnóstico técnico da plataforma.'); ?>
+<?php admin_shell_start('settings','Manutenção','Migrations, diagnóstico e verificação dos serviços da plataforma.'); ?><link rel="stylesheet" href="/assets/bemora-smtp-maintenance.css?v=1">
 <div class="admin-maintenance">
 <?php if ($flash): ?><div class="alert <?= $flash['type'] === 'success' ? 'success' : '' ?>"><?= e($flash['message']) ?></div><?php endif; ?>
 
@@ -73,6 +85,18 @@ $pendingCount = count(array_filter($migrations, fn(array $migration) => !$migrat
 </section>
 </div>
 
+<section class="card recent smtp-maintenance-card">
+<div class="card-head"><div><p class="eyebrow">E-MAIL TRANSACIONAL</p><h2>Teste de envio SMTP</h2></div><span class="pill <?= trim((string)config('mail','host',''))!==''?'success':'warning' ?>"><?= trim((string)config('mail','host',''))!==''?'Servidor configurado':'Configuração pendente' ?></span></div>
+<p class="muted-copy">Envie uma mensagem de teste utilizando as configurações SMTP do Bemora. O teste verifica se o servidor aceita o envio, sem revelar usuário, senha ou detalhes de autenticação.</p>
+<div class="smtp-maintenance-meta"><span><i class="bi bi-hdd-network"></i> Servidor: <strong><?= e((string)config('mail','host','Não configurado')) ?></strong></span><span><i class="bi bi-shield-lock"></i> Conexão: <strong><?= e(strtoupper((string)config('mail','encryption','tls'))) ?> · <?= (int)config('mail','port',587) ?></strong></span></div>
+<form method="post" class="smtp-test-form">
+<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+<input type="hidden" name="maintenance_action" value="test_smtp">
+<label for="smtp-test-email">E-mail para receber o teste</label>
+<div class="smtp-test-controls"><input id="smtp-test-email" type="email" name="test_email" autocomplete="email" placeholder="seuemail@dominio.com.br" maxlength="254" required><button class="primary" type="submit"><i class="bi bi-send"></i> Enviar teste</button></div>
+<p class="muted-copy">Disponível somente para o administrador global. Intervalo mínimo: 60 segundos entre envios.</p>
+</form>
+</section>
 <section class="card recent">
 <div class="card-head"><div><p class="eyebrow">TABELAS</p><h2>Uso da base</h2></div><span class="muted-copy"><?= e(bytes_human($diagnostics['size_bytes'])) ?> no total</span></div>
 <div class="table-wrap">
