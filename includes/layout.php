@@ -35,7 +35,7 @@ function nav_icon(string $name): string
 function render_sidebar(string $active, string $csrf): void
 {
     $items = [
-        ['key' => 'dashboard', 'href' => '/', 'label' => 'Painel'],
+        ['key' => 'dashboard', 'href' => '/painel', 'label' => 'Painel'],
         ['key' => 'relatorios', 'href' => '/relatorios', 'label' => 'Relatórios'],
         ['key' => 'movimentacoes', 'href' => '/movimentacoes', 'label' => 'Lançamentos'],
         ['key' => 'contas', 'href' => '/contas', 'label' => 'Contas previstas'],
@@ -49,7 +49,7 @@ function render_sidebar(string $active, string $csrf): void
     ?>
     <aside class="sidebar ref-sidebar" id="sidebar">
         <div class="ref-sidebar-head">
-            <a class="ref-brand" href="/">
+            <a class="ref-brand" href="/painel">
                 <span class="ref-brand-icon"><?php if(brand_asset_url('logo')): ?><img src="<?= e(brand_asset_url('logo')) ?>" alt="Bemora"><?php else: ?><strong>bemora</strong><?php endif; ?></span>
                 <span class="ref-brand-favicon"><?php if(brand_asset_url('favicon')): ?><img src="<?= e(brand_asset_url('favicon')) ?>" alt="Bemora"><?php else: ?><span aria-hidden="true">B</span><?php endif; ?></span>
                 <span class="ref-brand-copy"><small>Área financeira</small></span>
@@ -131,7 +131,7 @@ function render_topbar(array $user, string $context = 'Espaço privado'): void
     $quickMonth=selected_month();
     $quickDate=$quickMonth===date('Y-m')?date('Y-m-d'):$quickMonth.'-01';
     $quickPath=(string)(parse_url($_SERVER['REQUEST_URI']??'/',PHP_URL_PATH)?:'/');
-    $quickAllowed=['/','/movimentacoes','/contas','/categorias','/membros','/meu-perfil','/minha-conta'];
+    $quickAllowed=['/painel','/movimentacoes','/contas','/categorias','/membros','/meu-perfil','/minha-conta'];
     $quickReturn=in_array($quickPath,$quickAllowed,true)?$quickPath:'/movimentacoes';
     ?>
     <link rel="stylesheet" href="/assets/bemora-quick-entry.css?v=2">
