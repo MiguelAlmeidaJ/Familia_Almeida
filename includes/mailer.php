@@ -40,7 +40,7 @@ function bemora_send_email(string $recipient,string $subject,string $body):void 
         $mailer->isHTML(false);
         $mailer->send();
     }catch(\PHPMailer\PHPMailer\Exception $e){
-        error_log('Bemora SMTP: '.preg_replace('/[\r\n]/',' ',(string)$e->getMessage()));
+        error_log('Bemora SMTP: envio não confirmado.');
         throw new RuntimeException('Falha no envio SMTP. Confira as configurações do servidor e utilize o link para copiar.');
     }
 }
