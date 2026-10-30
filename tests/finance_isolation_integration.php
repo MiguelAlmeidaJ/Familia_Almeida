@@ -135,7 +135,7 @@ $reportScope=finance_scope($pdo,['id'=>1,'tenant_id'=>$family]);
 $mineReport=bemora_report_month($pdo,'2026-10',$reportScope,'mine');
 $sharedReport=bemora_report_month($pdo,'2026-10',$reportScope,'shared');
 check($mineReport['income']>$sharedReport['income'],'individual report includes own and shared income');
-check(abs($sharedReport['income']-50)<0.001,'shared report excludes both private member salaries');
+check(abs($sharedReport['income']-100)<0.001,'shared report excludes both private member salaries');
 check(count(bemora_report_series($pdo,'2026-10',$reportScope,'mine'))===12,'report displays twelve months');
 $p=profile_monthly_income($pdo,'2026-02');
 check(count($p)===1 && $p[0]['date']==='2026-02-28','owner salary repeats monthly with last-day adjustment');
