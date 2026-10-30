@@ -1,0 +1,12 @@
+(()=>{'use strict';
+const brl=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+function formatMoney(input){const digits=input.value.replace(/\D/g,'').slice(0,12);input.value=digits?brl.format(Number(digits)/100):'';}
+function setup(form){if(!form)return;const amount=form.querySelector('input[name="amount"]'),day=form.querySelector('[name="due_day"]'),business=form.querySelector('[name="due_business_day"]'),preview=form.querySelector('.bemora-due-preview'),month=form.querySelector('[name="month"]');
+ if(amount){amount.addEventListener('input',()=>formatMoney(amount));amount.addEventListener('focus',()=>{if(amount.value&&/^\d+(?:\.\d{1,2})?$/.test(amount.value))amount.value=brl.format(Number(amount.value));});}
+ if(day){day.addEventListener('input',()=>{const value=day.value.replace(/\D/g,'').slice(0,2);day.value=value?String(Math.min(31,Number(value))):'';updatePreview();});day.addEventListener('blur',()=>{if(day.value&&Number(day.value)<1)day.value='1';updatePreview();});}
+ function updatePreview(){if(!preview||!day)return;const n=Number(day.value);if(!Number.isInteger(n)||n<1||n>31){preview.textContent='Informe um dia entre 1 e 31.';return;}const activeMonth=form.querySelector('[name="start_month"]')?.value||month?.value||new Date().toISOString().slice(0,7);const [year,m]=activeMonth.split('-').map(Number);if(!year||!m)return;const last=new Date(year,m,0).getDate();let due=new Date(year,m-1,Math.min(n,last));if(business?.checked){let loops=0;while((due.getDay()===0||due.getDay()===6)&&loops++<8)due.setDate(due.getDate()+1);}preview.textContent='Vencimento previsto: '+due.toLocaleDateString('pt-BR')+(business?.checked?' (feriados nacionais considerados no servidor)':'')+(n>last?' · ajustado ao último dia do mês':'');}
+ business?.addEventListener('change',updatePreview);form.querySelector('[name="start_month"]')?.addEventListener('change',updatePreview);month?.addEventListener('change',updatePreview);updatePreview();
+ form.addEventListener('submit',e=>{if(!day||!Number.isInteger(Number(day.value))||Number(day.value)<1||Number(day.value)>31){e.preventDefault();day?.setCustomValidity('Informe um dia entre 1 e 31.');day?.reportValidity();return;}day.setCustomValidity('');});
+}
+setup(document.getElementById('billForm'));setup(document.getElementById('bemora-global-bill-form'));
+})();
