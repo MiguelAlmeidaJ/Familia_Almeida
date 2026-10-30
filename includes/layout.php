@@ -181,8 +181,8 @@ function render_topbar(array $user, string $context = 'Espaço privado'): void
     </dialog>
     <?php endif; ?>
     <script src="/assets/bemora-global-actions.js?v=2" defer></script>
-    <script src="/assets/bemora-bill-inputs.js?v=1" defer></script>
-    <link rel="stylesheet" href="/assets/bemora-bill-inputs.css?v=1">
+    <script src="/assets/bemora-bill-inputs.js?v=3" defer></script>
+    <link rel="stylesheet" href="/assets/bemora-bill-inputs.css?v=3">
 
     <style>
     .ref-topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
