@@ -5,7 +5,7 @@ declare(strict_types=1);
  * Sends transactional email through authenticated SMTP.
  * Configure credentials in the untracked production config.php.
  */
-function bemora_send_email(string $recipient,string $subject,string $body):void {
+function bemora_send_email(string $recipient,string $subject,string $body,?string $html=null):void {
     $autoload=dirname(__DIR__).'/vendor/autoload.php';
     if(!is_file($autoload))throw new RuntimeException('Dependências SMTP não instaladas (execute composer install).');
     require_once $autoload;
@@ -36,8 +36,14 @@ function bemora_send_email(string $recipient,string $subject,string $body):void 
         $mailer->setFrom($from,$fromName);
         $mailer->addAddress($recipient);
         $mailer->Subject=$subject;
-        $mailer->Body=$body;
-        $mailer->isHTML(false);
+        if($html!==null){
+            $mailer->isHTML(true);
+            $mailer->Body=$html;
+            $mailer->AltBody=$body;
+        }else{
+            $mailer->isHTML(false);
+            $mailer->Body=$body;
+        }
         $mailer->send();
     }catch(\PHPMailer\PHPMailer\Exception $e){
         error_log('Bemora SMTP: envio não confirmado.');
