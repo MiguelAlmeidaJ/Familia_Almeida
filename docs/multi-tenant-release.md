@@ -18,7 +18,7 @@ continua funcionando e as novas famílias não são ativadas.
    como variável de ambiente; o mecanismo depende da configuração PHP/Apache
    disponível na ValueHost.
 5. Criar um convite de teste no painel global; cadastrar duas famílias distintas
-   com e-mails diferentes; aprovar ambas.
+   com e-mails diferentes, verificando a ativação automática e o login imediato.
 6. Em dois navegadores, testar Painel, Lançamentos, Comprovantes, Contas,
    Categorias, Relatórios, Meu perfil, Membros e Finanças individuais.
 7. Confirmar que links ou IDs de outra família retornam **403/404** e que
@@ -32,11 +32,16 @@ servidor. Não colocar essa chave como parâmetro de URL ou campo de formulário
 Ela não é alterada pela página de administração.
 
 O fluxo previsto: Administração global → Famílias → Criar link → Cadastro →
-Aprovação → Login dos membros. Os usuários são criados somente na aprovação,
-com e-mails exclusivos, e ligados à família aprovada.
+criação automática de família e membros → acesso imediato do administrador familiar.
+Não há fila de aprovação. Os usuários possuem e-mails exclusivos e são vinculados
+à família criada. O administrador pode fornecer um e-mail opcional na geração do
+convite: a aplicação tenta enviar pela função `mail()` do PHP e sempre oferece
+um link copiável. Configure `app.base_url` e `mail.from` em `config.php` e confirme
+que a ValueHost permite envio de e-mail pelo PHP; retorno positivo de `mail()`
+não garante entrega na caixa de entrada.
 
 ## Desativação rápida
-Remover a variável ou ajustá-la para `0`. Isso impede novas aprovações e
+Remover a variável ou ajustá-la para `0`. Isso impede novos cadastros e
 bloqueia o acesso das famílias adicionais até corrigir qualquer incidente.
 Não apaga dados nem altera os vínculos existentes.
 
