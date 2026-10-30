@@ -73,12 +73,18 @@ list?.addEventListener('input',event=>{
   if(input)input.value=formatMoney(input.value);
 });
 const passwordToggle=document.getElementById('profile-password-toggle');
-const passwordPanel=document.getElementById('profile-password-panel');
+const passwordDialog=document.getElementById('profile-password-dialog');
+const closePassword=()=>passwordDialog?.close();
 passwordToggle?.addEventListener('click',()=>{
- const show=passwordPanel.hidden;
- passwordPanel.hidden=!show;
- passwordToggle.setAttribute('aria-expanded',String(show));
- if(show)passwordPanel.querySelector('input[name="current_password"]')?.focus();
+ if(!passwordDialog)return;
+ if(typeof passwordDialog.showModal==='function')passwordDialog.showModal();
+ else passwordDialog.setAttribute('open','');
+ passwordDialog.querySelector('input[name="current_password"]')?.focus();
+});
+document.getElementById('profile-password-close')?.addEventListener('click',closePassword);
+document.getElementById('profile-password-cancel')?.addEventListener('click',closePassword);
+passwordDialog?.addEventListener('click',event=>{
+ if(event.target===passwordDialog)closePassword();
 });
 const choose=document.getElementById('photo-choose');
 const camera=document.getElementById('photo-camera');
