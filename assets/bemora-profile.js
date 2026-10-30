@@ -33,6 +33,78 @@ passwordToggle?.addEventListener('click',()=>{if(!passwordDialog)return;password
 document.getElementById('profile-password-close')?.addEventListener('click',closePassword);
 document.getElementById('profile-password-cancel')?.addEventListener('click',closePassword);
 passwordDialog?.addEventListener('click',e=>{if(e.target===passwordDialog)closePassword();});
+const passwordForm=document.getElementById('profile-password-panel');
+if(passwordForm){
+ const current=passwordForm.querySelector('[name="current_password"]');
+ const next=passwordForm.querySelector('[name="new_password"]');
+ const confirmInput=passwordForm.querySelector('[name="confirm_password"]');
+ const currentMessage=document.getElementById('current-password-feedback');
+ const confirmMessage=document.getElementById('password-confirm-feedback');
+ const submit=document.getElementById('password-change-submit');
+ const strengthFill=document.getElementById('password-strength-fill');
+ const strengthLabel=document.getElementById('password-strength-label');
+ let verifiedValue=null,checking=false;
+ const rules=p=>({
+  length:p.length>=8&&p.length<=16,upper:/[A-Z]/.test(p),
+  lower:/[a-z]/.test(p),digit:/[0-9]/.test(p),
+  special:/[^A-Za-z0-9\\s]/.test(p)
+ });
+ function update(){
+  const conditions=rules(next.value);
+  let passed=0;Object.entries(conditions).forEach(([key,valid])=>{
+    if(valid)passed++;
+    const item=document.querySelector('#password-rules [data-rule="'+key+'"]');
+    item?.classList.toggle('passed',valid);
+  });
+  strengthFill.style.width=(passed*20)+'%';
+  strengthFill.dataset.score=String(passed);
+  strengthLabel.textContent=!next.value?'Não informada':passed<=2?'Fraca':passed<=4?'Média':'Forte';
+  const matches=next.value!==''&&next.value===confirmInput.value;
+  confirmMessage.textContent=confirmInput.value?(matches?'As senhas coincidem.':'As senhas não coincidem.'):'';
+  confirmMessage.classList.toggle('valid',matches);
+  confirmMessage.classList.toggle('invalid',!!confirmInput.value&&!matches);
+  submit.disabled=verifiedValue!==current.value||!verifiedValue||checking||passed!==5||!matches;
+ }
+ async function validateCurrent(){
+  const value=current.value;
+  verifiedValue=null;
+  if(!value){currentMessage.textContent='Informe a senha atual.';update();return;}
+  checking=true;currentMessage.textContent='Verificando senha atual...';currentMessage.className='password-validation';update();
+  const payload=new FormData();
+  payload.append('csrf_token',passwordForm.querySelector('[name="csrf_token"]').value);
+  payload.append('action','check_password');
+  payload.append('current_password',value);
+  try{
+   const response=await fetch(passwordForm.action,{method:'POST',body:payload,credentials:'same-origin',cache:'no-store'});
+   const result=await response.json();
+   if(current.value!==value)return;
+   verifiedValue=result.valid?value:null;
+   currentMessage.textContent=result.message||(result.valid?'Senha confirmada.':'Senha incorreta.');
+   currentMessage.classList.toggle('valid',!!result.valid);
+   currentMessage.classList.toggle('invalid',!result.valid);
+  }catch{
+   if(current.value===value)currentMessage.textContent='Não foi possível verificar a senha. Tente novamente.';
+  }finally{checking=false;update();}
+ }
+ current.addEventListener('blur',validateCurrent);
+ current.addEventListener('input',()=>{verifiedValue=null;currentMessage.textContent='Saia do campo para verificar a senha.';currentMessage.className='password-validation';update();});
+ next.addEventListener('input',update);
+ confirmInput.addEventListener('input',update);
+ passwordForm.querySelectorAll('.password-eye').forEach(button=>{
+  button.addEventListener('click',()=>{
+   const input=button.parentElement.querySelector('input');
+   const show=input.type==='password';input.type=show?'text':'password';
+   button.setAttribute('aria-pressed',String(show));
+   button.setAttribute('aria-label',(show?'Ocultar':'Mostrar')+' senha');
+   button.querySelector('i').className=show?'bi bi-eye-slash':'bi bi-eye';
+  });
+ });
+ passwordForm.addEventListener('submit',event=>{
+  if(submit.disabled){event.preventDefault();update();}
+ });
+ passwordDialog?.addEventListener('close',()=>{passwordForm.reset();verifiedValue=null;currentMessage.textContent='Informe a senha atual para validá-la.';currentMessage.className='password-validation';update();});
+ update();
+}
 const choose=document.getElementById('photo-choose');
 const camera=document.getElementById('photo-camera');
 const picker=document.getElementById('photo-file');
