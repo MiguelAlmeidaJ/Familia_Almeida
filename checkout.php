@@ -10,13 +10,14 @@ if(!$plan && $error===''){$error='Este plano não está disponível.';}
 $promo=$plan?bemora_plan_promo_active($plan):false;
 $amount=$plan?($promo?(float)$plan['promo_price']:(float)$plan['price']):0;
 $cycle=$plan?bemora_plan_cycles()[$plan['billing_cycle']]??'':'';
-$csrf=csrf_token();
+$csrf=csrf_token();$checkoutError=(string)($_SESSION['checkout_error']??'');unset($_SESSION['checkout_error']);
 ?><!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><title>Assinar Bemora</title><link rel="icon" href="/assets/brand/favicon.png"><link rel="stylesheet" href="/assets/bemora-checkout.css?v=1"></head><body>
 <header class="checkout-header"><a href="/"><img src="/assets/brand/logo.png" alt="Bemora by Anoar"></a><span>Checkout seguro</span></header><main class="checkout-main">
 <div class="checkout-head"><a href="/#planos">← Voltar aos planos</a><h1>Vamos começar sua nova fase financeira?</h1><p>Confira sua assinatura e informe os dados do responsável pelo pagamento.</p></div>
+<?php if($checkoutError): ?><div class="checkout-alert"><?= htmlspecialchars($checkoutError,ENT_QUOTES,'UTF-8') ?></div><?php endif; ?>
 <?php if($error): ?><div class="checkout-alert"><?= htmlspecialchars($error,ENT_QUOTES,'UTF-8') ?></div><?php elseif(!bemora_asaas_enabled()): ?><div class="checkout-alert">As contratações online ainda não estão habilitadas. Entre em contato com o comercial para conhecer o plano.</div><?php else: ?>
 <div class="checkout-columns"><section class="checkout-panel"><h2>Dados para a assinatura</h2><form method="post" action="/checkout/iniciar" id="checkout-form">
-<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf,ENT_QUOTES,'UTF-8') ?>"><input type="hidden" name="plan_id" value="<?= (int)$plan['id'] ?>">
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf,ENT_QUOTES,'UTF-8') ?>"><input type="hidden" name="plan_id" value="<?= (int)$plan['id'] ?>"><input type="hidden" name="quoted_amount" value="<?= htmlspecialchars(number_format($amount,2,'.',''),ENT_QUOTES,'UTF-8') ?>">
 <label>Nome completo<input name="name" autocomplete="name" maxlength="120" minlength="3" placeholder="Seu nome completo" required></label>
 <label>E-mail<input type="email" name="email" autocomplete="email" maxlength="254" placeholder="voce@exemplo.com.br" required></label>
 <div class="checkout-row"><label>CPF ou CNPJ<input name="cpf_cnpj" autocomplete="off" inputmode="numeric" maxlength="18" placeholder="Somente números" required></label><label>Celular<input name="phone" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="(00) 90000-0000" required></label></div>
