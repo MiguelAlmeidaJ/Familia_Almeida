@@ -25,7 +25,7 @@ try{
    $title=trim((string)$raw);$value=trim((string)$salaries[$i]);$day=(int)$days[$i];
    if($title===''&&$value===''&&$day===0)continue;
    // Accept Brazilian currency input (R$ 1.850,00) and legacy decimal values.
-   $normalized=trim(preg_replace('/\s+/u','',str_replace('R
+   $normalized=trim(preg_replace('/\\s+/u','',str_replace('R' . chr(36), '', $value))??''); if(str_contains($normalized,','))$normalized=str_replace(',','.',str_replace('.','',$normalized));
    if($title===''||mb_strlen($title)>120||!preg_match('/^\d+(?:\.\d{1,2})?$/',$normalized)||!is_numeric($normalized)|| (float)$normalized>9999999999||$day<1||$day>31)
     throw new RuntimeException('Revise emprego, salário e dia de recebimento.');
    $sources[]=[$title,$normalized,$day];
