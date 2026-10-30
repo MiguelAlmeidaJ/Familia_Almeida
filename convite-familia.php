@@ -62,9 +62,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 <?php if(brand_asset_url('logo')): ?><img class="invite-logo" src="<?= e(brand_asset_url('logo')) ?>" alt="Bemora">
 <?php else: ?><span class="invite-wordmark">bemora</span><?php endif; ?>
 </header>
-<?php if(($_GET['status']??'')==='received'): ?>
-<section class="invite-card invite-state"><i class="bi bi-check-circle" aria-hidden="true"></i><h1 class="invite-title">Cadastro recebido!</h1><p class="invite-subtitle">Sua família foi enviada para análise. O acesso financeiro só será liberado após aprovação e ativação segura.</p></section>
-<?php elseif(!$invitation): ?>
+<?php if(!$invitation): ?>
 <section class="invite-card invite-state"><i class="bi bi-link-45deg" aria-hidden="true"></i><h1 class="invite-title">Convite indisponível</h1><p class="invite-subtitle">Este link é inválido, expirou ou já foi utilizado. Solicite outro convite ao responsável.</p></section>
 <?php else: ?>
 <section class="invite-card">
