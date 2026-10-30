@@ -32,26 +32,49 @@ try{
   if($name===''||mb_strlen($name)>80||!filter_var($email,FILTER_VALIDATE_EMAIL)||strlen($email)>160)
    throw new RuntimeException('Informe nome e e-mail válidos.');
   if($phone!==''&&(!preg_match('/^[+0-9()\s-]{8,25}$/',$phone)))throw new RuntimeException('Telefone inválido.');
-  $titles=$_POST['job_title']??[];$salaries=$_POST['salary']??[];$days=$_POST['payday']??[];
-  if(!is_array($titles)||!is_array($salaries)||!is_array($days)||count($titles)>12||count($titles)!==count($salaries)||count($titles)!==count($days))
+  $titles=$_POST['job_title']??[];$salaries=$_POST['salary']??[];$days=$_POST['payday']??[];$ids=$_POST['source_id']??[];
+  $effective=(string)($_POST['effective_month']??date('Y-m'));
+  if(!preg_match('/^\\d{4}-(0[1-9]|1[0-2])$/D',$effective)||$effective<date('Y-m'))throw new RuntimeException('A alteração de renda deve começar no mês atual ou em um mês futuro.');
+  if(!is_array($titles)||!is_array($salaries)||!is_array($days)||!is_array($ids)||count($titles)>12||count($titles)!==count($salaries)||count($titles)!==count($days)||count($titles)!==count($ids))
    throw new RuntimeException('Fontes de renda inválidas (máximo 12).');
   $sources=[];
   foreach($titles as $i=>$raw){
-   $title=trim((string)$raw);$value=trim((string)$salaries[$i]);$day=(int)$days[$i];
-   if($title===''&&$value===''&&$day===0)continue;
-   // Accept Brazilian currency input (R$ 1.850,00) and legacy decimal values.
-   $normalized=trim(preg_replace('/\\s+/u','',str_replace('R' . chr(36), '', $value))??''); if(str_contains($normalized,','))$normalized=str_replace(',','.',str_replace('.','',$normalized));
-   if($title===''||mb_strlen($title)>120||!preg_match('/^\d+(?:\.\d{1,2})?$/',$normalized)||!is_numeric($normalized)|| (float)$normalized>9999999999||$day<1||$day>31)
+   $title=trim((string)$raw);$value=trim((string)$salaries[$i]);$day=(int)$days[$i];$sourceId=(int)$ids[$i];
+   $normalized=trim(preg_replace('/\\s+/u','',str_replace('R$','',$value))??'');
+   if(str_contains($normalized,','))$normalized=str_replace(',','.',str_replace('.','',$normalized));
+   if($title===''||mb_strlen($title)>120||!preg_match('/^\\d+(?:\\.\\d{1,2})?$/D',$normalized)||(float)$normalized>9999999999||$day<1||$day>31||$sourceId<0)
     throw new RuntimeException('Revise emprego, salário e dia de recebimento.');
-   $sources[]=[$title,$normalized,$day];
+   $sources[]=[$sourceId,$title,$normalized,$day];
   }
   $pdo->beginTransaction();
   $q=$pdo->prepare('SELECT id FROM users WHERE email=? AND id<>? LIMIT 1');$q->execute([$email,$uid]);
   if($q->fetchColumn())throw new RuntimeException('Este e-mail já está em uso.');
   $pdo->prepare('UPDATE users SET name=?,email=?,phone=? WHERE id=?')->execute([$name,$email,$phone?:null,$uid]);
-  $pdo->prepare('DELETE FROM user_income_sources WHERE user_id=?')->execute([$uid]);
+  $known=$pdo->prepare('SELECT id,job_title,salary,payday,ended_month FROM user_income_sources WHERE user_id=? FOR UPDATE');
+  $known->execute([$uid]);$existing=[];foreach($known->fetchAll(PDO::FETCH_ASSOC) as $row)$existing[(int)$row['id']]=$row;
+  $updated=[];
   $ins=$pdo->prepare('INSERT INTO user_income_sources(user_id,job_title,salary,payday) VALUES(?,?,?,?)');
-  foreach($sources as $source)$ins->execute([$uid,...$source]);
+  $up=$pdo->prepare('UPDATE user_income_sources SET job_title=?,salary=?,payday=?,ended_month=NULL WHERE user_id=? AND id=?');
+  $ver=$pdo->prepare('INSERT INTO user_income_source_versions(source_id,user_id,valid_from,job_title,salary,payday) VALUES(?,?,?,?,?,?) ON DUPLICATE KEY UPDATE job_title=VALUES(job_title),salary=VALUES(salary),payday=VALUES(payday)');
+  foreach($sources as [$id,$title,$salary,$payday]){
+    if($id){
+      if(!isset($existing[$id])||isset($updated[$id]))throw new RuntimeException('Fonte de renda inválida.');
+      $row=$existing[$id];
+      if($row['job_title']!==$title||abs((float)$row['salary']-(float)$salary)>0.001||(int)$row['payday']!==$payday||$row['ended_month']!==null){
+        $up->execute([$title,$salary,$payday,$uid,$id]);
+        $ver->execute([$id,$uid,$effective,$title,$salary,$payday]);
+      }
+    }else{
+      $ins->execute([$uid,$title,$salary,$payday]);$id=(int)$pdo->lastInsertId();
+      $ver->execute([$id,$uid,$effective,$title,$salary,$payday]);
+    }
+    $updated[$id]=true;
+  }
+  foreach($existing as $id=>$row){
+    if(isset($updated[$id]))continue;
+    $end=(new DateTimeImmutable($effective.'-01'))->modify('-1 month')->format('Y-m');
+    $pdo->prepare('UPDATE user_income_sources SET ended_month=? WHERE id=? AND user_id=?')->execute([$end,$id,$uid]);
+  }
   $pdo->commit();
   flash('success','Seu perfil foi atualizado.');
  }elseif($action==='change_password'){
