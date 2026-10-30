@@ -34,7 +34,7 @@ try{
   if($phone!==''&&(!preg_match('/^[+0-9()\s-]{8,25}$/',$phone)))throw new RuntimeException('Telefone inválido.');
   $titles=$_POST['job_title']??[];$salaries=$_POST['salary']??[];$days=$_POST['payday']??[];$ids=$_POST['source_id']??[];
   $effective=(string)($_POST['effective_month']??date('Y-m'));
-  if(!preg_match('/^\\d{4}-(0[1-9]|1[0-2])$/D',$effective)||$effective<date('Y-m'))throw new RuntimeException('A alteração de renda deve começar no mês atual ou em um mês futuro.');
+  if(!preg_match('/^\\d{4}-(0[1-9]|1[0-2])$/D',$effective)||$effective!==selected_month())throw new RuntimeException('O mês da alteração deve ser o mês selecionado no cabeçalho.');
   if(!is_array($titles)||!is_array($salaries)||!is_array($days)||!is_array($ids)||count($titles)>12||count($titles)!==count($salaries)||count($titles)!==count($days)||count($titles)!==count($ids))
    throw new RuntimeException('Fontes de renda inválidas (máximo 12).');
   $sources=[];
@@ -50,19 +50,31 @@ try{
   $q=$pdo->prepare('SELECT id FROM users WHERE email=? AND id<>? LIMIT 1');$q->execute([$email,$uid]);
   if($q->fetchColumn())throw new RuntimeException('Este e-mail já está em uso.');
   $pdo->prepare('UPDATE users SET name=?,email=?,phone=? WHERE id=?')->execute([$name,$email,$phone?:null,$uid]);
+  $memberStartStmt=$pdo->prepare('SELECT created_at FROM users WHERE id=?');
+  $memberStartStmt->execute([$uid]);$createdMonth=substr((string)$memberStartStmt->fetchColumn(),0,7);
+  if($effective<$createdMonth)throw new RuntimeException('Não é possível alterar rendas antes da criação do usuário.');
   $known=$pdo->prepare('SELECT id,job_title,salary,payday,ended_month FROM user_income_sources WHERE user_id=? FOR UPDATE');
   $known->execute([$uid]);$existing=[];foreach($known->fetchAll(PDO::FETCH_ASSOC) as $row)$existing[(int)$row['id']]=$row;
   $updated=[];
   $ins=$pdo->prepare('INSERT INTO user_income_sources(user_id,job_title,salary,payday) VALUES(?,?,?,?)');
   $up=$pdo->prepare('UPDATE user_income_sources SET job_title=?,salary=?,payday=?,ended_month=NULL WHERE user_id=? AND id=?');
   $ver=$pdo->prepare('INSERT INTO user_income_source_versions(source_id,user_id,valid_from,job_title,salary,payday) VALUES(?,?,?,?,?,?) ON DUPLICATE KEY UPDATE job_title=VALUES(job_title),salary=VALUES(salary),payday=VALUES(payday)');
+  $versionAt=$pdo->prepare('SELECT job_title,salary,payday FROM user_income_source_versions WHERE source_id=? AND valid_from<=? ORDER BY valid_from DESC LIMIT 1');
+  $latestAt=$pdo->prepare('SELECT MAX(valid_from) FROM user_income_source_versions WHERE source_id=?');
   foreach($sources as [$id,$title,$salary,$payday]){
     if($id){
       if(!isset($existing[$id])||isset($updated[$id]))throw new RuntimeException('Fonte de renda inválida.');
       $row=$existing[$id];
-      if($row['job_title']!==$title||abs((float)$row['salary']-(float)$salary)>0.001||(int)$row['payday']!==$payday||$row['ended_month']!==null){
-        $up->execute([$title,$salary,$payday,$uid,$id]);
+      $versionAt->execute([$id,$effective]);$currentVersion=$versionAt->fetch(PDO::FETCH_ASSOC);
+      if(!$currentVersion)throw new RuntimeException('A fonte ainda não existia neste mês.');
+      $changed=$currentVersion['job_title']!==$title||abs((float)$currentVersion['salary']-(float)$salary)>0.001||(int)$currentVersion['payday']!==$payday;
+      if($changed){
         $ver->execute([$id,$uid,$effective,$title,$salary,$payday]);
+        $latestAt->execute([$id]);$latest=(string)$latestAt->fetchColumn();
+        if($latest===$effective)$up->execute([$title,$salary,$payday,$uid,$id]);
+      }
+      if($row['ended_month']!==null && $row['ended_month']<$effective){
+        throw new RuntimeException('Não é possível reativar uma fonte encerrada em um mês anterior por este formulário.');
       }
     }else{
       $ins->execute([$uid,$title,$salary,$payday]);$id=(int)$pdo->lastInsertId();
@@ -72,8 +84,11 @@ try{
   }
   foreach($existing as $id=>$row){
     if(isset($updated[$id]))continue;
+    $versionAt->execute([$id,$effective]);
+    if(!$versionAt->fetch())continue; // Future sources must not be ended retroactively.
     $end=(new DateTimeImmutable($effective.'-01'))->modify('-1 month')->format('Y-m');
-    $pdo->prepare('UPDATE user_income_sources SET ended_month=? WHERE id=? AND user_id=?')->execute([$end,$id,$uid]);
+    if($row['ended_month']===null || $row['ended_month']>$end)
+      $pdo->prepare('UPDATE user_income_sources SET ended_month=? WHERE id=? AND user_id=?')->execute([$end,$id,$uid]);
   }
   $pdo->commit();
   flash('success','Seu perfil foi atualizado.');
