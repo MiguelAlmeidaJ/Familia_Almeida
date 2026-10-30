@@ -58,6 +58,7 @@ DirectoryIndex index.php
     RewriteRule ^meu-perfil/acao/?$ pages/profile_action.php [L,QSA]
     RewriteRule ^meu-perfil/foto/?$ pages/profile_avatar.php [L,QSA]
     RewriteRule ^minha-conta/?$ pages/minha_conta.php [L,QSA]
+    RewriteRule ^admin/assinaturas/?$ admin/assinaturas.php [L,QSA]
     RewriteRule ^admin/planos/?$ admin/planos.php [L,QSA]
     RewriteRule ^admin/tenants/?$ admin/tenants.php [L,QSA]
     RewriteRule ^admin/familia/?$ admin/familia.php [L,QSA]
