@@ -68,14 +68,14 @@ function require_auth(): array
             // Whitelist only the active, ownership-audited module entrypoints.
             // Legacy PHP endpoints are unavailable even when accessed directly.
             $script=str_replace('\\\\','/',(string)($_SERVER['SCRIPT_NAME']??''));
-            $allowed=['/index.php','/action.php','/budget_action.php','/categories_action.php',
+            $allowed=['/pages/painel.php','/action.php','/budget_action.php','/categories_action.php',
                 '/receipt.php','/pages/movimentacoes.php','/pages/contas.php',
                 '/pages/categorias.php','/pages/minha_conta.php',
                 '/pages/meu_perfil.php','/pages/profile_action.php','/pages/profile_avatar.php',
                 '/pages/relatorios.php','/pages/membros.php','/pages/membros_action.php','/pages/member_avatar.php',
                 '/pages/family_settings_action.php','/logout.php','/convite-familia.php'];
             $path=(string)(parse_url((string)($_SERVER['REQUEST_URI']??'/'),PHP_URL_PATH)??'/');
-            $allowedRoutes=['/','/acao','/movimentacoes','/contas','/categorias',
+            $allowedRoutes=['/painel','/acao','/movimentacoes','/contas','/categorias',
                 '/categorias/acao','/minha-conta','/relatorios','/membros','/membros/acao','/membros/foto','/meu-perfil','/meu-perfil/acao','/meu-perfil/foto','/comprovante','/sair','/convite-familia'];
             if(!in_array($script,$allowed,true) && !in_array(rtrim($path,'/')?:'/',$allowedRoutes,true)){
                 http_response_code(403);
