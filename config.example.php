@@ -18,6 +18,15 @@ return [
         'from' => 'seu-email@seudominio.com.br',
         'from_name' => 'Bemora',
     ],
+    'asaas' => [
+        'enabled' => '0', // Liberar depois de validar sandbox e webhooks
+        'environment' => 'sandbox', // sandbox ou production
+        'production_enabled' => '0', // Segunda trava antes de cobranças reais
+        'api_key' => 'CHAVE_PRIVADA_ASAAS',
+        'webhook_token' => 'TOKEN_WEBHOOK_EXCLUSIVO_MINIMO_32_CARACTERES',
+        'invite_secret' => 'SEGREDO_INDEPENDENTE_MINIMO_32_CARACTERES',
+        'system_admin_user_id' => 0, // ID válido do admin global
+    ],
     'app' => [
         'name' => 'Bemora',
         'base_url' => 'https://familia.anoar.com.br',
