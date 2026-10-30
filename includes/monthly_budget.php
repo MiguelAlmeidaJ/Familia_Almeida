@@ -9,8 +9,8 @@ function monthly_budget_ready(PDO $pdo): bool {
 function monthly_budget_data(PDO $pdo, string $month): array {
     $start = $month . '-01';
     $end = (new DateTimeImmutable($start))->modify('+1 month')->format('Y-m-d');
-    $incomeStmt=$pdo->prepare('SELECT id,name,amount FROM recurring_incomes WHERE tenant_id=? AND active=1' . finance_read_owner_clause($pdo,'recurring_incomes') . ' ORDER BY name');
-    $incomeStmt->execute([require_tenant_id()]);
+    $incomeStmt=$pdo->prepare('SELECT id,name,amount FROM recurring_incomes WHERE tenant_id=? AND DATE_FORMAT(created_at,\'%Y-%m\')<=? AND active=1' . finance_read_owner_clause($pdo,'recurring_incomes') . ' ORDER BY name');
+    $incomeStmt->execute([require_tenant_id(),$month]);
     $incomes=$incomeStmt->fetchAll();
     $profileIncomes=profile_monthly_income($pdo,$month);
     $profileIncomeTotal=array_sum(array_map(static fn($r)=>(float)$r['amount'],$profileIncomes));
