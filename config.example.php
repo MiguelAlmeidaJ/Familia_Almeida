@@ -10,7 +10,13 @@ return [
         'charset' => 'utf8mb4',
     ],
     'mail' => [
-        'from' => 'naoresponda@anoar.com.br',
+        'host' => 'smtp.seudominio.com.br',
+        'port' => 587,
+        'encryption' => 'tls', // tls (587) ou ssl (465)
+        'username' => 'seu-email@seudominio.com.br',
+        'password' => 'SENHA_SMTP_NAO_COMMITAR',
+        'from' => 'seu-email@seudominio.com.br',
+        'from_name' => 'Bemora',
     ],
     'app' => [
         'name' => 'Bemora',
