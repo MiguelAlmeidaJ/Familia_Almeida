@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Entrar • Bemora</title><?php brand_head_tags(); ?>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/bemora-login.css?v=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/bemora-login.css?v=2">
 </head>
 <body>
 <main class="login-screen">
@@ -64,7 +64,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="login-copy">
             <p class="eyebrow">BEM-VINDO À BEMORA</p>
-            <h1>Seu dinheiro em ordem.</h1>
             <p>Organize suas finanças com clareza e tranquilidade.</p>
         </div>
 
