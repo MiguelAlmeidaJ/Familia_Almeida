@@ -188,4 +188,12 @@ check($newRegistration['state']==='approved' && $newRegistration['members_json']
 $_SESSION['user_id']=$created['user_id'];$_SESSION['tenant_id']=$created['tenant_id'];
 $newDashboard=dashboard_data($pdo,'2026-10');
 check(count($newDashboard['transactions'])===0 && count($newDashboard['bills'])===0,'new family starts with empty finances');
+require_once __DIR__.'/../includes/plans.php';
+check(bemora_plans_table_exists($pdo),'commercial plan migration installed');
+$pdo->exec("INSERT INTO subscription_plans (name,billing_cycle,details,max_members,price,promo_price,promo_duration,promo_starts_at,promo_ends_at) VALUES ('Bemora Teste','monthly','Plano de teste',3,49.90,39.90,'24h',DATE_SUB(NOW(),INTERVAL 1 HOUR),DATE_ADD(NOW(),INTERVAL 23 HOUR))");
+$testPlan=$pdo->query("SELECT * FROM subscription_plans WHERE name='Bemora Teste' LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+check(bemora_plan_promo_active($testPlan),'active promotion displays discounted price');
+$pdo->prepare('UPDATE subscription_plans SET promo_ends_at=DATE_SUB(NOW(),INTERVAL 1 MINUTE) WHERE id=?')->execute([$testPlan['id']]);
+$testPlan['promo_ends_at']=date('Y-m-d H:i:s',time()-60);
+check(!bemora_plan_promo_active($testPlan),'expired promotion no longer displays discount');
 echo "Finance isolation integration assertions complete.\n";
