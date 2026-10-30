@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__.'/tenant.php';
 require_once __DIR__.'/finance_scope.php';
 require_once __DIR__.'/profile_income.php';
+require_once __DIR__.'/bill_due_date.php';
 
 function db_column_exists(PDO $pdo, string $table, string $column): bool
 {
@@ -55,6 +56,7 @@ function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false
                 b.billing_type,
                 b.amount AS base_amount,
                 b.due_day,
+                ' . (db_column_exists($pdo,'fixed_bills','due_business_day') ? 'b.due_business_day,' : '0 AS due_business_day,') . '
                 b.start_month,
                 b.installment_total,
                 b.active,
@@ -142,6 +144,8 @@ function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false
             'amount' => $effectiveAmount,
             'amount_due' => $amountDue,
             'due_day' => (int) $row['due_day'],
+            'due_business_day' => (bool)($row['due_business_day'] ?? false),
+            'due_date' => bill_due_date($month,(int)$row['due_day'],(bool)($row['due_business_day'] ?? false)),
             'start_month' => $row['start_month'],
             'installment_total' => $row['installment_total'] !== null ? (int) $row['installment_total'] : null,
             'installment_number' => $installmentNumber,
