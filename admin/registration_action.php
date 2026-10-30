@@ -15,7 +15,7 @@ try{
  $q->execute([$id]);$reg=$q->fetch(PDO::FETCH_ASSOC);
  if(!$reg||$reg['state']!=='pending')throw new RuntimeException('Cadastro não está pendente.');
  if($action==='reject'){
-  $pdo->prepare("UPDATE family_registrations SET state='rejected' WHERE id=?")->execute([$id]);
+  $pdo->prepare("UPDATE family_registrations SET state='rejected',members_json='[]' WHERE id=?")->execute([$id]);
   $pdo->commit();
   flash('success','Cadastro recusado.');
  }else{
@@ -50,7 +50,7 @@ try{
    $userInsert->execute([(string)$m['name'],mb_strtolower((string)$m['email']),(string)$m['password_hash'],$m['sex']??null,$m['birth_date']??null]);
    $memberInsert->execute([$tenantId,(int)$pdo->lastInsertId(),$index===$admin?'family_admin':'member']);
   }
-  $pdo->prepare("UPDATE family_registrations SET state='approved' WHERE id=? AND state='pending'")->execute([$id]);
+  $pdo->prepare("UPDATE family_registrations SET state='approved',members_json='[]' WHERE id=? AND state='pending'")->execute([$id]);
   $pdo->commit();
   flash('success','Família aprovada e acessos criados. Os membros já podem entrar com suas credenciais.');
  }
