@@ -1,0 +1,1 @@
+(()=>{'use strict';const form=document.getElementById('checkout-form');if(!form)return;const submit=document.getElementById('checkout-submit');form.addEventListener('submit',()=>{if(form.checkValidity()){submit.disabled=true;submit.textContent='Preparando pagamento…';}});})();
