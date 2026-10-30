@@ -6,6 +6,21 @@ if($_SERVER['REQUEST_METHOD']!=='POST'){http_response_code(405);exit('Método n�
 verify_csrf();
 $pdo=db();$uid=(int)$user['id'];
 $action=(string)($_POST['action']??'');
+if($action==='check_password'){
+ header('Content-Type: application/json; charset=utf-8');
+ header('Cache-Control: no-store');
+ $limit=$_SESSION['password_check_limit']??['since'=>time(),'count'=>0];
+ if(time()-(int)$limit['since']>900)$limit=['since'=>time(),'count'=>0];
+ $limit['count']++;
+ $_SESSION['password_check_limit']=$limit;
+ if($limit['count']>20){http_response_code(429);echo json_encode(['valid'=>false,'message'=>'Muitas tentativas. Tente novamente mais tarde.']);exit;}
+ $stmt=$pdo->prepare('SELECT password_hash FROM users WHERE id=?');
+ $stmt->execute([$uid]);
+ $hash=$stmt->fetchColumn();
+ $correct=is_string($hash)&&password_verify((string)($_POST['current_password']??''),$hash);
+ echo json_encode(['valid'=>$correct,'message'=>$correct?'Senha atual confirmada.':'Senha atual incorreta.'],JSON_UNESCAPED_UNICODE);
+ exit;
+}
 try{
  if($action==='save_profile'){
   $name=trim(preg_replace('/\s+/u',' ',(string)($_POST['name']??''))??'');
@@ -46,7 +61,8 @@ try{
   $q=$pdo->prepare('SELECT password_hash FROM users WHERE id=?');$q->execute([$uid]);
   $hash=$q->fetchColumn();
   if(!$hash||!password_verify($current,(string)$hash))throw new RuntimeException('Senha atual incorreta.');
-  if(strlen($next)<12)throw new RuntimeException('A nova senha deve ter pelo menos 12 caracteres.');
+  if(strlen($next)<8||strlen($next)>16||!preg_match('/[A-Z]/',$next)||!preg_match('/[a-z]/',$next)||!preg_match('/[0-9]/',$next)||!preg_match('/[^A-Za-z0-9\\s]/',$next))
+   throw new RuntimeException('A nova senha deve ter 8 a 16 caracteres, com maiúscula, minúscula, número e caractere especial.');
   if(!hash_equals($next,$confirm))throw new RuntimeException('As senhas não coincidem.');
   $pdo->prepare('UPDATE users SET password_hash=? WHERE id=?')->execute([password_hash($next,PASSWORD_DEFAULT),$uid]);
   session_regenerate_id(true);
