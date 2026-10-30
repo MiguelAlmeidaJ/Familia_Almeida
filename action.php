@@ -664,7 +664,12 @@ try {
             $billingType = (string) ($_POST['billing_type'] ?? 'fixed');
             $amount = bemora_bill_amount($_POST['amount'] ?? '0');
             $dueDay = filter_var($_POST['due_day'] ?? null,FILTER_VALIDATE_INT,['options'=>['min_range'=>1,'max_range'=>31]]);
-            $dueBusinessDay=isset($_POST['due_business_day']) && $_POST['due_business_day']==='1' ? 1 : 0;
+            $dueBusinessDay=0;
+            $dueMode=(string)($_POST['due_mode']??'fixed');
+            $businessRule=(string)($_POST['business_day_rule']??'');
+            if(!in_array($dueMode,['fixed','business'],true))throw new RuntimeException('Tipo de vencimento inválido.');
+            if($dueMode==='business'&&!in_array($businessRule,['first','fifth','penultimate','last'],true))throw new RuntimeException('Selecione um dia útil válido.');
+            if($dueMode==='fixed')$businessRule=null;
             $startMonth = trim((string) ($_POST['start_month'] ?? ''));
             $installmentTotal = (int) ($_POST['installment_total'] ?? 0);
 
@@ -692,11 +697,11 @@ try {
                 $installmentTotal = 0;
             }
 
-            if(!db_column_exists($pdo,'fixed_bills','due_business_day'))throw new RuntimeException('Execute a migration 018 em Manutenção.');
+            if(!db_column_exists($pdo,'fixed_bills','due_mode'))throw new RuntimeException('Execute a migration 018 em Manutenção.');
             $personal=$scope['mode']==='separate';
             $stmt = $pdo->prepare($personal
-                ? 'INSERT INTO fixed_bills (tenant_id,owner_user_id,name,billing_type,amount,due_day,start_month,installment_total,due_business_day) VALUES (?,?,?,?,?,?,?,?,?)'
-                : 'INSERT INTO fixed_bills (tenant_id,name,billing_type,amount,due_day,start_month,installment_total,due_business_day) VALUES (?,?,?,?,?,?,?,?)');
+                ? 'INSERT INTO fixed_bills (tenant_id,owner_user_id,name,billing_type,amount,due_day,start_month,installment_total,due_business_day,due_mode,business_day_rule) VALUES (?,?,?,?,?,?,?,?,?,?,?)'
+                : 'INSERT INTO fixed_bills (tenant_id,name,billing_type,amount,due_day,start_month,installment_total,due_business_day,due_mode,business_day_rule) VALUES (?,?,?,?,?,?,?,?,?,?)');
             $parameters=[
                 $tenantId,
                 $name,
@@ -706,6 +711,8 @@ try {
                 $startMonth !== '' ? $startMonth : null,
                 $installmentTotal > 0 ? $installmentTotal : null,
                 $dueBusinessDay,
+                $dueMode,
+                $businessRule,
             ];
             if($personal)array_splice($parameters,1,0,[(int)$user['id']]);
             $stmt->execute($parameters);
@@ -719,7 +726,12 @@ try {
             $billingType = (string) ($_POST['billing_type'] ?? 'fixed');
             $amount = bemora_bill_amount($_POST['amount'] ?? '0');
             $dueDay = filter_var($_POST['due_day'] ?? null,FILTER_VALIDATE_INT,['options'=>['min_range'=>1,'max_range'=>31]]);
-            $dueBusinessDay=isset($_POST['due_business_day']) && $_POST['due_business_day']==='1' ? 1 : 0;
+            $dueBusinessDay=0;
+            $dueMode=(string)($_POST['due_mode']??'fixed');
+            $businessRule=(string)($_POST['business_day_rule']??'');
+            if(!in_array($dueMode,['fixed','business'],true))throw new RuntimeException('Tipo de vencimento inválido.');
+            if($dueMode==='business'&&!in_array($businessRule,['first','fifth','penultimate','last'],true))throw new RuntimeException('Selecione um dia útil válido.');
+            if($dueMode==='fixed')$businessRule=null;
             $startMonth = trim((string) ($_POST['start_month'] ?? ''));
             $installmentTotal = (int) ($_POST['installment_total'] ?? 0);
 
@@ -744,11 +756,11 @@ try {
                 $installmentTotal = 0;
             }
 
-            if(!db_column_exists($pdo,'fixed_bills','due_business_day'))throw new RuntimeException('Execute a migration 018 em Manutenção.');
+            if(!db_column_exists($pdo,'fixed_bills','due_mode'))throw new RuntimeException('Execute a migration 018 em Manutenção.');
             finance_assert_owned_record($pdo,'fixed_bills',$billId,$scope);
             $stmt = $pdo->prepare(
                 'UPDATE fixed_bills
-                 SET name = ?, billing_type = ?, amount = ?, due_day = ?, start_month = ?, installment_total = ?, due_business_day = ?
+                 SET name = ?, billing_type = ?, amount = ?, due_day = ?, start_month = ?, installment_total = ?, due_business_day = ?, due_mode = ?, business_day_rule = ?
                  WHERE id = ? AND tenant_id=?'
             );
             $stmt->execute([
@@ -759,6 +771,8 @@ try {
                 $startMonth !== '' ? $startMonth : null,
                 $installmentTotal > 0 ? $installmentTotal : null,
                 $dueBusinessDay,
+                $dueMode,
+                $businessRule,
                 $billId,
                 $tenantId,
             ]);
