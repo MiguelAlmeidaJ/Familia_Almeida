@@ -325,7 +325,7 @@ function fixed_bill_subtitle(array $bill): string
             </label>
         </div>
 
-        <label class="bemora-business-option"><input id="bill-business-day" type="checkbox" name="due_business_day" value="1"><span><strong>Vencimento no próximo dia útil</strong><small>Se cair no fim de semana ou feriado nacional, passa ao próximo dia útil.</small></span></label>
+        <label>Tipo de vencimento<select name="due_mode" id="bill-due-mode"><option value="fixed">Dia fixo (1 a 31)</option><option value="business">Dia útil do mês</option></select></label><label class="bemora-business-rule" hidden>Posição do dia útil<select name="business_day_rule" id="bill-business-rule"><option value="first">1º dia útil</option><option value="fifth">5º dia útil</option><option value="penultimate">Penúltimo dia útil</option><option value="last">Último dia útil</option></select></label>
         <p class="bemora-due-preview" id="bemora-due-preview" role="status"></p>
         <label>Tipo de conta
             <select id="bill-type" class="billing-type-select" name="billing_type" required>
@@ -431,7 +431,8 @@ function openNewBill() {
     document.getElementById('bill-dialog-subtitle').textContent = 'Defina o vencimento e como esta conta se repete.';
     document.getElementById('bill-type').value = 'fixed';
     document.getElementById('bill-day').value = '10';
-    document.getElementById('bill-business-day').checked=false;
+    document.getElementById('bill-due-mode').value='fixed';
+    document.getElementById('bill-business-rule').value='fifth';
     document.getElementById('bill-start').value = '<?= e($month) ?>';
     document.getElementById('bill-total').value = '10';
 
@@ -439,14 +440,15 @@ function openNewBill() {
     document.getElementById('bill-dialog').showModal();
 }
 
-function openBillEditor(id, name, type, amount, dueDay, startMonth, installmentTotal, businessDay) {
+function openBillEditor(id, name, type, amount, dueDay, startMonth, installmentTotal, businessDay, dueMode, businessRule) {
     document.getElementById('bill-action').value = 'update_bill';
     document.getElementById('bill-id').value = id;
     document.getElementById('bill-name').value = name;
     document.getElementById('bill-type').value = type;
     document.getElementById('bill-amount').value = Number(amount)>0 ? Number(amount).toFixed(2).replace('.',',') : '';
     document.getElementById('bill-day').value = dueDay;
-    document.getElementById('bill-business-day').checked=!!businessDay;
+    document.getElementById('bill-due-mode').value=dueMode||'fixed';
+    document.getElementById('bill-business-rule').value=businessRule||'fifth';
     document.getElementById('bill-start').value = startMonth || '<?= e($month) ?>';
     document.getElementById('bill-total').value = installmentTotal || 10;
     document.getElementById('bill-dialog-title').textContent = 'Editar conta prevista';
