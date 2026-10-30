@@ -210,7 +210,9 @@ function fixed_bill_subtitle(array $bill): string
                                             <?= (int) $bill["due_day"] ?>,
                                             <?= json_encode($bill["start_month"]) ?>,
                                             <?= json_encode($bill["installment_total"]) ?>,
-                                            <?= !empty($bill["due_business_day"]) ? "true" : "false" ?>
+                                            <?= !empty($bill["due_business_day"]) ? "true" : "false" ?>,
+                                            <?= json_encode($bill["due_mode"]??"fixed") ?>,
+                                            <?= json_encode($bill["business_day_rule"]??"fifth") ?>
                                         )'
                                     >✎</button>
 
