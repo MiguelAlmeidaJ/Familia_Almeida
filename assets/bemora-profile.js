@@ -26,6 +26,23 @@ function initializeMoney(input){
 }
 document.querySelectorAll('input.profile-currency').forEach(initializeMoney);
 list?.addEventListener('input',e=>{const input=e.target.closest('input.profile-currency');if(input)input.value=formatMoney(input.value);});
+const incomeTotal=document.getElementById('profile-income-total');
+const incomeCount=document.getElementById('profile-income-count');
+function updateIncomeSummary(){
+ if(!list)return;
+ const values=[...list.querySelectorAll('.income-source-row input.profile-currency')].map(input=>{
+  const clean=input.value.replace(/[^0-9,.-]/g,'');
+  const numeric=clean.includes(',')?clean.replace(/\./g,'').replace(',','.'):clean;
+  const value=Number(numeric);
+  return Number.isFinite(value)?value:0;
+ });
+ if(incomeTotal)incomeTotal.textContent=reais.format(values.reduce((sum,n)=>sum+n,0));
+ if(incomeCount)incomeCount.textContent=values.length+' '+(values.length===1?'fonte':'fontes');
+}
+list?.addEventListener('input',updateIncomeSummary);
+list?.addEventListener('click',event=>{if(event.target.closest('.source-remove'))requestAnimationFrame(updateIncomeSummary);});
+add?.addEventListener('click',()=>requestAnimationFrame(updateIncomeSummary));
+updateIncomeSummary();
 const passwordToggle=document.getElementById('profile-password-toggle');
 const passwordDialog=document.getElementById('profile-password-dialog');
 const closePassword=()=>{if(passwordDialog?.open)passwordDialog.close();};
