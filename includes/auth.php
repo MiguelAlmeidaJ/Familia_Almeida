@@ -59,11 +59,11 @@ function require_auth(): array
             http_response_code(403);
             exit('Família não autorizada nesta versão do Bemora.');
         }
-        if($family['finance_mode']==='separate'){
+        if($family['finance_mode']==='separate' || $family['slug']!=='familia-almeida'){
             require_once __DIR__.'/finance_scope.php';
             if(!finance_separate_schema_ready(db())){
                 http_response_code(503);
-                exit('Execute as migrations 015 e 016 para acessar as finanças individuais.');
+                exit('Execute as migrations de isolamento antes de habilitar esta família.');
             }
             // Whitelist only the active, ownership-audited module entrypoints.
             // Legacy PHP endpoints are unavailable even when accessed directly.
