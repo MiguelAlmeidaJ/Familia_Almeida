@@ -35,7 +35,7 @@ $hasAvatar=!empty($profile['avatar_path']);
 <label>Dia de recebimento<input name="payday[]" class="form-control" type="number" min="1" max="31" required value="<?= (int)$source['payday'] ?>"></label>
 </div></div><?php endforeach; ?>
 </div>
-<p class="profile-help">O dia 31 pode não existir em todos os meses. Estes valores descrevem sua renda e não criam lançamentos financeiros automaticamente.</p>
+<p class="profile-help">O dia 31 pode não existir em todos os meses. Essas fontes passam a aparecer automaticamente nos ganhos de cada mês como renda prevista. Não geram lançamentos bancários nem confirmam recebimento; evite cadastrar o mesmo salário manualmente para não duplicar a previsão.</p>
 <button class="btn btn-success profile-save" type="submit"><i class="bi bi-check-lg"></i> Salvar meu perfil</button>
 </form>
 </section></div>
