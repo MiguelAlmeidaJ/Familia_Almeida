@@ -136,7 +136,7 @@ function fixed_bill_subtitle(array $bill): string
                 <div class="fixed-reference-list">
                     <?php if ($currentBills): ?>
                         <?php foreach ($currentBills as $bill): ?>
-                            <div class="fixed-reference-row <?= $bill['paid'] ? 'is-paid' : '' ?>" data-due-date="<?= e(sprintf('%s-%02d', $month, min((int)$bill['due_day'], (int)$currentDate->format('t')))) ?>">
+                            <div class="fixed-reference-row <?= $bill['paid'] ? 'is-paid' : '' ?>" data-due-date="<?= e($bill['due_date']) ?>">
                                 <div class="fixed-reference-day">
                                     <small>DIA</small>
                                     <strong><?= str_pad((string) $bill['due_day'], 2, '0', STR_PAD_LEFT) ?></strong>
@@ -152,7 +152,7 @@ function fixed_bill_subtitle(array $bill): string
                                             <span class="fixed-paid-tag">Pago</span>
                                         <?php endif; ?>
                                     </div>
-                                    <span><?= e(fixed_bill_subtitle($bill)) ?></span>
+                                    <span><?= e(fixed_bill_subtitle($bill)) ?> · <?= e((new DateTimeImmutable($bill['due_date']))->format('d/m/Y')) ?></span>
                                 </div>
 
                                 <div class="fixed-reference-value">
@@ -209,7 +209,8 @@ function fixed_bill_subtitle(array $bill): string
                                             <?= json_encode($bill["base_amount"]) ?>,
                                             <?= (int) $bill["due_day"] ?>,
                                             <?= json_encode($bill["start_month"]) ?>,
-                                            <?= json_encode($bill["installment_total"]) ?>
+                                            <?= json_encode($bill["installment_total"]) ?>,
+                                            <?= !empty($bill["due_business_day"]) ? "true" : "false" ?>
                                         )'
                                     >✎</button>
 
@@ -316,14 +317,16 @@ function fixed_bill_subtitle(array $bill): string
         <div class="fixed-reference-dialog-grid">
             <label>
                 <span class="amount-field-label">Valor (R$)</span>
-                <input id="bill-amount" class="billing-amount-input" type="number" name="amount" min="0" step="0.01" placeholder="0,00">
+                <input id="bill-amount" class="billing-amount-input" type="text" name="amount" class="billing-amount-input bemora-money" inputmode="numeric" maxlength="16" placeholder="0,00">
             </label>
 
             <label>Dia do vencimento
-                <input id="bill-day" type="number" name="due_day" min="1" max="31" value="10" required>
+                <input id="bill-day" type="number" name="due_day" min="1" max="31" step="1" value="10" required>
             </label>
         </div>
 
+        <label class="bemora-business-option"><input id="bill-business-day" type="checkbox" name="due_business_day" value="1"><span><strong>Vencimento no próximo dia útil</strong><small>Se cair no fim de semana ou feriado nacional, passa ao próximo dia útil.</small></span></label>
+        <p class="bemora-due-preview" id="bemora-due-preview" role="status"></p>
         <label>Tipo de conta
             <select id="bill-type" class="billing-type-select" name="billing_type" required>
                 <option value="fixed">Fixa — mesmo valor todo mês</option>
@@ -428,6 +431,7 @@ function openNewBill() {
     document.getElementById('bill-dialog-subtitle').textContent = 'Defina o vencimento e como esta conta se repete.';
     document.getElementById('bill-type').value = 'fixed';
     document.getElementById('bill-day').value = '10';
+    document.getElementById('bill-business-day').checked=false;
     document.getElementById('bill-start').value = '<?= e($month) ?>';
     document.getElementById('bill-total').value = '10';
 
@@ -435,13 +439,14 @@ function openNewBill() {
     document.getElementById('bill-dialog').showModal();
 }
 
-function openBillEditor(id, name, type, amount, dueDay, startMonth, installmentTotal) {
+function openBillEditor(id, name, type, amount, dueDay, startMonth, installmentTotal, businessDay) {
     document.getElementById('bill-action').value = 'update_bill';
     document.getElementById('bill-id').value = id;
     document.getElementById('bill-name').value = name;
     document.getElementById('bill-type').value = type;
-    document.getElementById('bill-amount').value = amount || '';
+    document.getElementById('bill-amount').value = Number(amount)>0 ? Number(amount).toFixed(2).replace('.',',') : '';
     document.getElementById('bill-day').value = dueDay;
+    document.getElementById('bill-business-day').checked=!!businessDay;
     document.getElementById('bill-start').value = startMonth || '<?= e($month) ?>';
     document.getElementById('bill-total').value = installmentTotal || 10;
     document.getElementById('bill-dialog-title').textContent = 'Editar conta prevista';
@@ -460,5 +465,7 @@ function openMonthlyAmount(id, name, amount) {
 
 syncBillingForm();
 </script>
+<script src="/assets/bemora-bill-inputs.js?v=1" defer></script>
+<link rel="stylesheet" href="/assets/bemora-bill-inputs.css?v=1">
 </body>
 </html>
