@@ -6,3 +6,5 @@ Thumbs.db
 storage/receipts/*
 !storage/receipts/.htaccess
 !storage/receipts/.gitignore
+
+/vendor/
