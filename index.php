@@ -1,134 +1,47 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . '/includes/auth.php';
-require_once __DIR__ . '/includes/monthly_budget.php';
-require_once __DIR__ . '/includes/finance_scope.php';
-require_once __DIR__ . '/includes/layout.php';
-require_once __DIR__ . '/includes/reports.php';
-
-$user = require_family_access();
-$pdo = db();
-$month = selected_month();
-$ready = monthly_budget_ready($pdo);
-$data = $ready ? monthly_budget_data($pdo, $month) : null;
-$flash = pull_flash();
-$csrf = csrf_token();
-$date = new DateTimeImmutable($month . '-01');
-$monthNames = [1=>'Janeiro',2=>'Fevereiro',3=>'Março',4=>'Abril',5=>'Maio',6=>'Junho',7=>'Julho',8=>'Agosto',9=>'Setembro',10=>'Outubro',11=>'Novembro',12=>'Dezembro'];
-$label = $monthNames[(int)$date->format('n')] . ' de ' . $date->format('Y');
-if ($ready) {
-    $stmt = $pdo->prepare("SELECT description,category,type,amount,occurred_on
-      FROM transactions WHERE tenant_id=? AND type IN ('income','expense') AND occurred_on >= ? AND occurred_on < ?" . finance_read_owner_clause($pdo,'transactions') . "
-      ORDER BY occurred_on DESC,id DESC LIMIT 6");
-    $stmt->execute([(int)$user['tenant_id'],$month.'-01',$date->modify('+1 month')->format('Y-m-d')]);
-    $recent = $stmt->fetchAll();
-    foreach($data['profileIncomes']??[] as $source){
-        $recent[]=[
-          'description'=>$source['description'],
-          'category'=>$source['category'].' · Prevista',
-          'type'=>'income','amount'=>$source['amount'],
-          'occurred_on'=>$source['occurred_on'],
-        ];
-    }
-    usort($recent,static fn($a,$b)=>strcmp((string)$b['occurred_on'],(string)$a['occurred_on']));
-    $recent=array_slice($recent,0,6);
-    $reportScope=finance_scope($pdo,$user);
-    $miniTrend=bemora_report_series($pdo,$month,$reportScope,'mine',6);
-    $rankedBills = array_values(array_filter($data['bills'],static fn($b) => !$b['needs_amount'] && (float)$b['amount']>0));
-    usort($rankedBills,static fn($a,$b) => (float)$b['amount'] <=> (float)$a['amount']);
-}
-?>
-<!doctype html>
-<html lang="pt-BR">
-<head>
+// Public landing page: no session, database or authentication required.
+?><!doctype html>
+<html lang="pt-BR"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Painel • Bemora</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=1">
-<link rel="stylesheet" href="/assets/budget-dashboard.css?v=2">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=3"><link rel="stylesheet" href="/assets/bemora-dashboard-evolution.css?v=2"></head>
-<body class="bemora-finance">
-<div class="shell ref-shell"><?php render_sidebar('dashboard',$csrf); ?>
-<main><?php render_topbar($user); ?>
-<div class="budget-wrap budget-dashboard">
-<header class="budget-title">
-<div><p class="eyebrow">VISÃO GERAL · <?= e($label) ?></p>
-<h1>Painel financeiro</h1>
-<p>Uma visão clara de tudo que está previsto para o mês.</p></div>
-</header>
-<?php if($flash): ?><div class="budget-alert"><?= e($flash['message']) ?></div><?php endif; ?>
-<?php if(!$ready): ?>
-<div class="budget-alert">Atualização necessária: execute as migrations em <a href="/configuracoes/manutencao">Configurações → Manutenção</a>.</div>
-<?php else: ?>
-<section class="budget-grid" aria-label="Indicadores financeiros">
-<article class="budget-card metric"><span class="metric-label">Receitas previstas</span><strong><?= money($data['incomeTotal']) ?></strong><small><?= money($data['recordedIncomeTotal']) ?> em lançamentos</small></article>
-<article class="budget-card metric"><span class="metric-label">Contas previstas</span><strong><?= money($data['billTotal']) ?></strong><small><?= count($data['bills']) ?> contas no mês</small></article>
-<article class="budget-card metric metric-feature"><span class="metric-label">Disponível após contas</span><strong><?= money($data['after_bills']) ?></strong><small>Antes dos gastos avulsos</small></article>
-<article class="budget-card metric"><span class="metric-label">Saldo projetado</span><strong><?= money($data['expected_end']) ?></strong><small>Após gastos registrados</small></article>
-</section>
-<?php if($data['missingBills']): ?><div class="budget-inline-alert" role="status">⚠ <?= (int)$data['missingBills'] ?> conta(s) sem valor informado. A previsão pode estar incompleta.</div><?php endif; ?>
-<section class="dashboard-visual-grid" aria-label="Análise visual do mês">
-<article class="budget-card dashboard-main-chart">
-<div class="dashboard-section-head"><div><h2>Para onde vai o dinheiro</h2><p>Distribuição da receita mensal entre compromissos, gastos e saldo projetado.</p></div><span class="budget-chart-pill"><?= e($label) ?></span></div>
-<div class="dashboard-donut-layout">
-<div class="dashboard-donut" id="budget-donut" role="img" aria-label="Gráfico de distribuição do orçamento">
-<div class="dashboard-donut-center"><span id="donut-focus-label">Saldo projetado</span><strong id="donut-focus-value"><?= money($data['expected_end']) ?></strong><small id="donut-focus-share">do total previsto</small></div>
-</div>
-<div class="dashboard-chart-side">
-<div class="dashboard-legend" id="budget-chart-legend"></div>
-<div class="dashboard-chart-foot">Toque em uma categoria para destacar sua participação.</div>
-</div>
-</div>
-</article>
-<article class="budget-card dashboard-breakdown">
-<div class="dashboard-section-head"><div><h2>Maiores contas</h2><p>Principais compromissos previstos no mês.</p></div><span class="budget-chart-pill"><?= count($rankedBills) ?> com valor</span></div>
-<?php if($rankedBills): ?>
-<div class="dashboard-bill-bars">
-<?php foreach(array_slice($rankedBills,0,6) as $bill):
-$ratio=$data['billTotal']>0?min(100,100*(float)$bill['amount']/(float)$data['billTotal']):0;
-?>
-<div class="dashboard-bill">
-<div class="dashboard-bill-top"><span><?= e($bill['name']) ?></span><strong><?= money($bill['amount']) ?></strong></div>
-<div class="dashboard-track"><span style="width:<?= number_format($ratio,2,'.','') ?>%"></span></div>
-</div>
-<?php endforeach; ?>
-</div>
-<?php else: ?><p class="dashboard-empty">Nenhuma conta com valor previsto neste mês.</p><?php endif; ?>
-</article>
-</section>
-<section class="budget-card bemora-dashboard-trend">
-<div class="dashboard-section-head"><div><h2><i class="bi bi-graph-up-arrow"></i> Sua evolução financeira</h2><p>Compare as receitas, contas e o saldo projetado dos últimos seis meses.</p></div><a href="/relatorios?mes=<?= e($month) ?>" class="bemora-report-link">Abrir relatórios <i class="bi bi-arrow-right"></i></a></div>
-<div class="bemora-dashboard-trend-bars" id="bemora-dashboard-trend-bars">
-<?php $miniMax=max(1,...array_map(static fn($r)=>max(0,(float)$r['income'],(float)$r['bills']+(float)$r['expenses']),$miniTrend)); foreach($miniTrend as $item): ?>
-<button type="button" class="bemora-dashboard-trend-month" data-month="<?= e($item['month']) ?>" data-income="<?= e((string)$item['income']) ?>" data-costs="<?= e((string)($item['bills']+$item['expenses'])) ?>" data-balance="<?= e((string)$item['balance']) ?>" aria-label="Ver valores de <?= e($item['month']) ?>"><div class="bemora-dashboard-trend-columns"><span class="income" style="height:<?= number_format(max(2,100*$item['income']/$miniMax),2,'.','') ?>%" title="Receitas: <?= e(money($item['income'])) ?>"></span><span class="expense" style="height:<?= number_format(max(2,100*($item['bills']+$item['expenses'])/$miniMax),2,'.','') ?>%" title="Contas e gastos: <?= e(money($item['bills']+$item['expenses'])) ?>"></span></div><small><?= e(substr($item['month'],5,2).'/'.substr($item['month'],2,2)) ?></small></button>
-<?php endforeach; ?>
-</div><p id="bemora-dashboard-trend-detail" class="bemora-dashboard-trend-detail" aria-live="polite">Selecione um mês para consultar os valores.</p><div class="bemora-dashboard-trend-legend"><span><i class="income"></i> Receitas</span><span><i class="expense"></i> Contas e gastos</span></div></section>
-<section class="dashboard-bottom-grid">
-<article class="budget-card dashboard-stat-panel">
-<div class="dashboard-section-head"><div><h2>Resumo do mês</h2><p>Valores previstos, sem depender de confirmação de pagamento.</p></div></div>
-<div class="dashboard-summary-row"><span>Receitas recorrentes e do perfil</span><strong><?= money($data['recurringIncomeTotal']) ?></strong></div>
-<div class="dashboard-summary-row"><span>Receitas lançadas</span><strong><?= money($data['recordedIncomeTotal']) ?></strong></div>
-<div class="dashboard-summary-row"><span>Gastos avulsos registrados</span><strong><?= money($data['variableSpent']) ?></strong></div>
-<div class="dashboard-summary-row"><span>Valor destinado a categorias</span><strong><?= money($data['allocated']) ?></strong></div>
-<div class="dashboard-summary-row"><span>Ainda sem destino</span><strong><?= money($data['unallocated']) ?></strong></div>
-</article>
-<article class="budget-card dashboard-recent">
-<div class="dashboard-section-head"><div><h2>Últimos lançamentos</h2><p>Movimentações e rendas mensais previstas em <?= e($label) ?>.</p></div><a href="/movimentacoes">Ver histórico →</a></div>
-<?php if($recent): ?>
-<?php foreach($recent as $transaction): ?>
-<div class="dashboard-transaction"><div><strong><?= e($transaction['description']) ?></strong><small><?= e($transaction['category']) ?> · <?= e(date('d/m',strtotime($transaction['occurred_on']))) ?></small></div><span class="<?= $transaction['type']==='income'?'income':'expense' ?>"><?= $transaction['type']==='income'?'+':'−' ?> <?= money($transaction['amount']) ?></span></div>
-<?php endforeach; ?>
-<?php else: ?><p class="dashboard-empty">Nenhum lançamento para este mês.</p><?php endif; ?>
-</article>
-</section>
-<p class="dashboard-disclaimer">Os números são projeções do mês selecionado, não o saldo de uma conta bancária. Contas entram no cálculo mesmo sem confirmação de pagamento.</p>
-<script id="budget-visual-data" type="application/json"><?= json_encode([
-'income'=>(float)$data['incomeTotal'],
-'bills'=>(float)$data['billTotal'],
-'spent'=>(float)$data['variableSpent'],
-'remaining'=>(float)$data['expected_end']
-],JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) ?></script>
-<?php endif; ?>
-</div>
-</main></div>
-<script src="/assets/budget-dashboard.js?v=2" defer></script><script src="/assets/bemora-dashboard-evolution.js?v=1" defer></script>
-</body></html>
+<meta name="description" content="Bemora: organize suas finanças pessoais, em casal ou em família. Lançamentos, contas previstas, relatórios e privacidade em um só lugar.">
+<meta name="theme-color" content="#064e41">
+<title>Bemora — Sua vida financeira mais leve</title>
+<link rel="icon" href="/assets/brand/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/bemora-landing.css?v=1">
+</head><body id="inicio">
+<header class="site-header"><div class="site-container navigation">
+<a class="site-brand" href="/" aria-label="Bemora, início"><img src="/assets/brand/logo.png" alt="Bemora by Anoar"></a>
+<nav class="desktop-nav" aria-label="Menu principal"><a href="#recursos">Funcionalidades</a><a href="#para-quem">Para quem é</a><a href="#como-funciona">Como funciona</a><a href="#duvidas">Dúvidas</a></nav>
+<div class="nav-actions"><a class="nav-login" href="/login">Entrar</a><a class="button button-dark nav-cta" href="#contato">Conhecer o Bemora <span aria-hidden="true">↗</span></a></div>
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-nav" aria-label="Abrir menu"><span></span><span></span><span></span></button>
+</div><nav class="mobile-nav" id="mobile-nav" aria-label="Menu mobile" hidden><a href="#recursos">Funcionalidades</a><a href="#para-quem">Para quem é</a><a href="#como-funciona">Como funciona</a><a href="#duvidas">Dúvidas</a><a href="/login">Entrar na minha conta</a></nav></header>
+<main>
+<section class="hero"><div class="site-container hero-grid"><div class="hero-copy">
+<span class="eyebrow"><span class="mini-star">✳</span> BEM-ESTAR FINANCEIRO, DO SEU JEITO</span>
+<h1>Seu dinheiro em ordem.<br><em>Sua vida mais leve.</em></h1>
+<p class="hero-description">Seu espaço para cuidar do que importa. Organize ganhos, acompanhe contas e entenda suas finanças — sozinho, a dois ou com toda a família.</p>
+<div class="hero-buttons"><a href="#contato" class="button button-primary">Quero conhecer o Bemora <span>↗</span></a><a href="#recursos" class="button button-outline">Explorar recursos <span>↓</span></a></div>
+<div class="hero-trust"><span class="trust-dots"><i></i><i></i><i></i></span><span>Mais clareza nas decisões de todos os dias.</span></div>
+</div><div class="hero-art"><div class="hero-orbit orbit-one"></div><div class="hero-orbit orbit-two"></div>
+<div class="mock-main"><div class="mock-top"><div class="mock-symbol">◫</div><span>Visão financeira</span><span class="mock-top-date">Este mês <b>⌄</b></span></div><div class="mock-heading">Seu dinheiro, com mais clareza.</div><div class="mock-kpis"><div><small>Receitas previstas</small><strong>R$ 5.420,00</strong><span class="good">↗ Organizadas</span></div><div><small>Contas previstas</small><strong>R$ 2.180,00</strong><span>Próximos compromissos</span></div></div><div class="mock-chart-title">Distribuição financeira <span>•••</span></div><div class="mock-chart"><div class="mock-ring"></div><div class="mock-legend"><div><i class="dot deep"></i>Contas previstas <strong>40%</strong></div><div><i class="dot warm"></i>Gastos do mês <strong>18%</strong></div><div><i class="dot mint"></i>Disponível <strong>42%</strong></div></div></div><div class="mock-foot">Uma visão simples de tudo o que importa.</div></div>
+<div class="float-card float-card-one"><span class="float-icon">✓</span><div><b>Contas organizadas</b><small>Mais tranquilidade para planejar</small></div></div>
+<div class="float-card float-card-two"><span class="float-emoji">✧</span><div><b>Seu ritmo, suas escolhas</b><small>Individual ou em família</small></div></div>
+</div></div></section>
+<section class="strip"><div class="site-container strip-inner"><span>UM JEITO MAIS LEVE DE CUIDAR DAS FINANÇAS</span><div><b>Individual</b><i></i><b>Casal</b><i></i><b>Família</b></div></div></section>
+<section id="recursos" class="section features"><div class="site-container"><div class="section-heading"><span class="eyebrow">TUDO EM UM SÓ LUGAR</span><h2>Menos planilhas.<br><em>Mais tempo para viver.</em></h2><p>As ferramentas de que você precisa para ter uma relação mais simples e consciente com seu dinheiro.</p></div>
+<div class="feature-grid"><article class="feature-card"><span class="feature-icon">↗</span><span class="feature-index">01 /</span><h3>Lançamentos sem complicação</h3><p>Registre seus ganhos e gastos em poucos passos. Acompanhe o movimento do mês com clareza.</p><div class="feature-lines"><i></i><i></i><i></i></div></article>
+<article class="feature-card"><span class="feature-icon">▤</span><span class="feature-index">02 /</span><h3>Contas sob controle</h3><p>Organize vencimentos e acompanhe contas fixas, variáveis e parceladas, mês a mês.</p><div class="feature-dates"><b>05</b><b>15</b><b>25</b></div></article>
+<article class="feature-card"><span class="feature-icon">◔</span><span class="feature-index">03 /</span><h3>Relatórios que fazem sentido</h3><p>Entenda sua evolução financeira e compare períodos para planejar os próximos passos.</p><div class="feature-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+<article class="feature-card"><span class="feature-icon">♧</span><span class="feature-index">04 /</span><h3>Seu espaço, sua privacidade</h3><p>Escolha entre organizar as finanças em conjunto ou manter informações individuais separadas.</p><div class="feature-pills"><span>Meu espaço</span><span>Família</span></div></article></div></div></section>
+<section id="para-quem" class="section audience"><div class="site-container"><div class="section-heading"><span class="eyebrow">FEITO PARA A VIDA REAL</span><h2>Cada família é única.<br><em>O Bemora acompanha.</em></h2></div><div class="audience-grid"><article><span>01</span><div class="audience-icon">◡</div><h3>Para você</h3><p>Organize suas receitas, despesas e compromissos do jeito que funciona na sua rotina.</p></article><article><span>02</span><div class="audience-icon">♡</div><h3>Para o casal</h3><p>Conversem sobre dinheiro com mais clareza e acompanhem as decisões da vida a dois.</p></article><article><span>03</span><div class="audience-icon">♧</div><h3>Para a família</h3><p>Um lugar para organizar as finanças familiares e acompanhar as responsabilidades de cada pessoa.</p></article></div></div></section>
+<section id="como-funciona" class="section steps"><div class="site-container steps-grid"><div><span class="eyebrow">SIMPLES DESDE O PRIMEIRO DIA</span><h2>Comece com o que você tem.<br><em>Construa com tranquilidade.</em></h2><p>Nada de sistemas complicados. O Bemora ajuda você a enxergar o presente e se preparar para o futuro.</p><a href="#contato" class="text-link">Quero começar <span>↗</span></a></div><div class="steps-list"><div><span>01</span><article><h3>Entre no seu espaço</h3><p>Acesse seu ambiente pessoal ou familiar com segurança.</p></article></div><div><span>02</span><article><h3>Organize sua rotina financeira</h3><p>Cadastre fontes de renda, contas previstas e movimentações.</p></article></div><div><span>03</span><article><h3>Acompanhe sua evolução</h3><p>Veja indicadores e relatórios para tomar decisões com mais confiança.</p></article></div></div></div></section>
+<section class="section statement"><div class="site-container statement-inner"><span>✳</span><p>Organizar o dinheiro não precisa ser complicado. <em>Precisa fazer sentido para a sua vida.</em></p><small>BEMORA · BY ANOAR</small></div></section>
+<section id="duvidas" class="section faq"><div class="site-container faq-grid"><div><span class="eyebrow">AINDA TEM DÚVIDAS?</span><h2>Estamos aqui<br><em>para simplificar.</em></h2><p>Algumas respostas para começar com tranquilidade.</p></div><div class="faq-list"><details><summary>O Bemora é para uma pessoa ou para famílias?<span>+</span></summary><p>Para os dois! Você pode organizar suas finanças pessoais, em casal ou com a família, conforme o ambiente configurado.</p></details><details><summary>Posso separar minhas finanças das outras pessoas?<span>+</span></summary><p>Sim. O Bemora oferece opções para informações financeiras compartilhadas e individuais, conforme a configuração da sua família.</p></details><details><summary>Preciso instalar algum programa?<span>+</span></summary><p>Não. O Bemora funciona pelo navegador, no computador ou no celular.</p></details><details><summary>Como posso conhecer os planos?<span>+</span></summary><p>Entre em contato com nossa equipe comercial pelo WhatsApp para conhecer as condições de contratação disponíveis.</p></details></div></div></section>
+<section id="contato" class="cta-section"><div class="site-container cta-box"><div class="cta-flower">✳</div><span class="eyebrow">COMECE UMA NOVA RELAÇÃO COM O SEU DINHEIRO</span><h2>Mais organização.<br><em>Mais leveza todos os dias.</em></h2><p>Converse com a nossa equipe e descubra como o Bemora pode fazer parte da sua rotina.</p><a class="button button-white" href="https://wa.me/5532984075039?text=Ol%C3%A1%21%20Quero%20conhecer%20o%20Bemora." target="_blank" rel="noopener noreferrer">Falar com o comercial <span>↗</span></a><small>Atendimento pelo WhatsApp · (32) 98407-5039</small></div></section>
+</main>
+<footer class="footer"><div class="site-container footer-main"><div><a href="/"><img src="/assets/brand/logo.png" alt="Bemora by Anoar"></a><p>Seu dinheiro em ordem.<br>Sua vida mais leve.</p></div><div><strong>Navegação</strong><a href="#recursos">Funcionalidades</a><a href="#para-quem">Para quem é</a><a href="#como-funciona">Como funciona</a><a href="/login">Acessar conta</a></div><div><strong>Fale com a gente</strong><a href="https://wa.me/5532984075039" target="_blank" rel="noopener noreferrer">WhatsApp: (32) 98407-5039</a><a href="mailto:bemora@anoar.com.br">bemora@anoar.com.br</a></div></div><div class="site-container footer-bottom"><span>© <?= date('Y') ?> Bemora. Todos os direitos reservados.</span><span>Um produto <a href="https://anoar.com.br" target="_blank" rel="noopener noreferrer">Anoar</a> ♡</span></div></footer>
+<script src="/assets/bemora-landing.js?v=1" defer></script></body></html>
