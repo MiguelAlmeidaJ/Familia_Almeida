@@ -16,12 +16,12 @@ function profile_monthly_income(PDO $pdo,string $month):array {
  $state=$pdo->prepare('SELECT finance_mode FROM tenants WHERE id=? AND active=1');
  $state->execute([$tenantId]);$mode=$state->fetchColumn();
  if(!in_array($mode,['shared','separate'],true))return [];
- $sql="SELECT s.id,s.user_id,s.job_title,s.salary,s.payday,u.name AS member_name
-       FROM user_income_sources s
-       JOIN tenant_users tu ON tu.user_id=s.user_id AND tu.tenant_id=?
-       JOIN users u ON u.id=s.user_id";
- $params=[$tenantId];
- if($mode==='separate'){$sql.=' WHERE s.user_id=?';$params[]=$userId;}
+ $versioned=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='user_income_source_versions'")->fetchColumn()===1;
+ $sql=$versioned
+ ? "SELECT s.id,s.user_id,v.job_title,v.salary,v.payday,u.name AS member_name FROM user_income_sources s JOIN tenant_users tu ON tu.user_id=s.user_id AND tu.tenant_id=? JOIN users u ON u.id=s.user_id JOIN user_income_source_versions v ON v.source_id=s.id AND v.valid_from=(SELECT MAX(v2.valid_from) FROM user_income_source_versions v2 WHERE v2.source_id=s.id AND v2.valid_from<=?) WHERE (s.ended_month IS NULL OR s.ended_month>=?)"
+ : "SELECT s.id,s.user_id,s.job_title,s.salary,s.payday,u.name AS member_name FROM user_income_sources s JOIN tenant_users tu ON tu.user_id=s.user_id AND tu.tenant_id=? JOIN users u ON u.id=s.user_id WHERE DATE_FORMAT(s.created_at,'%Y-%m')<=?";
+ $params=$versioned?[$tenantId,$month,$month]:[$tenantId,$month];
+ if($mode==='separate'){$sql.=' AND s.user_id=?';$params[]=$userId;}
  $sql.=' ORDER BY s.user_id,s.id';
  $stmt=$pdo->prepare($sql);$stmt->execute($params);
  $maxDay=(int)(new DateTimeImmutable($month.'-01'))->format('t');
