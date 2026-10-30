@@ -27,8 +27,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if(time()-$last<60)throw new RuntimeException('Aguarde pelo menos 60 segundos entre testes SMTP.');
             $_SESSION['last_smtp_test_at']=time();
             require_once __DIR__.'/../includes/mailer.php';
+            require_once __DIR__.'/../includes/email_templates.php';
             $body="Olá!\n\nEste é um teste de envio SMTP do Bemora, iniciado pela área de Manutenção.\n\nData e hora: ".date('d/m/Y H:i:s')."\n\nSe você recebeu esta mensagem, o servidor SMTP aceitou o envio. A entrega depende também do serviço de e-mail.\n\nBemora · By Anoar";
-            bemora_send_email($destination,'Bemora — teste de envio SMTP',$body);
+            bemora_send_email($destination,'Bemora — teste de envio SMTP',$body,bemora_smtp_test_email(date('d/m/Y H:i:s')));
             flash('success','Servidor SMTP aceitou o e-mail de teste destinado a '.$destination.'. Confira a caixa de entrada e o spam.');
         } else {
             flash('error', 'Ação de manutenção inválida.');
