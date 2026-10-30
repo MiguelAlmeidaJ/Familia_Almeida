@@ -130,6 +130,8 @@ $incomeSource=$pdo->prepare("INSERT INTO user_income_sources(user_id,job_title,s
 $incomeSource->execute([1,'Emprego principal',1850,31]);
 $incomeSource->execute([2,'Autônomo',600,15]);
 $incomeSource->execute([3,'Outra família',9999,20]);
+$pdo->exec("INSERT INTO user_income_source_versions(source_id,user_id,valid_from,job_title,salary,payday) SELECT id,user_id,'2026-01',job_title,salary,payday FROM user_income_sources");
+
 $_SESSION['user_id']=1;$_SESSION['tenant_id']=$family;
 $reportScope=finance_scope($pdo,['id'=>1,'tenant_id'=>$family]);
 $mineReport=bemora_report_month($pdo,'2026-10',$reportScope,'mine');
