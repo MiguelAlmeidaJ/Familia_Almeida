@@ -3,6 +3,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/tenant.php';
 require_once __DIR__.'/finance_scope.php';
+require_once __DIR__.'/profile_income.php';
 
 function db_column_exists(PDO $pdo, string $table, string $column): bool
 {
@@ -177,6 +178,17 @@ function dashboard_data(PDO $pdo, string $month): array
     );
     $stmt->execute([require_tenant_id(),$start, $next]);
     $transactions = $stmt->fetchAll();
+    // Profile sources are forecast income rows, not editable transactions.
+    $profileIncome=profile_monthly_income($pdo,$month);
+    foreach($profileIncome as $source){
+        $transactions[]=[
+          'id'=>0, 'type'=>'income', 'description'=>$source['description'],
+          'category'=>$source['category'], 'amount'=>$source['amount'],
+          'date'=>$source['date'],'debt_id'=>null,'bill_payment_id'=>null,
+          'created_by_name'=>$source['member_name'],'virtual_income'=>true,
+        ];
+    }
+    usort($transactions,static fn($a,$b)=>strcmp((string)$b['date'],(string)$a['date']));
 
     $totals = ['income' => 0.0, 'expense' => 0.0, 'investment' => 0.0, 'debt' => 0.0];
     foreach ($transactions as &$transaction) {
