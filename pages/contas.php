@@ -320,7 +320,7 @@ function fixed_bill_subtitle(array $bill): string
         <div class="fixed-reference-dialog-grid">
             <label>
                 <span class="amount-field-label">Valor (R$)</span>
-                <input id="bill-amount" class="billing-amount-input" type="text" name="amount" class="billing-amount-input bemora-money" inputmode="numeric" maxlength="16" placeholder="0,00">
+                <input id="bill-amount" class="billing-amount-input bemora-money" type="text" name="amount" inputmode="numeric" maxlength="16" placeholder="0,00">
             </label>
 
             <label>Dia do vencimento
@@ -471,7 +471,7 @@ function openMonthlyAmount(id, name, amount) {
 
 syncBillingForm();
 </script>
-<script src="/assets/bemora-bill-inputs.js?v=2" defer></script>
-<link rel="stylesheet" href="/assets/bemora-bill-inputs.css?v=1">
+<script src="/assets/bemora-bill-inputs.js?v=3" defer></script>
+<link rel="stylesheet" href="/assets/bemora-bill-inputs.css?v=3">
 </body>
 </html>
