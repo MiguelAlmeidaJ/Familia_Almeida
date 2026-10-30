@@ -77,7 +77,7 @@ try{
  }elseif($action==='remove_avatar'){
   $q=$pdo->prepare('SELECT avatar_path FROM users WHERE id=?');$q->execute([$uid]);$previous=$q->fetchColumn();
   $pdo->prepare('UPDATE users SET avatar_path=NULL WHERE id=?')->execute([$uid]);
-  if(is_string($previous)&&preg_match('/^[a-f0-9]{48}\.jpg$/',$previous))@unlink(dirname(__DIR__,2).'/bemora-private/avatars/'.$previous);
+  if(is_string($previous)&&preg_match('/^[a-f0-9]{48}\.jpg$/',$previous))@unlink(dirname(__DIR__).'/storage/avatars/'.$previous);
   flash('success','Foto removida.');
  }else throw new RuntimeException('Ação inválida.');
 }catch(Throwable $e){
