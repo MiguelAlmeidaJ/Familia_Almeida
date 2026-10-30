@@ -36,7 +36,7 @@ function render_sidebar(string $active, string $csrf): void
 {
     $items = [
         ['key' => 'dashboard', 'href' => '/', 'label' => 'Painel'],
-        ['key' => 'movimentacoes', 'href' => '/movimentacoes', 'label' => 'Ganhos e gastos'],
+        ['key' => 'movimentacoes', 'href' => '/movimentacoes', 'label' => 'Lançamentos'],
         ['key' => 'contas', 'href' => '/contas', 'label' => 'Contas previstas'],
         ['key' => 'categorias', 'href' => '/categorias', 'label' => 'Categorias'],
         ['key' => 'membros', 'href' => '/membros', 'label' => 'Membros'],
@@ -124,6 +124,39 @@ function render_topbar(array $user, string $context = 'Espaço privado'): void
             <span><?= e($context) ?></span>
         </div>
     </header>
+    <?php
+    // A single quick-entry action shared by authenticated family pages.
+    $quickCsrf=csrf_token();
+    $quickMonth=selected_month();
+    $quickDate=$quickMonth===date('Y-m')?date('Y-m-d'):$quickMonth.'-01';
+    $quickPath=(string)(parse_url($_SERVER['REQUEST_URI']??'/',PHP_URL_PATH)?:'/');
+    $quickAllowed=['/','/movimentacoes','/contas','/categorias','/membros','/meu-perfil','/minha-conta'];
+    $quickReturn=in_array($quickPath,$quickAllowed,true)?$quickPath:'/movimentacoes';
+    ?>
+    <link rel="stylesheet" href="/assets/bemora-quick-entry.css?v=1">
+    <button class="bemora-fab" id="bemora-fab" type="button" aria-haspopup="dialog" aria-controls="bemora-quick-dialog" title="Novo lançamento"><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Novo lançamento</span></button>
+    <dialog class="bemora-quick-dialog" id="bemora-quick-dialog" aria-labelledby="bemora-quick-title">
+      <div class="bemora-quick-head"><div class="bemora-quick-symbol"><i class="bi bi-arrow-left-right"></i></div><div><h2 id="bemora-quick-title">Novo lançamento</h2><p>Registre uma movimentação em poucos passos.</p></div><button type="button" class="bemora-quick-close" id="bemora-quick-close" aria-label="Fechar"><i class="bi bi-x-lg"></i></button></div>
+      <form method="post" action="/acao" enctype="multipart/form-data" id="bemora-quick-form">
+        <input type="hidden" name="csrf_token" value="<?= e($quickCsrf) ?>">
+        <input type="hidden" name="action" value="add_transaction">
+        <input type="hidden" name="return_to" value="<?= e($quickReturn) ?>">
+        <input type="hidden" name="month" value="<?= e($quickMonth) ?>">
+        <fieldset class="bemora-quick-types"><legend>Tipo de movimentação</legend>
+          <label><input type="radio" name="type" value="expense" checked><span><i class="bi bi-arrow-up-right"></i> Gasto</span></label>
+          <label><input type="radio" name="type" value="income"><span><i class="bi bi-arrow-down-left"></i> Ganho</span></label>
+          <label><input type="radio" name="type" value="investment"><span><i class="bi bi-graph-up-arrow"></i> Investimento</span></label>
+        </fieldset>
+        <div class="bemora-quick-fields"><label>Descrição<input class="form-control" name="description" maxlength="160" placeholder="Ex.: Mercado, serviço, pagamento..." required></label>
+        <div class="bemora-quick-grid"><label>Valor (R$)<input class="form-control" name="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0,00" required></label>
+        <label>Data<input class="form-control" name="date" type="date" value="<?= e($quickDate) ?>" required></label></div>
+        <label>Categoria<input class="form-control" name="category" maxlength="100" placeholder="Ex.: Alimentação" list="bemora-quick-categories" autocomplete="off" required></label>
+        <datalist id="bemora-quick-categories"></datalist>
+        <label class="bemora-quick-attachment" id="bemora-quick-attachment">Comprovante <small>(opcional, somente gastos)</small><input type="file" name="receipt_files[]" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf,.pdf"></label></div>
+        <div class="bemora-quick-footer"><button class="btn btn-outline-secondary" id="bemora-quick-cancel" type="button">Cancelar</button><button class="btn btn-success" type="submit"><i class="bi bi-check-lg"></i> Salvar lançamento</button></div>
+      </form>
+    </dialog>
+    <script src="/assets/bemora-quick-entry.js?v=1" defer></script>
     <style>
     .ref-topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
     .topbar-month{margin-left:auto;display:flex;align-items:center;gap:9px;border:1px solid #dde7eb;border-radius:12px;background:#fff;padding:4px 8px;color:#173749;white-space:nowrap}
