@@ -1,0 +1,37 @@
+/* Bemora planned bills — compact editorial ledger */
+.fixed-reference-page{max-width:1380px!important;padding-bottom:110px}
+.fixed-reference-heading{padding-bottom:12px}
+.fixed-reference-summary{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important}
+.fixed-reference-summary>div{padding:23px!important;border:1px solid #e1ece5!important;border-radius:16px!important;box-shadow:none!important;background:#fff!important}
+.fixed-reference-summary>div.paid{background:#ecf7f1!important}
+.fixed-reference-summary>div strong{font-variant-numeric:tabular-nums}
+.fixed-reference-card{border:1px solid #dfeae3!important;border-radius:18px!important;background:#fff!important;box-shadow:0 7px 28px rgba(25,75,55,.035)!important;overflow:hidden}
+.fixed-reference-card-head{padding:24px 26px 18px!important;border-bottom:1px solid #e5eee8}
+.fixed-reference-card-head h2{font-size:20px!important;font-weight:750!important;color:#0b5042!important}
+.fixed-reference-card-head p{color:#84968b!important;font-size:12px!important}
+.fixed-reference-list{padding:0 26px}
+.fixed-reference-row{display:grid!important;grid-template-columns:48px minmax(180px,1fr) minmax(128px,auto) minmax(120px,auto) auto!important;align-items:center!important;gap:16px!important;padding:17px 0!important;min-height:91px!important;border-bottom:1px solid #edf2ee!important}
+.fixed-reference-row:last-child{border-bottom:0!important}
+.fixed-reference-row:hover{background:#fcfefc}
+.fixed-reference-day{width:45px!important;height:49px!important;border-radius:10px!important;background:#f0f5f2!important;display:flex!important;flex-direction:column;justify-content:center;align-items:center}
+.fixed-reference-day small{font-size:9px!important;letter-spacing:.08em}
+.fixed-reference-day strong{font-size:18px!important}
+.fixed-reference-title strong{font-size:14px!important;color:#143f35}
+.fixed-reference-copy>span{font-size:11px!important;color:#789286!important}
+.fixed-reference-value{text-align:right}
+.fixed-reference-value strong{font-size:14px!important;white-space:nowrap;color:#0c493c;font-variant-numeric:tabular-nums}
+.bemora-month-value-button{border:1px solid #d5e9dc;border-radius:9px;padding:9px 11px;background:#f5faf6;color:#08765b;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;display:inline-flex;align-items:center;gap:7px;justify-content:center}
+.bemora-month-value-button:hover{background:#e6f5eb;border-color:#95ceb0}
+.bemora-pending-amount{font-size:11px;color:#9b7751}
+.fixed-reference-actions{display:flex!important;gap:6px!important;align-items:center!important;justify-content:flex-end}
+.fixed-reference-actions .fixed-icon-action{width:32px!important;height:32px!important;min-width:32px;display:grid!important;place-items:center;border-radius:8px!important}
+.fixed-reference-actions .fixed-text-action{font-size:11px!important;font-weight:700!important;white-space:nowrap}
+.fixed-reference-row.is-paid .fixed-reference-day{background:#e3f4e9!important}
+.fixed-reference-row.is-paid .fixed-reference-value strong{color:#288365}
+.fixed-reference-footer{background:#f9fbf9;color:#87958c;font-size:11px;padding:16px 26px!important}
+#monthly-amount-dialog{border:0!important;border-radius:18px!important;max-width:min(450px,calc(100vw - 25px))!important;box-shadow:0 30px 75px rgba(6,42,31,.24)!important}
+#monthly-amount-dialog::backdrop{background:rgba(5,38,30,.55)}
+#monthly-amount-dialog .fixed-reference-dialog-head h3{font-size:20px;color:#0b5243}
+#monthly-amount-dialog input{min-height:49px;border-radius:11px;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+@media(max-width:1100px){.fixed-reference-row{grid-template-columns:46px minmax(130px,1fr) minmax(100px,auto) auto!important}.bemora-month-value-button{grid-column:2/4;grid-row:2;justify-self:start}.fixed-reference-row.is-variable{grid-template-rows:auto auto}.fixed-reference-row.is-variable .fixed-reference-actions{grid-column:4;grid-row:1/3}.fixed-reference-row.is-variable .fixed-reference-value{grid-column:3}}
+@media(max-width:700px){.fixed-reference-summary{grid-template-columns:1fr!important}.fixed-reference-list{padding:0 15px}.fixed-reference-card-head{padding:19px 15px!important}.fixed-reference-row{grid-template-columns:42px minmax(0,1fr) auto!important;gap:9px!important;align-items:start!important}.fixed-reference-day{grid-row:1/3}.fixed-reference-copy{grid-column:2}.fixed-reference-value{grid-column:3!important;grid-row:1;text-align:right}.fixed-reference-actions{grid-column:2/4!important;grid-row:3!important;justify-content:flex-start!important;flex-wrap:wrap}.bemora-month-value-button{grid-column:2/4!important;grid-row:2!important}.fixed-reference-row.is-variable .fixed-reference-actions{grid-row:3!important}.fixed-reference-footer{padding:15px!important}}
