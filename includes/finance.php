@@ -57,6 +57,7 @@ function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false
                 b.amount AS base_amount,
                 b.due_day,
                 ' . (db_column_exists($pdo,'fixed_bills','due_business_day') ? 'b.due_business_day,' : '0 AS due_business_day,') . '
+                ' . (db_column_exists($pdo,'fixed_bills','due_mode') ? 'b.due_mode,b.business_day_rule,' : "'fixed' AS due_mode,NULL AS business_day_rule,") . '
                 b.start_month,
                 b.installment_total,
                 b.active,
@@ -79,6 +80,8 @@ function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false
                 b.amount AS base_amount,
                 b.due_day,
                 0 AS due_business_day,
+                'fixed' AS due_mode,
+                NULL AS business_day_rule,
                 NULL AS start_month,
                 NULL AS installment_total,
                 b.active,
@@ -146,7 +149,9 @@ function fixed_bills_data(PDO $pdo, string $month, bool $includeInactive = false
             'amount_due' => $amountDue,
             'due_day' => (int) $row['due_day'],
             'due_business_day' => (bool)($row['due_business_day'] ?? false),
-            'due_date' => bill_due_date($month,(int)$row['due_day'],(bool)($row['due_business_day'] ?? false)),
+            'due_date' => ($row['due_mode']??'fixed')==='business' ? bill_business_date($month,(string)$row['business_day_rule']) : bill_due_date($month,(int)$row['due_day'],(bool)($row['due_business_day']??false)),
+            'due_mode' => $row['due_mode']??'fixed',
+            'business_day_rule' => $row['business_day_rule']??null,
             'start_month' => $row['start_month'],
             'installment_total' => $row['installment_total'] !== null ? (int) $row['installment_total'] : null,
             'installment_number' => $installmentNumber,
