@@ -1,1 +1,23 @@
 .bemora-business-option{display:flex!important;align-items:flex-start!important;flex-direction:row!important;gap:11px!important;padding:13px!important;margin-top:14px;border:1px solid #d9e8df;border-radius:11px;background:#f7fbf8;cursor:pointer}.bemora-business-option>input{width:18px!important;min-height:18px!important;height:18px!important;margin-top:3px;accent-color:#087c65;flex-shrink:0}.bemora-business-option span{display:flex;flex-direction:column;gap:4px}.bemora-business-option strong{font-size:13px;color:#144c40}.bemora-business-option small{font-size:11px;color:#688477;line-height:1.5}.bemora-due-preview{font-size:12px;color:#377762;margin:8px 0 12px;line-height:1.5}.bemora-money{font-variant-numeric:tabular-nums}
+/* The label is a grid in the base theme; explicit hidden rules must win. */
+#bill-dialog label[hidden],
+#bemora-global-bill-dialog label[hidden],
+#bill-dialog .bemora-business-rule[hidden],
+#bemora-global-bill-dialog .bemora-business-rule[hidden]{display:none!important}
+#bill-dialog .fixed-reference-dialog-form{display:flex;flex-direction:column;gap:16px}
+#bill-dialog .fixed-reference-dialog-head{margin-bottom:0!important;padding-bottom:18px!important}
+#bill-dialog .fixed-reference-dialog-grid{gap:14px}
+#bill-dialog .fixed-reference-dialog-form>label{margin-top:0!important}
+#bill-dialog .bemora-due-preview,
+#bemora-global-bill-dialog .bemora-due-preview{border:1px solid #bee1cd;background:#eff9f2;padding:12px 14px;border-radius:12px;color:#086d55;font-size:13px;font-weight:650;margin:0}
+#bill-dialog select[name=due_mode],
+#bill-dialog select[name=business_day_rule],
+#bemora-global-bill-dialog select[name=due_mode],
+#bemora-global-bill-dialog select[name=business_day_rule]{min-height:47px;border:1px solid #d7e8dd;border-radius:11px;background-color:#fff;color:#154d3f;padding:10px 12px}
+#bill-dialog .fixed-reference-dialog-actions{margin-top:0!important}
+#bill-dialog .bemora-bill-form-note{margin:0!important}
+#bill-dialog .fixed-reference-dialog-form>label,
+#bemora-global-bill-dialog .bemora-quick-fields>label{line-height:1.5}
+#bill-dialog input:focus-visible,#bill-dialog select:focus-visible,
+#bemora-global-bill-dialog input:focus-visible,#bemora-global-bill-dialog select:focus-visible{outline:2px solid #2c9c7e;outline-offset:1px}
+@media(max-width:600px){#bill-dialog .fixed-reference-dialog-grid{grid-template-columns:1fr}}
