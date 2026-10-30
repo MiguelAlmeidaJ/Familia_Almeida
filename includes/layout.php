@@ -157,6 +157,29 @@ function render_topbar(array $user, string $context = 'Espaço privado'): void
       </form>
     </dialog>
     <script src="/assets/bemora-quick-entry.js?v=1" defer></script>
+    <link rel="stylesheet" href="/assets/bemora-global-actions.css?v=1">
+    <button class="bemora-global-bill-fab" type="button" id="bemora-global-bill-fab" aria-label="Nova conta prevista" title="Nova conta prevista" aria-haspopup="dialog" aria-controls="<?= $quickPath==='/contas'?'bill-dialog':'bemora-global-bill-dialog' ?>"><i class="bi bi-receipt-cutoff" aria-hidden="true"></i></button>
+    <?php if($quickPath!=='/contas'): ?>
+    <dialog id="bemora-global-bill-dialog" class="bemora-global-bill-dialog" aria-labelledby="bemora-global-bill-title">
+      <div class="bemora-quick-head"><div class="bemora-quick-symbol"><i class="bi bi-calendar-check"></i></div><div><h2 id="bemora-global-bill-title">Nova conta prevista</h2><p>Organize o vencimento e a recorrência.</p></div><button type="button" id="bemora-global-bill-close" class="bemora-quick-close" aria-label="Fechar"><i class="bi bi-x-lg"></i></button></div>
+      <form method="post" action="/acao" id="bemora-global-bill-form">
+        <input type="hidden" name="csrf_token" value="<?= e($quickCsrf) ?>">
+        <input type="hidden" name="action" value="add_bill">
+        <input type="hidden" name="return_to" value="<?= e($quickReturn) ?>">
+        <input type="hidden" name="month" value="<?= e($quickMonth) ?>">
+        <div class="bemora-quick-fields">
+          <label>Descrição<input class="form-control" name="name" maxlength="120" placeholder="Ex.: Aluguel, energia, internet" required></label>
+          <div class="bemora-quick-grid"><label>Valor mensal (R$)<input class="form-control" type="number" name="amount" min="0" step="0.01" inputmode="decimal" placeholder="0,00"></label><label>Dia do vencimento<input class="form-control" type="number" name="due_day" min="1" max="31" value="10" required></label></div>
+          <label>Tipo de conta<select class="form-select" name="billing_type" id="bemora-global-bill-type"><option value="fixed">Fixa — mesmo valor todo mês</option><option value="variable">Variável — valor definido por mês</option><option value="installment">Parcelada — quantidade determinada</option></select></label>
+          <div id="bemora-global-bill-installments" hidden><div class="bemora-quick-grid"><label>Mês de início<input class="form-control" type="month" name="start_month" value="<?= e($quickMonth) ?>"></label><label>Quantidade de parcelas<input class="form-control" type="number" name="installment_total" min="1" max="360" value="10"></label></div></div>
+          <p class="bemora-global-bill-note" id="bemora-global-bill-hint">O valor será repetido mensalmente. O pagamento é controlado em cada mês.</p>
+        </div>
+        <div class="bemora-quick-footer"><button class="btn btn-outline-secondary" type="button" id="bemora-global-bill-cancel">Cancelar</button><button class="btn btn-success" type="submit">Salvar conta</button></div>
+      </form>
+    </dialog>
+    <?php endif; ?>
+    <script src="/assets/bemora-global-actions.js?v=1" defer></script>
+
     <style>
     .ref-topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
     .topbar-month{margin-left:auto;display:flex;align-items:center;gap:9px;border:1px solid #dde7eb;border-radius:12px;background:#fff;padding:4px 8px;color:#173749;white-space:nowrap}
