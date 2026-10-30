@@ -79,7 +79,7 @@ $initialCycle=array_key_first(array_filter($plansByCycle,static fn($offers)=>cou
 <p class="landing-plan-members"><span aria-hidden="true">♧</span> Até <?= (int)$plan['max_members'] ?> <?= (int)$plan['max_members']===1?'pessoa':'pessoas' ?></p>
 <div class="landing-plan-details"><?= nl2br(htmlspecialchars($plan['details'],ENT_QUOTES,'UTF-8')) ?></div>
 <?php if($promoted): ?><p class="landing-plan-expires">Oferta válida até <?= htmlspecialchars(date('d/m/Y H:i',strtotime((string)$plan['promo_ends_at'])),ENT_QUOTES,'UTF-8') ?></p><?php endif; ?>
-<a class="button button-dark landing-plan-cta" href="https://wa.me/5532984075039?text=<?= rawurlencode('Olá! Quero contratar o plano '.$plan['name'].' ('.$cycleName.') do Bemora.') ?>" target="_blank" rel="noopener noreferrer">Escolher este plano <span aria-hidden="true">↗</span></a>
+<a class="button button-dark landing-plan-cta" href="/checkout?plano=<?= (int)$plan['id'] ?>">Escolher este plano <span aria-hidden="true">↗</span></a>
 </article>
 <?php endforeach; ?>
 </div></div>
