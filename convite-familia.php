@@ -35,6 +35,8 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    if(family_name_taken($pdo,$key))throw new RuntimeException('Esse nome de família já existe. Escolha uma das sugestões disponíveis.');
    $check=$pdo->prepare('SELECT 1 FROM users WHERE email=? LIMIT 1');
    foreach($emails as $email){$check->execute([$email]);if($check->fetchColumn())throw new RuntimeException('Um dos e-mails já possui cadastro. Use outro e-mail.');}
+   require_once __DIR__.'/includes/finance_scope.php';
+   if(getenv('BEMORA_MULTI_TENANT_RELEASE')!=='1'||!finance_separate_schema_ready($pdo))throw new RuntimeException('Cadastro temporariamente indisponível durante a validação de segurança.');
    $check=$pdo->prepare("INSERT INTO family_registrations(invitation_id,family_name,family_name_key,member_count,admin_member,members_json) VALUES(?,?,?,?,?,?)");
    $check->execute([(int)$invitation['id'],$name,$key,$count,$admin,json_encode($members,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)]);
    $pdo->prepare('UPDATE family_invitations SET used_at=NOW() WHERE id=?')->execute([(int)$invitation['id']]);
