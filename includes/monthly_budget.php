@@ -12,7 +12,9 @@ function monthly_budget_data(PDO $pdo, string $month): array {
     $incomeStmt=$pdo->prepare('SELECT id,name,amount FROM recurring_incomes WHERE tenant_id=? AND active=1' . finance_read_owner_clause($pdo,'recurring_incomes') . ' ORDER BY name');
     $incomeStmt->execute([require_tenant_id()]);
     $incomes=$incomeStmt->fetchAll();
-    $recurringIncomeTotal = array_sum(array_map(static fn($r) => (float)$r['amount'], $incomes));
+    $profileIncomes=profile_monthly_income($pdo,$month);
+    $profileIncomeTotal=array_sum(array_map(static fn($r)=>(float)$r['amount'],$profileIncomes));
+    $recurringIncomeTotal = array_sum(array_map(static fn($r) => (float)$r['amount'], $incomes)) + $profileIncomeTotal;
     // Ganhos lançados no mês fazem parte da previsão, sem status de recebido.
     $stmtIncome = $pdo->prepare("SELECT COALESCE(SUM(amount),0) FROM transactions WHERE tenant_id=? AND type='income' AND occurred_on >= ? AND occurred_on < ?" . finance_read_owner_clause($pdo,'transactions'));
     $stmtIncome->execute([require_tenant_id(),$start,$end]);
@@ -53,7 +55,7 @@ function monthly_budget_data(PDO $pdo, string $month): array {
       AND bill_payment_id IS NULL AND LOWER(category) NOT IN ('contas recorrentes','contas fixas')" . finance_read_owner_clause($pdo,'transactions'));
     $stmt->execute([require_tenant_id(),$start,$end]);
     $variableSpent=(float)$stmt->fetchColumn();
-    return compact('incomes','recurringIncomeTotal','recordedIncomeTotal','incomeTotal','bills','billTotal','missingBills','allocations','allocated','spent','actuals','billTransactions','variableSpent') + [
+    return compact('incomes','profileIncomes','profileIncomeTotal','recurringIncomeTotal','recordedIncomeTotal','incomeTotal','bills','billTotal','missingBills','allocations','allocated','spent','actuals','billTransactions','variableSpent') + [
       'after_bills'=>$incomeTotal-$billTotal,
       'unallocated'=>$incomeTotal-$billTotal-$allocated,
       'expected_end'=>$incomeTotal-$billTotal-$variableSpent,
