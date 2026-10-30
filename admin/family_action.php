@@ -26,7 +26,8 @@ try{
    $body="Olá!\n\nVocê recebeu um convite para criar sua família no Bemora.\n\nAcesse: ".$link."\n\nO link é de uso único e expira em 72 horas.\n\nSe não esperava esta mensagem, ignore-a.";
    try{
     require_once __DIR__.'/../includes/mailer.php';
-    bemora_send_email($recipient,$subject,$body);
+    require_once __DIR__.'/../includes/email_templates.php';
+    bemora_send_email($recipient,$subject,$body,bemora_invitation_email($link,$max));
     $message.=' Convite entregue ao servidor SMTP para o e-mail informado.';
    }catch(Throwable $mailError){
     error_log('Bemora: falha ao encaminhar convite via SMTP.');
