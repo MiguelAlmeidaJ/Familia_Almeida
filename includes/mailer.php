@@ -38,6 +38,20 @@ function bemora_send_email(string $recipient,string $subject,string $body,?strin
         $mailer->Subject=$subject;
         if($html!==null){
             $mailer->isHTML(true);
+            // Embed logo inside the email so Gmail/Outlook do not need
+            // to fetch a remote URL from the configured web hostname.
+            if(str_contains($html,'cid:bemora-brand-logo')){
+                $logoPng=dirname(__DIR__).'/assets/brand/logo.png';
+                $logoWebp=dirname(__DIR__).'/assets/brand/logo.webp';
+                if(is_file($logoPng)){
+                    $mailer->addEmbeddedImage($logoPng,'bemora-brand-logo','bemora-logo.png','base64','image/png');
+                }elseif(is_file($logoWebp)){
+                    $mailer->addEmbeddedImage($logoWebp,'bemora-brand-logo','bemora-logo.webp','base64','image/webp');
+                }else{
+                    // Never show a broken image if the asset is removed after rendering.
+                    $html=str_replace('<img src="cid:bemora-brand-logo" width="190" alt="Bemora by Anoar" style="display:block;width:190px;max-width:100%;height:auto;border:0;margin:0 auto">','<strong style="font-size:30px;color:#075246">bemora</strong>',$html);
+                }
+            }
             $mailer->Body=$html;
             $mailer->AltBody=$body;
         }else{
