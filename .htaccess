@@ -26,6 +26,7 @@ DirectoryIndex index.php
     RewriteRule ^pages/(?:cartoes|estoque|compras|compras_mercado|metas|dividas)\.php$ - [G,L,NC]
 
     # Rotas amigáveis
+    RewriteRule ^painel/?$ pages/painel.php [L,QSA]
     RewriteRule ^login/?$ login.php [L,QSA]
     RewriteRule ^instalar/?$ install.php [L,QSA]
     RewriteRule ^acao/?$ action.php [L,QSA]
