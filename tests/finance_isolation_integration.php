@@ -120,6 +120,23 @@ $_SESSION['user_id']=3;$_SESSION['tenant_id']=$other;
 $c=monthly_budget_data($pdo,'2026-10');
 check(abs($c['recurringIncomeTotal']-1000)<0.001,'second family sees only its income');
 check(count($c['bills'])===1,'second family sees only its bills');
+$probe=static function(int $member,int $tenant,string $release,string $route):string {
+ $cmd=escapeshellarg(PHP_BINARY).' '.escapeshellarg(__DIR__.'/tenant_access_cli.php')
+  .' '.escapeshellarg((string)$member).' '.escapeshellarg((string)$tenant)
+  .' '.escapeshellarg($release).' '.escapeshellarg($route);
+ $output=[];$status=0;exec($cmd.' 2>&1',$output,$status);
+ check($status===0,'tenant guard CLI exits cleanly');
+ return implode("\n",$output);
+};
+$unreleased=$probe(3,$other,'0','/');
+check(str_contains($unreleased,'Família não autorizada'),'unreleased second family is denied by default');
+$released=$probe(3,$other,'1','/');
+$external=json_decode($released,true);
+check(is_array($external) && (int)$external['tenant']===$other && abs((float)$external['income']-900)<0.001,
+ 'authorized second family sees own transactions only');
+$legacy=$probe(3,$other,'1','/cartoes');
+check(str_contains($legacy,'Funcionalidade indisponível'),'additional family cannot enter removed legacy modules');
+
 $_SESSION['user_id']=1;$_SESSION['tenant_id']=$family;
 $pdo->prepare("UPDATE tenants SET finance_mode='shared' WHERE id=?")->execute([$family]);
 $all=dashboard_data($pdo,'2026-10');
