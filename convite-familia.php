@@ -47,7 +47,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    $_SESSION['user_id']=$login['user_id'];
    $_SESSION['tenant_id']=$login['tenant_id'];
    unset($_SESSION['selected_month']);
-   redirect_to('/');
+   redirect_to('/painel');
   }catch(Throwable $e){if(isset($pdo)&&$pdo->inTransaction())$pdo->rollBack();$error=$e instanceof PDOException?'Nome da família já reservado ou dados duplicados.':$e->getMessage();}
   }
 }
