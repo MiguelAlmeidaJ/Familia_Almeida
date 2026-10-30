@@ -133,8 +133,8 @@ function render_topbar(array $user, string $context = 'Espaço privado'): void
     $quickAllowed=['/','/movimentacoes','/contas','/categorias','/membros','/meu-perfil','/minha-conta'];
     $quickReturn=in_array($quickPath,$quickAllowed,true)?$quickPath:'/movimentacoes';
     ?>
-    <link rel="stylesheet" href="/assets/bemora-quick-entry.css?v=1">
-    <button class="bemora-fab" id="bemora-fab" type="button" aria-haspopup="dialog" aria-controls="bemora-quick-dialog" title="Novo lançamento"><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Novo lançamento</span></button>
+    <link rel="stylesheet" href="/assets/bemora-quick-entry.css?v=2">
+    <button class="bemora-fab" id="bemora-fab" type="button" aria-label="Novo lançamento" aria-haspopup="dialog" aria-controls="bemora-quick-dialog" title="Novo lançamento"><i class="bi bi-plus-lg" aria-hidden="true"></i></button>
     <dialog class="bemora-quick-dialog" id="bemora-quick-dialog" aria-labelledby="bemora-quick-title">
       <div class="bemora-quick-head"><div class="bemora-quick-symbol"><i class="bi bi-arrow-left-right"></i></div><div><h2 id="bemora-quick-title">Novo lançamento</h2><p>Registre uma movimentação em poucos passos.</p></div><button type="button" class="bemora-quick-close" id="bemora-quick-close" aria-label="Fechar"><i class="bi bi-x-lg"></i></button></div>
       <form method="post" action="/acao" enctype="multipart/form-data" id="bemora-quick-form">
