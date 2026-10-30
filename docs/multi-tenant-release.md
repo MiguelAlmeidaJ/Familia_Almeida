@@ -35,10 +35,13 @@ O fluxo previsto: Administração global → Famílias → Criar link → Cadast
 criação automática de família e membros → acesso imediato do administrador familiar.
 Não há fila de aprovação. Os usuários possuem e-mails exclusivos e são vinculados
 à família criada. O administrador pode fornecer um e-mail opcional na geração do
-convite: a aplicação tenta enviar pela função `mail()` do PHP e sempre oferece
-um link copiável. Configure `app.base_url` e `mail.from` em `config.php` e confirme
-que a ValueHost permite envio de e-mail pelo PHP; retorno positivo de `mail()`
-não garante entrega na caixa de entrada.
+convite: a aplicação envia via PHPMailer e SMTP autenticado, mantendo sempre
+um link copiável. Instale as dependências com `composer install --no-dev --optimize-autoloader`
+e configure `app.base_url`, `mail.host`, `mail.port`, `mail.encryption`,
+`mail.username`, `mail.password`, `mail.from` e `mail.from_name` no `config.php`
+fora do GitHub. TLS STARTTLS na porta 587 ou SMTPS na porta 465.
+Verifique a conectividade de saída SMTP da ValueHost e os registros SPF/DKIM/DMARC.
+O aceite pelo servidor SMTP não garante entrega na caixa de entrada.
 
 ## Desativação rápida
 Remover a variável ou ajustá-la para `0`. Isso impede novos cadastros e
