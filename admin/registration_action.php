@@ -20,6 +20,7 @@ try{
   flash('success','Cadastro recusado.');
  }else{
   if(!finance_separate_schema_ready($pdo))throw new RuntimeException('Execute as migrations de isolamento antes da aprovação.');
+  if(getenv('BEMORA_MULTI_TENANT_RELEASE')!=='1')throw new RuntimeException('Aprovação bloqueada até a liberação final do isolamento multi-tenant.');
   $members=json_decode((string)$reg['members_json'],true,512,JSON_THROW_ON_ERROR);
   $count=(int)$reg['member_count'];$admin=(int)$reg['admin_member'];
   if(!is_array($members)||count($members)!==$count||$count<1||$count>(int)$reg['max_members']||$admin<0||$admin>=$count)
