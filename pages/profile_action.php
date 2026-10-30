@@ -34,15 +34,15 @@ try{
   if($phone!==''&&(!preg_match('/^[+0-9()\s-]{8,25}$/',$phone)))throw new RuntimeException('Telefone inválido.');
   $titles=$_POST['job_title']??[];$salaries=$_POST['salary']??[];$days=$_POST['payday']??[];$ids=$_POST['source_id']??[];
   $effective=(string)($_POST['effective_month']??date('Y-m'));
-  if(!preg_match('/^\\d{4}-(0[1-9]|1[0-2])$/D',$effective)||$effective!==selected_month())throw new RuntimeException('O mês da alteração deve ser o mês selecionado no cabeçalho.');
+  if(!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/D',$effective)||$effective!==selected_month())throw new RuntimeException('O mês da alteração deve ser o mês selecionado no cabeçalho.');
   if(!is_array($titles)||!is_array($salaries)||!is_array($days)||!is_array($ids)||count($titles)>12||count($titles)!==count($salaries)||count($titles)!==count($days)||count($titles)!==count($ids))
    throw new RuntimeException('Fontes de renda inválidas (máximo 12).');
   $sources=[];
   foreach($titles as $i=>$raw){
    $title=trim((string)$raw);$value=trim((string)$salaries[$i]);$day=(int)$days[$i];$sourceId=(int)$ids[$i];
-   $normalized=trim(preg_replace('/\\s+/u','',str_replace('R$','',$value))??'');
+   $normalized=trim(preg_replace('/\s+/u','',str_replace('R$','',$value))??'');
    if(str_contains($normalized,','))$normalized=str_replace(',','.',str_replace('.','',$normalized));
-   if($title===''||mb_strlen($title)>120||!preg_match('/^\\d+(?:\\.\\d{1,2})?$/D',$normalized)||(float)$normalized>9999999999||$day<1||$day>31||$sourceId<0)
+   if($title===''||mb_strlen($title)>120||!preg_match('/^\d+(?:\.\d{1,2})?$/D',$normalized)||(float)$normalized>9999999999||$day<1||$day>31||$sourceId<0)
     throw new RuntimeException('Revise emprego, salário e dia de recebimento.');
    $sources[]=[$sourceId,$title,$normalized,$day];
   }
