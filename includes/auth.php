@@ -59,7 +59,7 @@ function require_auth(): array
             http_response_code(403);
             exit('Família não autorizada nesta versão do Bemora.');
         }
-        if($family['finance_mode']==='separate' || $family['slug']!=='familia-almeida'){
+        if(in_array($family['finance_mode'],['shared','separate'],true)){
             require_once __DIR__.'/finance_scope.php';
             if(!finance_separate_schema_ready(db())){
                 http_response_code(503);
