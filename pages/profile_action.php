@@ -11,6 +11,9 @@ try{
   $name=trim(preg_replace('/\s+/u',' ',(string)($_POST['name']??''))??'');
   $email=strtolower(trim((string)($_POST['email']??'')));
   $phone=trim((string)($_POST['phone']??''));
+  $phoneDigits=preg_replace('/\D/','',$phone)??'';
+  if($phone!=='' && !in_array(strlen($phoneDigits),[10,11],true))throw new RuntimeException('Informe um telefone com DDD válido.');
+  $phone=$phoneDigits===''?'':(strlen($phoneDigits)===11?sprintf('(%s) %s-%s',substr($phoneDigits,0,2),substr($phoneDigits,2,5),substr($phoneDigits,7)):sprintf('(%s) %s-%s',substr($phoneDigits,0,2),substr($phoneDigits,2,4),substr($phoneDigits,6)));
   if($name===''||mb_strlen($name)>80||!filter_var($email,FILTER_VALIDATE_EMAIL)||strlen($email)>160)
    throw new RuntimeException('Informe nome e e-mail válidos.');
   if($phone!==''&&(!preg_match('/^[+0-9()\s-]{8,25}$/',$phone)))throw new RuntimeException('Telefone inválido.');
@@ -21,7 +24,69 @@ try{
   foreach($titles as $i=>$raw){
    $title=trim((string)$raw);$value=trim((string)$salaries[$i]);$day=(int)$days[$i];
    if($title===''&&$value===''&&$day===0)continue;
-   $normalized=str_replace(',','.',$value);
+   // Accept Brazilian currency input (R$ 1.850,00) and legacy decimal values.
+   $normalized=trim(preg_replace('/\s+/u','',str_replace('R
+   if($title===''||mb_strlen($title)>120||!preg_match('/^\d+(?:\.\d{1,2})?$/',$normalized)||!is_numeric($normalized)|| (float)$normalized>9999999999||$day<1||$day>31)
+    throw new RuntimeException('Revise emprego, salário e dia de recebimento.');
+   $sources[]=[$title,$normalized,$day];
+  }
+  $pdo->beginTransaction();
+  $q=$pdo->prepare('SELECT id FROM users WHERE email=? AND id<>? LIMIT 1');$q->execute([$email,$uid]);
+  if($q->fetchColumn())throw new RuntimeException('Este e-mail já está em uso.');
+  $pdo->prepare('UPDATE users SET name=?,email=?,phone=? WHERE id=?')->execute([$name,$email,$phone?:null,$uid]);
+  $pdo->prepare('DELETE FROM user_income_sources WHERE user_id=?')->execute([$uid]);
+  $ins=$pdo->prepare('INSERT INTO user_income_sources(user_id,job_title,salary,payday) VALUES(?,?,?,?)');
+  foreach($sources as $source)$ins->execute([$uid,...$source]);
+  $pdo->commit();
+  flash('success','Seu perfil foi atualizado.');
+ }elseif($action==='change_password'){
+  $current=(string)($_POST['current_password']??'');
+  $next=(string)($_POST['new_password']??'');
+  $confirm=(string)($_POST['confirm_password']??'');
+  $q=$pdo->prepare('SELECT password_hash FROM users WHERE id=?');$q->execute([$uid]);
+  $hash=$q->fetchColumn();
+  if(!$hash||!password_verify($current,(string)$hash))throw new RuntimeException('Senha atual incorreta.');
+  if(strlen($next)<12)throw new RuntimeException('A nova senha deve ter pelo menos 12 caracteres.');
+  if(!hash_equals($next,$confirm))throw new RuntimeException('As senhas não coincidem.');
+  $pdo->prepare('UPDATE users SET password_hash=? WHERE id=?')->execute([password_hash($next,PASSWORD_DEFAULT),$uid]);
+  session_regenerate_id(true);
+  flash('success','Sua senha foi atualizada com sucesso.');
+ }elseif($action==='save_avatar'){
+  $image=(string)($_POST['avatar_image']??'');
+  if(strlen($image)>3000000||!preg_match('~^data:image/jpeg;base64,([A-Za-z0-9+/=]+)$~',$image,$matches))
+   throw new RuntimeException('Imagem inválida. Recorte a foto novamente.');
+  $bytes=base64_decode($matches[1],true);
+  if($bytes===false||strlen($bytes)>1800000||strlen($bytes)<1000)throw new RuntimeException('Imagem muito grande ou inválida.');
+  $info=@getimagesizefromstring($bytes);
+  if(!$info||$info[0]!==1080||$info[1]!==1080||$info['mime']!=='image/jpeg')
+   throw new RuntimeException('A foto deve ter exatamente 1080 × 1080 pixels em JPEG.');
+  $dir=dirname(__DIR__).'/storage/avatars';
+  if(!is_dir($dir)&&!mkdir($dir,0750,true)&&!is_dir($dir))throw new RuntimeException('Pasta de fotos indisponível.');
+  $filename=bin2hex(random_bytes(24)).'.jpg';
+  $destination=$dir.'/'.$filename;
+  if(file_put_contents($destination,$bytes,LOCK_EX)!==strlen($bytes))throw new RuntimeException('Não foi possível salvar a foto.');
+  @chmod($destination,0640);
+  try{
+    $pdo->beginTransaction();
+    $q=$pdo->prepare('SELECT avatar_path FROM users WHERE id=? FOR UPDATE');$q->execute([$uid]);$previous=$q->fetchColumn();
+    $pdo->prepare('UPDATE users SET avatar_path=? WHERE id=?')->execute([$filename,$uid]);
+    $pdo->commit();
+    if(is_string($previous)&&preg_match('/^[a-f0-9]{48}\.jpg$/',$previous))@unlink($dir.'/'.$previous);
+  }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();@unlink($destination);throw $e;}
+  flash('success','Foto do perfil atualizada.');
+ }elseif($action==='remove_avatar'){
+  $q=$pdo->prepare('SELECT avatar_path FROM users WHERE id=?');$q->execute([$uid]);$previous=$q->fetchColumn();
+  $pdo->prepare('UPDATE users SET avatar_path=NULL WHERE id=?')->execute([$uid]);
+  if(is_string($previous)&&preg_match('/^[a-f0-9]{48}\.jpg$/',$previous))@unlink(dirname(__DIR__,2).'/bemora-private/avatars/'.$previous);
+  flash('success','Foto removida.');
+ }else throw new RuntimeException('Ação inválida.');
+}catch(Throwable $e){
+ if($pdo->inTransaction())$pdo->rollBack();
+ flash('error',$e instanceof PDOException?'Não foi possível salvar. Confira os dados e tente novamente.':$e->getMessage());
+}
+redirect_to('/meu-perfil');
+,'',$value))??'');
+   if(str_contains($normalized,','))$normalized=str_replace(',','.',str_replace('.','',$normalized));
    if($title===''||mb_strlen($title)>120||!preg_match('/^\d+(?:\.\d{1,2})?$/',$normalized)||!is_numeric($normalized)|| (float)$normalized>9999999999||$day<1||$day>31)
     throw new RuntimeException('Revise emprego, salário e dia de recebimento.');
    $sources[]=[$title,$normalized,$day];
