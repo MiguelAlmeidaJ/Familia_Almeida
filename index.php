@@ -21,6 +21,16 @@ if ($ready) {
       ORDER BY occurred_on DESC,id DESC LIMIT 6");
     $stmt->execute([(int)$user['tenant_id'],$month.'-01',$date->modify('+1 month')->format('Y-m-d')]);
     $recent = $stmt->fetchAll();
+    foreach($data['profileIncomes']??[] as $source){
+        $recent[]=[
+          'description'=>$source['description'],
+          'category'=>$source['category'].' · Prevista',
+          'type'=>'income','amount'=>$source['amount'],
+          'occurred_on'=>$source['occurred_on'],
+        ];
+    }
+    usort($recent,static fn($a,$b)=>strcmp((string)$b['occurred_on'],(string)$a['occurred_on']));
+    $recent=array_slice($recent,0,6);
     $rankedBills = array_values(array_filter($data['bills'],static fn($b) => !$b['needs_amount'] && (float)$b['amount']>0));
     usort($rankedBills,static fn($a,$b) => (float)$b['amount'] <=> (float)$a['amount']);
 }
@@ -85,14 +95,14 @@ $ratio=$data['billTotal']>0?min(100,100*(float)$bill['amount']/(float)$data['bil
 <section class="dashboard-bottom-grid">
 <article class="budget-card dashboard-stat-panel">
 <div class="dashboard-section-head"><div><h2>Resumo do mês</h2><p>Valores previstos, sem depender de confirmação de pagamento.</p></div></div>
-<div class="dashboard-summary-row"><span>Receitas recorrentes</span><strong><?= money($data['recurringIncomeTotal']) ?></strong></div>
+<div class="dashboard-summary-row"><span>Receitas recorrentes e do perfil</span><strong><?= money($data['recurringIncomeTotal']) ?></strong></div>
 <div class="dashboard-summary-row"><span>Receitas lançadas</span><strong><?= money($data['recordedIncomeTotal']) ?></strong></div>
 <div class="dashboard-summary-row"><span>Gastos avulsos registrados</span><strong><?= money($data['variableSpent']) ?></strong></div>
 <div class="dashboard-summary-row"><span>Valor destinado a categorias</span><strong><?= money($data['allocated']) ?></strong></div>
 <div class="dashboard-summary-row"><span>Ainda sem destino</span><strong><?= money($data['unallocated']) ?></strong></div>
 </article>
 <article class="budget-card dashboard-recent">
-<div class="dashboard-section-head"><div><h2>Últimos lançamentos</h2><p>Movimentações registradas em <?= e($label) ?>.</p></div><a href="/movimentacoes">Ver histórico →</a></div>
+<div class="dashboard-section-head"><div><h2>Últimos lançamentos</h2><p>Movimentações e rendas mensais previstas em <?= e($label) ?>.</p></div><a href="/movimentacoes">Ver histórico →</a></div>
 <?php if($recent): ?>
 <?php foreach($recent as $transaction): ?>
 <div class="dashboard-transaction"><div><strong><?= e($transaction['description']) ?></strong><small><?= e($transaction['category']) ?> · <?= e(date('d/m',strtotime($transaction['occurred_on']))) ?></small></div><span class="<?= $transaction['type']==='income'?'income':'expense' ?>"><?= $transaction['type']==='income'?'+':'−' ?> <?= money($transaction['amount']) ?></span></div>
