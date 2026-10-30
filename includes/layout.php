@@ -39,8 +39,8 @@ function render_sidebar(string $active, string $csrf): void
         ['key' => 'movimentacoes', 'href' => '/movimentacoes', 'label' => 'Ganhos e gastos'],
         ['key' => 'contas', 'href' => '/contas', 'label' => 'Contas previstas'],
         ['key' => 'categorias', 'href' => '/categorias', 'label' => 'Categorias'],
-        ['key' => 'meu-perfil', 'href' => '/meu-perfil', 'label' => 'Meu perfil'],
         ['key' => 'membros', 'href' => '/membros', 'label' => 'Membros'],
+        ['key' => 'meu-perfil', 'href' => '/meu-perfil', 'label' => 'Meu perfil'],
     ];
 
     $user = function_exists('current_user') ? current_user() : null;
