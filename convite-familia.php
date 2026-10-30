@@ -42,8 +42,8 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    require_once __DIR__.'/includes/family_onboarding.php';
    $login=bemora_activate_registration($pdo,(int)$pdo->lastInsertId(),$members,$admin,$name,$key,(int)$invitation['max_members']);
    // Bind a completed checkout to the newly created isolated family.
-   $orderLink=$pdo->prepare("UPDATE subscription_orders SET activated_tenant_id=?,status='completed' WHERE invite_id=? AND status='paid' AND activated_tenant_id IS NULL");
    if((int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='subscription_orders'")->fetchColumn()===1){
+    $orderLink=$pdo->prepare("UPDATE subscription_orders SET activated_tenant_id=?,status='completed' WHERE invite_id=? AND status='paid' AND activated_tenant_id IS NULL");
     $orderLink->execute([(int)$login['tenant_id'],(int)$invitation['id']]);
    }
    $pdo->prepare('UPDATE family_invitations SET used_at=NOW() WHERE id=?')->execute([(int)$invitation['id']]);
