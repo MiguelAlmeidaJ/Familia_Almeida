@@ -169,7 +169,9 @@ function render_topbar(array $user, string $context = 'Espaço privado'): void
         <input type="hidden" name="month" value="<?= e($quickMonth) ?>">
         <div class="bemora-quick-fields">
           <label>Descrição<input class="form-control" name="name" maxlength="120" placeholder="Ex.: Aluguel, energia, internet" required></label>
-          <div class="bemora-quick-grid"><label>Valor mensal (R$)<input class="form-control" type="number" name="amount" min="0" step="0.01" inputmode="decimal" placeholder="0,00"></label><label>Dia do vencimento<input class="form-control" type="number" name="due_day" min="1" max="31" value="10" required></label></div>
+          <div class="bemora-quick-grid"><label>Valor mensal (R$)<input class="form-control bemora-money" type="text" name="amount" inputmode="numeric" maxlength="16" placeholder="0,00"></label><label>Dia do vencimento<input class="form-control" type="number" name="due_day" min="1" max="31" step="1" value="10" required></label></div>
+          <label class="bemora-business-option"><input type="checkbox" name="due_business_day" value="1"><span><strong>Próximo dia útil</strong><small>Ajustar sábados, domingos e feriados nacionais.</small></span></label>
+          <p class="bemora-due-preview" role="status"></p>
           <label>Tipo de conta<select class="form-select" name="billing_type" id="bemora-global-bill-type"><option value="fixed">Fixa — mesmo valor todo mês</option><option value="variable">Variável — valor definido por mês</option><option value="installment">Parcelada — quantidade determinada</option></select></label>
           <div id="bemora-global-bill-installments" hidden><div class="bemora-quick-grid"><label>Mês de início<input class="form-control" type="month" name="start_month" value="<?= e($quickMonth) ?>"></label><label>Quantidade de parcelas<input class="form-control" type="number" name="installment_total" min="1" max="360" value="10"></label></div></div>
           <p class="bemora-global-bill-note" id="bemora-global-bill-hint">O valor será repetido mensalmente. O pagamento é controlado em cada mês.</p>
@@ -178,7 +180,9 @@ function render_topbar(array $user, string $context = 'Espaço privado'): void
       </form>
     </dialog>
     <?php endif; ?>
-    <script src="/assets/bemora-global-actions.js?v=1" defer></script>
+    <script src="/assets/bemora-global-actions.js?v=2" defer></script>
+    <script src="/assets/bemora-bill-inputs.js?v=1" defer></script>
+    <link rel="stylesheet" href="/assets/bemora-bill-inputs.css?v=1">
 
     <style>
     .ref-topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
