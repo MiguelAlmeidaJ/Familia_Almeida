@@ -1,0 +1,23 @@
+/* Planned bills: clear hierarchy, compact floating add, and accessible modal. */
+.fixed-reference-page{max-width:1280px;margin-left:auto;margin-right:auto}
+.fixed-reference-page .fixed-reference-summary{gap:14px}
+.fixed-reference-page .fixed-reference-card{border-radius:18px}
+.fixed-reference-page .fixed-reference-card-head{align-items:center}
+.fixed-reference-page .fixed-reference-card-head h2{font-size:20px;font-weight:750}
+.bemora-bill-fab{position:fixed;z-index:98;right:27px;bottom:27px;width:56px;height:56px;border-radius:50%;border:0;background:#087c65;color:white;box-shadow:0 10px 30px #075b4970;display:grid;place-items:center;cursor:pointer;transition:transform .2s,background .2s}
+.bemora-bill-fab:hover{background:#046a56;transform:translateY(-3px)}.bemora-bill-fab i{font-size:25px;line-height:1}
+body:has(.bemora-bill-fab) .bemora-fab{bottom:94px!important}
+#bill-dialog{width:min(550px,calc(100vw - 24px));max-height:calc(100dvh - 32px);overflow-y:auto;border-radius:21px;border:0;box-shadow:0 25px 90px rgba(7,37,33,.26)}
+#bill-dialog::backdrop{background:rgba(7,37,33,.62)}
+#bill-dialog .fixed-reference-dialog-head{border-bottom:1px solid #e5eee9;padding-bottom:16px;margin-bottom:19px;align-items:flex-start}
+#bill-dialog .fixed-reference-dialog-head h3{font-size:21px;font-weight:750;color:#0b5547}
+#bill-dialog .fixed-reference-dialog-form>label{margin-top:14px}
+#bill-dialog input,#bill-dialog select{border-radius:11px;min-height:45px}
+#bill-dialog input:focus,#bill-dialog select:focus{border-color:#0e9774;outline:2px solid #0e977427}
+#bill-dialog .billing-form-hint{background:#f0f8f3;border-radius:10px;padding:12px 13px;color:#527768;font-size:12px;line-height:1.6}
+#bill-dialog .bemora-bill-form-note{margin:11px 0 0;font-size:12px;line-height:1.5;color:#73887a}
+#bill-dialog .bemora-bill-form-note i{margin-right:5px;color:#0e9774}
+#bill-dialog .fixed-reference-dialog-actions{padding-top:18px;margin-top:14px;border-top:1px solid #e5eee9}
+.fixed-reference-row.is-overdue:not(.is-paid) .fixed-reference-day{background:#fff4ed;color:#b86131}
+.fixed-reference-row.is-overdue:not(.is-paid) .fixed-reference-copy>span{color:#b86131}
+@media(max-width:640px){.bemora-bill-fab{right:16px;bottom:18px;width:52px;height:52px}body:has(.bemora-bill-fab) .bemora-fab{bottom:82px!important}#bill-dialog{padding:18px}}
