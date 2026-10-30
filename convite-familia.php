@@ -39,8 +39,15 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    if(getenv('BEMORA_MULTI_TENANT_RELEASE')!=='1'||!finance_separate_schema_ready($pdo))throw new RuntimeException('Cadastro temporariamente indisponível durante a validação de segurança.');
    $check=$pdo->prepare("INSERT INTO family_registrations(invitation_id,family_name,family_name_key,member_count,admin_member,members_json) VALUES(?,?,?,?,?,?)");
    $check->execute([(int)$invitation['id'],$name,$key,$count,$admin,json_encode($members,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)]);
+   require_once __DIR__.'/includes/family_onboarding.php';
+   $login=bemora_activate_registration($pdo,(int)$pdo->lastInsertId(),$members,$admin,$name,$key,(int)$invitation['max_members']);
    $pdo->prepare('UPDATE family_invitations SET used_at=NOW() WHERE id=?')->execute([(int)$invitation['id']]);
-   $pdo->commit();redirect_to('/convite-familia.php?status=received');
+   $pdo->commit();
+   session_regenerate_id(true);
+   $_SESSION['user_id']=$login['user_id'];
+   $_SESSION['tenant_id']=$login['tenant_id'];
+   unset($_SESSION['selected_month']);
+   redirect_to('/');
   }catch(Throwable $e){if(isset($pdo)&&$pdo->inTransaction())$pdo->rollBack();$error=$e instanceof PDOException?'Nome da família já reservado ou dados duplicados.':$e->getMessage();}
   }
 }
