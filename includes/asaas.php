@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/bootstrap.php';
 require_once __DIR__.'/plans.php';
-function bemora_asaas_enabled():bool {return (string)config('asaas','enabled','0')==='1';}
+function bemora_asaas_enabled():bool {return in_array(config('asaas','enabled',false),[true,1,'1','true','on'],true);}
 function bemora_asaas_mode():string {return (string)config('asaas','environment','sandbox')==='production'?'production':'sandbox';}
 function bemora_asaas_request(string $method,string $path,?array $data=null):array {
  $key=trim((string)config('asaas','api_key',''));
