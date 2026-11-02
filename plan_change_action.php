@@ -5,85 +5,54 @@ require_once __DIR__.'/includes/asaas.php';
 $user=require_family_access();
 if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);exit;}
 verify_csrf();
-$pdo=db();$tid=(int)$user['tenant_id'];$requestId=0;
-try {
- if(!bemora_asaas_enabled()||bemora_asaas_mode()!=='sandbox')throw new RuntimeException('Trocas automáticas estão disponíveis somente no Asaas Sandbox nesta etapa.');
- // Safety gate: do not grant paid plan benefits before confirmed payment.
- // Full paid-change orchestration will be implemented separately.
+$pdo=db();$tid=(int)$user['tenant_id'];$changeId=0;
+try{
+ if(!bemora_asaas_enabled()||bemora_asaas_mode()!=='sandbox')throw new RuntimeException('Alterações pagas disponíveis apenas no Sandbox.');
  $targetId=filter_var($_POST['plan_id']??null,FILTER_VALIDATE_INT);
  $mode=(string)($_POST['change_mode']??'');
- if(!in_array($mode,['immediate','renewal'],true))throw new RuntimeException('Escolha quando deseja mudar seu plano.');
- if(!$targetId||$targetId<1)throw new RuntimeException('Escolha um plano válido.');
- throw new RuntimeException('Troca automática temporariamente suspensa: o novo plano exige confirmação de pagamento pelo Asaas antes da ativação. Sua assinatura atual permanece inalterada.');
+ if(!$targetId||!in_array($mode,['immediate','renewal'],true))throw new RuntimeException('Selecione um plano e quando deseja mudar.');
+ if($mode!=='immediate')throw new RuntimeException('Troca na renovação ainda indisponível até a confirmação de pagamento do próximo ciclo.');
  $pdo->beginTransaction();
- $role=$pdo->prepare("SELECT role FROM tenant_users WHERE tenant_id=? AND user_id=? FOR UPDATE");
- $role->execute([$tid,(int)$user['id']]);
+ $role=$pdo->prepare("SELECT role FROM tenant_users WHERE tenant_id=? AND user_id=? FOR UPDATE");$role->execute([$tid,(int)$user['id']]);
  if($role->fetchColumn()!=='family_admin')throw new RuntimeException('Somente o administrador familiar pode mudar o plano.');
- $orderQuery=$pdo->prepare("SELECT * FROM subscription_orders WHERE activated_tenant_id=? AND status='completed' ORDER BY id DESC LIMIT 1 FOR UPDATE");
- $orderQuery->execute([$tid]);$order=$orderQuery->fetch(PDO::FETCH_ASSOC);
- if(!$order||!$order['asaas_subscription_id'])throw new RuntimeException('Assinatura atual indisponível.');
- $trialActive=!empty($order['coupon_free_until']) && $order['coupon_free_until']>date('Y-m-d');
- $targetQuery=$pdo->prepare("SELECT * FROM subscription_plans WHERE id=? AND active=1");
- $targetQuery->execute([$targetId]);$target=$targetQuery->fetch(PDO::FETCH_ASSOC);
- if(!$target||(int)$target['id']===(int)$order['plan_id'])throw new RuntimeException('Selecione um plano diferente do atual.');
- $countQuery=$pdo->prepare('SELECT COUNT(*) FROM tenant_users WHERE tenant_id=?');$countQuery->execute([$tid]);
- if((int)$target['max_members']<(int)$countQuery->fetchColumn())throw new RuntimeException('Este plano não comporta os membros atuais da família.');
- $pending=$pdo->prepare("SELECT id FROM subscription_change_requests WHERE tenant_id=? AND status IN ('scheduled','processing','reconciliation_required') LIMIT 1 FOR UPDATE");
- $pending->execute([$tid]);if($pending->fetchColumn())throw new RuntimeException('Já existe uma alteração em andamento. Aguarde a conciliação.');
- // Legacy 'pending' requests never called Asaas; they may be superseded safely.
+ $q=$pdo->prepare("SELECT * FROM subscription_orders WHERE activated_tenant_id=? AND status='completed' ORDER BY id DESC LIMIT 1 FOR UPDATE");$q->execute([$tid]);$order=$q->fetch(PDO::FETCH_ASSOC);
+ if(!$order||!$order['asaas_subscription_id']||!$order['asaas_customer_id'])throw new RuntimeException('Assinatura não disponível.');
+ if(!empty($order['coupon_free_until'])&&$order['coupon_free_until']>date('Y-m-d'))throw new RuntimeException('Aguarde o fim da cortesia para não perder meses gratuitos.');
+ $q=$pdo->prepare("SELECT * FROM subscription_plans WHERE id=? AND active=1");$q->execute([$targetId]);$target=$q->fetch(PDO::FETCH_ASSOC);
+ if(!$target||(int)$target['id']===(int)$order['plan_id'])throw new RuntimeException('Selecione outro plano.');
+ if((string)$target['billing_cycle']!==(string)$order['billing_cycle'])throw new RuntimeException('Mudança de periodicidade será habilitada após validação da renovação.');
+ $q=$pdo->prepare("SELECT COUNT(*) FROM tenant_users WHERE tenant_id=?");$q->execute([$tid]);if((int)$target['max_members']<(int)$q->fetchColumn())throw new RuntimeException('Limite de membros insuficiente.');
+ $q=$pdo->prepare("SELECT id FROM subscription_change_requests WHERE tenant_id=? AND status IN ('scheduled','processing','reconciliation_required','awaiting_payment','payment_confirmed') LIMIT 1 FOR UPDATE");$q->execute([$tid]);
+ if($q->fetchColumn())throw new RuntimeException('Existe uma mudança pendente ou exigindo conciliação.');
+ $oldPrice=(float)($order['recurring_amount']??$order['amount']);$newPrice=bemora_plan_promo_active($target)?(float)$target['promo_price']:(float)$target['price'];
+ if($newPrice<=$oldPrice+0.009)throw new RuntimeException('Downgrades e mudanças sem acréscimo ficam disponíveis no próximo ciclo, após implementar a confirmação da renovação.');
  $pdo->prepare("UPDATE subscription_change_requests SET status='superseded' WHERE tenant_id=? AND status='pending'")->execute([$tid]);
- $amount=bemora_plan_promo_active($target)?(float)$target['promo_price']:(float)$target['price'];
- $renewalAt=null;
- if($mode==='renewal'){
-  $current=bemora_asaas_request('GET','/subscriptions/'.rawurlencode((string)$order['asaas_subscription_id']));
-  if((string)($current['status']??'')!=='ACTIVE'||(string)($current['customer']??'')!==(string)$order['asaas_customer_id'])throw new RuntimeException('Não foi possível confirmar a assinatura no Asaas.');
-  $next=(string)($current['nextDueDate']??'');
-  if(!preg_match('/^\\d{4}-\\d{2}-\\d{2}$/D',$next)||$next<=date('Y-m-d'))throw new RuntimeException('Próxima renovação indisponível. Escolha a troca imediata ou tente mais tarde.');
-  $renewalAt=$next;
- }
-
- $insert=$pdo->prepare("INSERT INTO subscription_change_requests(tenant_id,order_id,requested_by,from_plan_id,to_plan_id,quoted_amount,status,change_mode,effective_at) VALUES(?,?,?,?,?,?,?,?,?)");
- $insert->execute([$tid,(int)$order['id'],(int)$user['id'],(int)$order['plan_id'],(int)$target['id'],$amount,$mode==='renewal'?'scheduled':'processing',$mode,$renewalAt]);
- $requestId=(int)$pdo->lastInsertId();
- $pdo->commit();
- if($mode==='renewal'){
-  flash('success','Troca agendada para '.date('d/m/Y',strtotime($renewalAt)).'. Seu plano atual permanece ativo até a execução do agendamento.');
-  redirect_to('/evoluir-plano');
- }
- // Do not hold a database transaction while calling an external provider.
- // A timeout is ambiguous: retain reconciliation_required to prevent duplicate updates.
- $subscriptionId=(string)$order['asaas_subscription_id'];
- $current=bemora_asaas_request('GET','/subscriptions/'.rawurlencode($subscriptionId));
- if((string)($current['id']??'')!==$subscriptionId||(string)($current['status']??'')!=='ACTIVE')throw new RuntimeException('Assinatura não está ativa no Asaas.');
- if((string)($current['customer']??'')!==(string)$order['asaas_customer_id'])throw new RuntimeException('Cliente Asaas não corresponde à assinatura.');
- $expectedCycle=bemora_asaas_cycle((string)$order['billing_cycle']);
- $originalDue=(string)($current['nextDueDate']??'');
- if($trialActive && (!preg_match('/^\\d{4}-\\d{2}-\\d{2}$/D',$originalDue)||$originalDue<(string)$order['coupon_free_until']))throw new RuntimeException('Data de cortesia divergente no Asaas; alteração requer conciliação.');
- if((string)($current['cycle']??'')!==$expectedCycle)throw new RuntimeException('Periodicidade divergente. Concilie a assinatura antes de alterar.');
- // Do not modify an outstanding invoice or payment due date; changes apply to future ungenerated invoices only.
- $updated=bemora_asaas_request('PUT','/subscriptions/'.rawurlencode($subscriptionId),[
-  'value'=>$amount,'cycle'=>bemora_asaas_cycle((string)$target['billing_cycle']),
-  'description'=>'Bemora - '.$target['name'],'updatePendingPayments'=>false
+ $q=$pdo->prepare("INSERT INTO subscription_change_requests(tenant_id,order_id,requested_by,from_plan_id,to_plan_id,quoted_amount,old_recurring_amount,payment_amount,status,change_mode) VALUES(?,?,?,?,?,?,?,?,'processing','immediate')");
+ // Temporary amount is positive; updated with validated prorated quote before payment creation.
+ $q->execute([$tid,(int)$order['id'],(int)$user['id'],(int)$order['plan_id'],$targetId,$newPrice,$oldPrice,round($newPrice-$oldPrice,2)]);
+ $changeId=(int)$pdo->lastInsertId();$pdo->commit();
+ $sub=bemora_asaas_request('GET','/subscriptions/'.rawurlencode((string)$order['asaas_subscription_id']));
+ if((string)($sub['id']??'')!==(string)$order['asaas_subscription_id']||(string)($sub['customer']??'')!==(string)$order['asaas_customer_id']||(string)($sub['status']??'')!=='ACTIVE'||(string)($sub['cycle']??'')!==bemora_asaas_cycle($order['billing_cycle']))throw new RuntimeException('Assinatura Asaas divergente.');
+ $due=(string)($sub['nextDueDate']??'');if(!preg_match('/^\\d{4}-\\d{2}-\\d{2}$/D',$due))throw new RuntimeException('Vencimento não disponível.');
+ $today=new DateTimeImmutable('today');$next=new DateTimeImmutable($due);
+ $days=(int)$today->diff($next)->format('%r%a');if($days<=0)throw new RuntimeException('Renovação em andamento. Tente após o próximo vencimento.');
+ $period=['monthly'=>31,'semiannual'=>184,'annual'=>366][$order['billing_cycle']];
+ $prorated=round(($newPrice-$oldPrice)*min($days,$period)/$period,2);
+ if($prorated<0.01)throw new RuntimeException('Diferença proporcional insuficiente para cobrança.');
+ $pdo->prepare('UPDATE subscription_change_requests SET payment_amount=? WHERE id=?')->execute([$prorated,$changeId]);
+ $payment=bemora_asaas_request('POST','/payments',[
+  'customer'=>(string)$order['asaas_customer_id'],'billingType'=>'UNDEFINED','value'=>$prorated,
+  'dueDate'=>$today->modify('+1 day')->format('Y-m-d'),
+  'description'=>'Bemora - diferenca proporcional de upgrade para '.$target['name'],
+  'externalReference'=>'bemora-change-'.$changeId
  ]);
- if($trialActive && (string)($updated['nextDueDate']??'')!==$originalDue)throw new RuntimeException('Data de cortesia alterada. Conciliação manual necessária.');
- if((string)($updated['id']??'')!==$subscriptionId
-    ||(string)($updated['cycle']??'')!==bemora_asaas_cycle((string)$target['billing_cycle'])
-    ||abs((float)($updated['value']??-1)-$amount)>0.009)
-    throw new RuntimeException('Resposta de alteração divergente. Conciliação manual necessária.');
- $pdo->beginTransaction();
- $lock=$pdo->prepare("SELECT status FROM subscription_change_requests WHERE id=? AND tenant_id=? FOR UPDATE");$lock->execute([$requestId,$tid]);
- if($lock->fetchColumn()!=='processing')throw new RuntimeException('Solicitação alterada durante a confirmação.');
- $pdo->prepare("UPDATE subscription_orders SET plan_id=?,plan_name=?,billing_cycle=?,max_members=?,recurring_amount=?,amount=? WHERE id=?")->execute([(int)$target['id'],$target['name'],$target['billing_cycle'],(int)$target['max_members'],$amount,$amount,(int)$order['id']]);
- $pdo->prepare("UPDATE tenants SET max_members=? WHERE id=?")->execute([(int)$target['max_members'],$tid]);
- $pdo->prepare("UPDATE subscription_change_requests SET status='completed' WHERE id=?")->execute([$requestId]);
- $pdo->commit();
- flash('success','Seu plano foi atualizado no Asaas. As faturas já emitidas permanecem com seus valores originais.');
+ $paymentId=(string)($payment['id']??'');$url=bemora_asaas_invoice_url($payment);
+ if(!preg_match('/^[A-Za-z0-9_-]{3,100}$/D',$paymentId)||!$url||abs((float)($payment['value']??-1)-$prorated)>0.009)throw new RuntimeException('Cobrança criada com resposta não confirmada. Requer conciliação.');
+ $pdo->prepare("UPDATE subscription_change_requests SET asaas_payment_id=?,invoice_url=?,status='awaiting_payment' WHERE id=? AND status='processing'")->execute([$paymentId,$url,$changeId]);
+ flash('success','Cobrança de upgrade criada. O plano será liberado somente após o Asaas confirmar o pagamento.');
 }catch(Throwable $e){
  if($pdo->inTransaction())$pdo->rollBack();
- if($requestId>0){
-  try{$pdo->prepare("UPDATE subscription_change_requests SET status='reconciliation_required' WHERE id=? AND status='processing'")->execute([$requestId]);}catch(Throwable $ignored){error_log('Bemora: falha ao registrar conciliação de plano.');}
-  error_log('Bemora: troca de plano requer conciliação. Request '.$requestId);
-  flash('error','A atualização precisa ser conferida no Asaas antes de tentar novamente. Nenhuma nova solicitação será aceita até a conciliação.');
- }else flash('error',$e instanceof PDOException?'Verifique se a migration 028 foi executada.':$e->getMessage());
+ if($changeId){$pdo->prepare("UPDATE subscription_change_requests SET status='reconciliation_required' WHERE id=? AND status='processing'")->execute([$changeId]);error_log('Bemora: upgrade request '.$changeId.' needs reconciliation: '.$e->getMessage());flash('error','A solicitação precisa de conciliação no Asaas. Nenhuma mudança de plano foi liberada.');}
+ else flash('error',$e->getMessage());
 }
 redirect_to('/evoluir-plano');
