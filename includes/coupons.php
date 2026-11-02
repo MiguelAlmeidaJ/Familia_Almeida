@@ -28,10 +28,10 @@ function bemora_coupon_find(PDO $pdo,string $code):?array {
 function bemora_coupon_quote(array $coupon,array $plan,float $base):array {
  if(!bemora_coupon_is_eligible($coupon,$plan))throw new RuntimeException('Cupom indisponível ou não aplicável a este plano.');
  $kind=(string)$coupon['kind'];
- if($kind==='free_months')return ['kind'=>$kind,'amount'=>$base,'discount'=>0.0,'label'=>(int)$coupon['free_months'].' meses gratuitos','supported'=>false];
+ if($kind==='free_months'){ $months=(int)$coupon['free_months']; if($months<1||$months>24)throw new RuntimeException('Período gratuito inválido.'); return ['kind'=>$kind,'amount'=>0.0,'recurring_amount'=>$base,'discount'=>0.0,'label'=>$months.' '.($months===1?'mês grátis':'meses grátis'),'free_months'=>$months,'supported'=>true]; }
  $value=(float)$coupon['discount_value'];
  $discount=$coupon['discount_type']==='percent'?round($base*$value/100,2):round($value,2);
  if($discount<0||$discount>=$base)throw new RuntimeException('O desconto ultrapassa o valor permitido da assinatura.');
- return ['kind'=>$kind,'amount'=>round($base-$discount,2),'discount'=>$discount,'label'=>'Economia de '.bemora_coupon_money($discount),'supported'=>$kind==='annual_discount'];
+ return ['kind'=>$kind,'amount'=>round($base-$discount,2),'discount'=>$discount,'label'=>'Economia de '.bemora_coupon_money($discount),'recurring_amount'=>$kind==='first_payment_discount'?$base:round($base-$discount,2),'free_months'=>0,'supported'=>true];
 }
 function bemora_coupon_money(float $amount):string{return 'R$ '.number_format($amount,2,',','.');}
