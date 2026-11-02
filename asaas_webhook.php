@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__.'/includes/asaas.php';
 require_once __DIR__.'/includes/mailer.php';
 require_once __DIR__.'/includes/email_templates.php';
+require_once __DIR__.'/includes/paid_plan_changes.php';
 if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);exit;}
 $secret=(string)config('asaas','webhook_token','');
 $given=(string)($_SERVER['HTTP_ASAAS_ACCESS_TOKEN']??'');
@@ -16,6 +17,12 @@ try{
  $payment=$payload['payment']??[];
  if(!is_array($payment))$payment=[];
  $sub=(string)($payment['subscription']??'');
+ // Standalone upgrade payments have no subscription field. Confirm through Asaas before activation.
+ if($sub==='' && in_array($event,['PAYMENT_CONFIRMED','PAYMENT_RECEIVED'],true)){
+  $id=(string)($payment['id']??'');
+  if(preg_match('/^[A-Za-z0-9_-]{3,100}$/D',$id))bemora_apply_paid_plan_change(db(),$id);
+ }
+
  $pdo=db();$pdo->beginTransaction();
  $ins=$pdo->prepare('INSERT IGNORE INTO asaas_webhook_events(event_id,event_type,subscription_id) VALUES (?,?,?)');
  $ins->execute([$eventId,$event,$sub?:null]);
