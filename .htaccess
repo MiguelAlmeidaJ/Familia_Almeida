@@ -28,6 +28,7 @@ DirectoryIndex index.php
     # Rotas amigáveis
     RewriteRule ^painel/?$ pages/painel.php [L,QSA]
     RewriteRule ^checkout/?$ checkout.php [L,QSA]
+    RewriteRule ^pagamento/?$ payment.php [L,QSA]
     RewriteRule ^checkout/cupom/?$ coupon_quote.php [L,QSA]
     RewriteRule ^checkout/iniciar/?$ checkout_action.php [L,QSA]
     RewriteRule ^checkout/aguardando/?$ checkout_status.php [L,QSA]
