@@ -79,3 +79,7 @@ html.sidebar-collapsed .sidebar.ref-sidebar .bemora-account-links{left:calc(100%
 html.sidebar-collapsed .sidebar.ref-sidebar .bemora-account-links a{font-size:12px!important;justify-content:flex-start!important}
 html.sidebar-collapsed .sidebar.ref-sidebar .bemora-account-links::after{left:-5px;bottom:22px;transform:rotate(135deg)}
 .plan-payment-done{font-weight:750;color:#08795d;white-space:nowrap}
+
+/* Let collapsed account popup extend outside the sidebar, while nav keeps its own scroll. */
+.sidebar.ref-sidebar{overflow:visible!important}
+@media(max-width:760px){.sidebar.ref-sidebar{overflow:visible!important}}
