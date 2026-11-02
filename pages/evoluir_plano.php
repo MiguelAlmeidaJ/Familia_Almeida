@@ -22,6 +22,7 @@ $cycles=bemora_plan_cycles();
 <?php else: ?>
 <section class="sub-card plan-current"><div><span class="sub-kicker">SEU PLANO ATUAL</span><h2><?= e($order['plan_name']) ?></h2><p><?= e($cycles[$order['billing_cycle']]??$order['billing_cycle']) ?> · <?= (int)$order['max_members'] ?> <?= (int)$order['max_members']===1?'pessoa':'pessoas' ?> · <?= bemora_plan_price((float)($order['recurring_amount']??$order['amount'])) ?> por período</p></div><span class="sub-pill">Sua assinatura permanece ativa</span></section>
 <?php if(!$migrationReady): ?><div class="alert alert-warning">Execute a migration 20261102_028_plan_change_requests em Administração → Manutenção para habilitar solicitações.</div><?php endif; ?>
+<div class="alert alert-warning" role="status">A troca automática está temporariamente suspensa enquanto implementamos a confirmação de pagamento pelo Asaas antes de liberar o novo plano. Sua assinatura atual não será alterada por novas solicitações.</div>
 <?php if($pending): ?><div class="alert alert-info">Há uma troca agendada ou uma alteração aguardando conciliação. Confira o histórico abaixo antes de tentar novamente.</div><?php endif; ?>
 <div class="plan-cycle-tabs" role="group" aria-label="Filtrar periodicidade"><?php foreach($cycles as $key=>$label): ?><button type="button" data-cycle="<?= e($key) ?>" aria-pressed="<?= $key===$order['billing_cycle']?'true':'false' ?>" class="<?= $key===$order['billing_cycle']?'selected':'' ?>"><?= e($label) ?></button><?php endforeach; ?></div>
 <div class="plan-options">
@@ -31,6 +32,7 @@ $cycles=bemora_plan_cycles();
 <?php if($current): ?><div class="plan-option-disabled">Plano contratado</div>
 <?php elseif(!$enough): ?><div class="plan-option-disabled">Incompatível com os <?= $memberCount ?> membros atuais</div>
 <?php elseif(!$isAdmin): ?><div class="plan-option-disabled">Somente o administrador pode solicitar</div>
+<?php elseif(true): ?><div class="plan-option-disabled">Troca indisponível até confirmação de pagamento</div>
 <?php elseif($pending||!$migrationReady): ?><div class="plan-option-disabled">Solicitação indisponível</div>
 <?php else: ?><form method="post" action="/evoluir-plano/solicitar" data-plan-name="<?= e($p['name']) ?>" data-plan-price="<?= e(bemora_plan_price($amount)) ?>" data-plan-cycle="<?= e($cycles[$p['billing_cycle']]) ?>" data-plan-members="<?= (int)$p['max_members'] ?>"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="plan_id" value="<?= (int)$p['id'] ?>"><fieldset class="change-mode"><legend>Quando deseja trocar?</legend><label><input type="radio" name="change_mode" value="immediate" required> Agora, sem cobrança proporcional</label><label><input type="radio" name="change_mode" value="renewal" required> Na próxima renovação</label></fieldset><button type="submit" class="sub-btn">Confirmar escolha <i class="bi bi-arrow-right"></i></button></form><?php endif; ?></article>
 <?php endforeach; ?></div>
