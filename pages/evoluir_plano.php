@@ -12,7 +12,7 @@ $q=$pdo->prepare("SELECT o.*,t.name family_name FROM subscription_orders o JOIN 
 $q->execute([$tid]);$order=$q->fetch(PDO::FETCH_ASSOC);
 $q=$pdo->prepare("SELECT role FROM tenant_users WHERE tenant_id=? AND user_id=?");$q->execute([$tid,(int)$user['id']]);$isAdmin=$q->fetchColumn()==='family_admin';
 $q=$pdo->prepare("SELECT COUNT(*) FROM tenant_users WHERE tenant_id=?");$q->execute([$tid]);$memberCount=(int)$q->fetchColumn();
-$plans=$pdo->query('SELECT * FROM subscription_plans WHERE active=1 ORDER BY max_members,billing_cycle')->fetchAll(PDO::FETCH_ASSOC);
+$plans=$pdo->query('SELECT * FROM subscription_plans WHERE active=1 AND public_sale=1 ORDER BY max_members,billing_cycle')->fetchAll(PDO::FETCH_ASSOC);
 $requests=[];$migrationReady=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='subscription_change_requests'")->fetchColumn()===1;
 if($migrationReady){$q=$pdo->prepare("SELECT r.*,p.name target_name,p.billing_cycle target_cycle FROM subscription_change_requests r JOIN subscription_plans p ON p.id=r.to_plan_id WHERE r.tenant_id=? ORDER BY r.id DESC LIMIT 5");$q->execute([$tid]);$requests=$q->fetchAll(PDO::FETCH_ASSOC);}
 // Recover payment notifications that reached Asaas before our invoice ID was persisted.
