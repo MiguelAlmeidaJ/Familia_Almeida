@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/includes/asaas.php';
+require_once __DIR__.'/includes/complimentary_checkout.php';
 $id=(int)($_SESSION['checkout_order_id']??0);
 $token=(string)($_SESSION['checkout_order_token']??'');
 $order=null;
@@ -13,7 +14,7 @@ if($order && $order['status']==='awaiting_payment' && !$order['invoice_url'] && 
  $last=(int)($_SESSION['checkout_last_invoice_query']??0);
  if(time()-$last>=45){$_SESSION['checkout_last_invoice_query']=time();
   try{$payments=bemora_asaas_request('GET','/subscriptions/'.rawurlencode($order['asaas_subscription_id']).'/payments?limit=10');
-   foreach(($payments['data']??[]) as $payment){$url=bemora_asaas_invoice_url($payment);if($url){db()->prepare('UPDATE subscription_orders SET invoice_url=?,asaas_payment_id=? WHERE id=?')->execute([$url,(string)($payment['id']??''),$id]);$order['invoice_url']=$url;break;}}
+   foreach(($payments['data']??[]) as $payment){if(!bemora_adjust_first_coupon_payment(db(),$id,$payment))continue;$url=bemora_asaas_invoice_url($payment);if($url){db()->prepare('UPDATE subscription_orders SET invoice_url=?,asaas_payment_id=? WHERE id=?')->execute([$url,(string)($payment['id']??''),$id]);$order['invoice_url']=$url;break;}}
   }catch(Throwable $e){error_log('Bemora: invoice lookup failed.');}
  }
 }
@@ -31,10 +32,10 @@ if($order && $order['status']==='paid' && $order['invite_id']){
 <header class="checkout-header"><a href="/"><img src="/assets/brand/logo.png" alt="Bemora"></a><span>Minha assinatura</span></header><main class="checkout-status">
 <?php if(!$order): ?><h1>Pedido indisponível</h1><p>Abra seu pedido na mesma sessão utilizada para começar a contratação.</p><a href="/#planos" class="checkout-primary checkout-link">Ver planos</a>
 <?php elseif($order['status']==='paid' || $order['status']==='completed'): ?>
-<div class="checkout-status-icon">✓</div><h1>Pagamento confirmado!</h1><p>Obrigado por escolher o Bemora. Enviamos as instruções para <?= htmlspecialchars($order['buyer_email'],ENT_QUOTES,'UTF-8') ?>.</p>
-<?php if($inviteUrl): ?><a class="checkout-primary checkout-link" href="<?= htmlspecialchars($inviteUrl,ENT_QUOTES,'UTF-8') ?>">Criar minha família ↗</a><p class="checkout-small">O cadastro deve ser concluído em até 72 horas após a confirmação do pagamento.</p><?php else: ?><p>Se ainda não concluiu o cadastro, entre em contato com o suporte para obter um novo convite.</p><?php endif; ?>
+<div class="checkout-status-icon">✓</div><h1><?= $order['coupon_kind']==='free_months'?'Seu período gratuito está liberado!':'Pagamento confirmado!' ?></h1><p>Obrigado por escolher o Bemora. Enviamos as instruções para <?= htmlspecialchars($order['buyer_email'],ENT_QUOTES,'UTF-8') ?>.</p>
+<?php if($inviteUrl): ?><a class="checkout-primary checkout-link" href="<?= htmlspecialchars($inviteUrl,ENT_QUOTES,'UTF-8') ?>">Criar minha família ↗</a><p class="checkout-small">Conclua o cadastro em até 72 horas. <?= $order['coupon_kind']==='free_months'?'Sua primeira cobrança está prevista para '.htmlspecialchars(date('d/m/Y',strtotime($order['coupon_free_until'])),ENT_QUOTES,'UTF-8').'.':'' ?></p><?php else: ?><p>Se ainda não concluiu o cadastro, entre em contato com o suporte para obter um novo convite.</p><?php endif; ?>
 <?php else: ?><div class="checkout-status-icon wait">◷</div><h1>Estamos aguardando seu pagamento</h1><p>Seu plano <?= htmlspecialchars($order['plan_name'],ENT_QUOTES,'UTF-8') ?> foi reservado. O acesso só será liberado após a confirmação pelo Asaas.</p>
-<?php if($order['invoice_url'] && bemora_asaas_invoice_url(['invoiceUrl'=>$order['invoice_url']])): ?><a class="checkout-primary checkout-link" href="<?= htmlspecialchars($order['invoice_url'],ENT_QUOTES,'UTF-8') ?>" target="_blank" rel="noopener noreferrer">Ir para pagamento seguro ↗</a><?php else: ?><p>O Asaas ainda está preparando a primeira cobrança. Atualize esta página para consultar o link de pagamento.</p><?php endif; ?>
+<?php if($order['invoice_url'] && bemora_asaas_invoice_url(['invoiceUrl'=>$order['invoice_url']])): ?><a class="checkout-primary checkout-link" href="<?= htmlspecialchars($order['invoice_url'],ENT_QUOTES,'UTF-8') ?>" target="_blank" rel="noopener noreferrer">Ir para pagamento seguro ↗</a><?php else: ?><p>O Asaas está preparando e validando o valor da primeira cobrança. Atualize esta página para consultar o link seguro.</p><?php endif; ?>
 <p class="checkout-small">A confirmação é automática. Volte a esta página depois de pagar, ou consulte o e-mail informado.</p><a class="checkout-secondary" href="/checkout/aguardando">Atualizar situação ↻</a>
 <?php endif; ?>
 </main></body></html>
