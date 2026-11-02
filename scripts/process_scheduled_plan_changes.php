@@ -4,6 +4,10 @@ if(PHP_SAPI!=='cli'){http_response_code(404);exit;}
 require_once __DIR__.'/../includes/asaas.php';
 $pdo=db();
 if(!bemora_asaas_enabled()||bemora_asaas_mode()!=='sandbox'){fwrite(STDERR,"Scheduled changes only available in Sandbox.\n");exit(1);}
+// Disable legacy schedule execution until payment-first renewals are implemented.
+// Existing scheduled requests are preserved for manual reconciliation.
+fwrite(STDOUT,"Scheduled plan changes paused: waiting for payment-confirmed renewal flow.\n");
+exit(0);
 $rows=$pdo->query("SELECT id FROM subscription_change_requests WHERE status='scheduled' AND effective_at<=CURDATE() ORDER BY id LIMIT 20")->fetchAll(PDO::FETCH_COLUMN);
 foreach($rows as $id){
  $id=(int)$id;
