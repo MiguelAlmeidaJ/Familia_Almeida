@@ -6,7 +6,7 @@ require_once __DIR__.'/includes/checkout_validation.php';
 if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);exit;}
 verify_csrf();
 if(!bemora_asaas_enabled() || (bemora_asaas_mode()==='production' && (string)config('asaas','production_enabled','0')!=='1')){http_response_code(503);exit('Checkout ainda não liberado.');}
-if(getenv('BEMORA_MULTI_TENANT_RELEASE')!=='1'){http_response_code(503);exit('Ativação de novas famílias temporariamente indisponível.');}
+if(!bemora_multi_tenant_released()){http_response_code(503);exit('Ativação de novas famílias temporariamente indisponível.');}
 $pdo=db();$couponReservedId=null;$couponOrderId=null;
 try{
  if(!bemora_plans_table_exists($pdo))throw new RuntimeException('Planos não configurados.');
