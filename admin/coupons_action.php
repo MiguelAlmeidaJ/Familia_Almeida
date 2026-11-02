@@ -30,7 +30,7 @@ try{
   $months=filter_var($_POST['free_months']??null,FILTER_VALIDATE_INT);
   $type=(string)($_POST['discount_type']??'percent');
   $amountRaw=trim((string)($_POST['discount_value']??''));
-  $amount=(float)str_replace(',','.',str_replace('.','',$amountRaw));
+  $amount=(float)(str_contains($amountRaw,',')?str_replace(',','.',str_replace('.','',$amountRaw)):$amountRaw);
   if(!preg_match('/^[A-Z0-9][A-Z0-9_-]{2,31}$/D',$code))throw new RuntimeException('Código: 3 a 32 caracteres, letras, números, traço ou sublinhado.');
   if(mb_strlen($title)<3||mb_strlen($title)>100||mb_strlen($description)>500)throw new RuntimeException('Revise o nome e a descrição.');
   if(!isset(bemora_coupon_types()[$kind]))throw new RuntimeException('Tipo de benefício inválido.');
