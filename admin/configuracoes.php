@@ -11,7 +11,7 @@ admin_shell_start('settings','Configurações','Ferramentas e parâmetros globai
 <a class="admin-tile" href="/configuracoes/manutencao"><span class="tile-icon"><i class="bi bi-tools" aria-hidden="true"></i></span><strong>Manutenção</strong><small>Atualizações, migrations e diagnóstico de banco de dados</small><span class="tile-arrow">→</span></a>
 <a class="admin-tile" href="/admin/tenants"><span class="tile-icon"><i class="bi bi-people" aria-hidden="true"></i></span><strong>Gerenciar famílias</strong><small>Consulte famílias, convites e cadastros pendentes</small><span class="tile-arrow">→</span></a>
 </div></section>
-<section class="panel"><h2>Segurança e isolamento</h2><p class="sub">A administração global permanece separada das configurações pessoais dos usuários.</p><p class="notice"><?= bemora_multi_tenant_released() ? 'O multi-tenant está habilitado. Mantenha os testes de isolamento e backups em dia.' : 'A aprovação de famílias segue bloqueada até os testes de isolamento e a liberação controlada na hospedagem.' ?></p></section>
+<section class="panel"><h2>Ambiente e acesso</h2><p class="sub">As permissões de cada família continuam isoladas; os controles de acesso e backups permanecem ativos.</p><p class="sub"><i class="bi bi-shield-check" aria-hidden="true"></i> <?= bemora_multi_tenant_released()?'Cadastros multi-tenant habilitados.':'Novos cadastros desabilitados pela configuração de segurança.' ?></p></section>
 <section class="panel"><div class="panel-head"><div><h2>Identidade visual</h2><p class="sub">Personalize a logo e o favicon do Bemora.</p></div></div>
 <div class="admin-brand-grid">
 <?php foreach(['logo'=>'Logo da plataforma','favicon'=>'Favicon do navegador'] as $kind=>$label): ?>
