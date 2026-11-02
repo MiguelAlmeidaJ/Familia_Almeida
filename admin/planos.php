@@ -37,11 +37,11 @@ admin_shell_start('plans','Planos','Administre planos públicos e planos interno
 <label>Máximo de membros<input type="number" name="max_members" min="1" max="30" value="2" required></label>
 <label class="wide">Disponibilidade<select name="public_sale"><option value="1">Venda pública — aparece no site</option><option value="0">Plano interno — não aparece no site nem no checkout</option></select></label>
 <label class="wide">Detalhes do plano<textarea name="details" rows="4" maxlength="3000" required placeholder="Descreva os benefícios do plano. Separe cada benefício em uma linha."></textarea></label>
-<label>Preço normal (R$)<input name="price" inputmode="decimal" placeholder="49,90" required></label>
+<label>Preço normal (R$)<input name="price" inputmode="decimal" placeholder="49,90" required><small>Para plano interno gratuito, informe 0,00.</small></label>
 <label>Preço promocional (R$) <small>Opcional</small><input name="promo_price" inputmode="decimal" placeholder="39,90"></label>
 <label class="wide">Duração da promoção<select name="promo_duration"><option value="">Sem promoção</option><option value="24h">24 horas</option><option value="1w">1 semana</option><option value="1m">1 mês</option><option value="3m">3 meses</option></select></label>
 </div>
-<p class="plans-form-hint">A promoção começa ao salvar o plano e termina automaticamente após o período escolhido. Atualizações de nome e descrição não reiniciam a promoção.</p>
+<p class="plans-form-hint">Planos internos podem ter preço zero. Neles, promoções ficam desabilitadas quando o valor é gratuito.</p>
 <div class="plans-dialog-actions"><button type="button" class="plan-dialog-cancel">Cancelar</button><button type="submit" class="plans-add">Salvar plano</button></div>
 </form></dialog>
 <script src="/assets/bemora-plans-admin.js?v=2" defer></script>
