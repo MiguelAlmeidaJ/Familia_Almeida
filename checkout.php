@@ -28,4 +28,4 @@ $csrf=csrf_token();$checkoutError=(string)($_SESSION['checkout_error']??'');unse
 <div class="checkout-total"><span>Valor da assinatura</span><div><?php if($promo): ?><del><?= htmlspecialchars(bemora_plan_price((float)$plan['price']),ENT_QUOTES,'UTF-8') ?></del><?php endif; ?><strong id="checkout-final-price"><?= htmlspecialchars(bemora_plan_price($amount),ENT_QUOTES,'UTF-8') ?></strong></div></div>
 <p id="checkout-coupon-saving" class="checkout-coupon-saving" hidden></p><p class="checkout-small">Cobrança recorrente <?= htmlspecialchars(strtolower($cycle),ENT_QUOTES,'UTF-8') ?> pelo valor indicado. Preço promocional, quando aplicável, será usado como valor recorrente contratado até alteração comunicada das condições.</p></aside></div>
 <?php endif; ?>
-</main><script src="/assets/bemora-checkout.js?v=4" defer></script></body></html>
+</main><script src="/assets/bemora-checkout.js?v=5" defer></script></body></html>
