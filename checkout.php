@@ -4,7 +4,7 @@ require_once __DIR__.'/includes/asaas.php';
 $pdo=db();$ready=false;$plan=null;$error='';$publicToken='';
 try{
  $ready=bemora_plans_table_exists($pdo) && (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='subscription_orders'")->fetchColumn()===1;
- if($ready){$id=filter_input(INPUT_GET,'plano',FILTER_VALIDATE_INT);$q=$pdo->prepare('SELECT * FROM subscription_plans WHERE id=? AND active=1');$q->execute([$id?:0]);$plan=$q->fetch(PDO::FETCH_ASSOC);}
+ if($ready){$id=filter_input(INPUT_GET,'plano',FILTER_VALIDATE_INT);$q=$pdo->prepare('SELECT * FROM subscription_plans WHERE id=? AND active=1 AND public_sale=1');$q->execute([$id?:0]);$plan=$q->fetch(PDO::FETCH_ASSOC);}
 }catch(Throwable $e){$error='Checkout temporariamente indisponível.';}
 if(!$plan && $error===''){$error='Este plano não está disponível.';}
 $promo=$plan?bemora_plan_promo_active($plan):false;
