@@ -4,6 +4,7 @@ require_once __DIR__.'/../includes/auth.php';
 require_once __DIR__.'/../includes/layout.php';
 require_once __DIR__.'/../includes/plans.php';
 require_once __DIR__.'/../includes/asaas.php';
+require_once __DIR__.'/../includes/paid_plan_changes.php';
 $user=require_family_access();$pdo=db();$tid=(int)$user['tenant_id'];$csrf=csrf_token();$flash=pull_flash();
 $q=$pdo->prepare("SELECT o.*,t.name family_name FROM subscription_orders o JOIN tenants t ON t.id=o.activated_tenant_id WHERE o.activated_tenant_id=? AND o.status='completed' ORDER BY o.id DESC LIMIT 1");
 $q->execute([$tid]);$order=$q->fetch(PDO::FETCH_ASSOC);
@@ -12,6 +13,17 @@ $q=$pdo->prepare("SELECT COUNT(*) FROM tenant_users WHERE tenant_id=?");$q->exec
 $plans=$pdo->query('SELECT * FROM subscription_plans WHERE active=1 ORDER BY max_members,billing_cycle')->fetchAll(PDO::FETCH_ASSOC);
 $requests=[];$migrationReady=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='subscription_change_requests'")->fetchColumn()===1;
 if($migrationReady){$q=$pdo->prepare("SELECT r.*,p.name target_name,p.billing_cycle target_cycle FROM subscription_change_requests r JOIN subscription_plans p ON p.id=r.to_plan_id WHERE r.tenant_id=? ORDER BY r.id DESC LIMIT 5");$q->execute([$tid]);$requests=$q->fetchAll(PDO::FETCH_ASSOC);}
+// Recover payment notifications that reached Asaas before our invoice ID was persisted.
+foreach($requests as $candidate){
+ if($candidate['status']==='awaiting_payment' && !empty($candidate['asaas_payment_id'])){
+  try {bemora_apply_paid_plan_change($pdo,(string)$candidate['asaas_payment_id']);}
+  catch(Throwable $error){error_log('Bemora: plan change confirmation needs reconciliation.');}
+  $refresh=$pdo->prepare('SELECT status FROM subscription_change_requests WHERE id=? AND tenant_id=?');
+  $refresh->execute([(int)$candidate['id'],$tid]);
+  foreach($requests as &$entry){if((int)$entry['id']===(int)$candidate['id'])$entry['status']=$refresh->fetchColumn();}
+  unset($entry);
+ }
+}
 $pending=false;foreach($requests as $r)if(in_array($r['status'],['scheduled','processing','reconciliation_required','awaiting_payment','payment_confirmed'],true))$pending=true;
 $cycles=bemora_plan_cycles();
 ?><!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Evoluir meu plano • Bemora</title>
