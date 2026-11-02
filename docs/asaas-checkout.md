@@ -78,3 +78,15 @@ Em `/evoluir-plano`, o administrador familiar pode alterar a assinatura Asaas ex
 Requer migration `20261102_029_plan_change_schedule` além da 028. A tela `/evoluir-plano` oferece seleção explícita entre troca imediata e agendamento na data `nextDueDate` que o Asaas informar. A troca imediata altera assinatura existente sem cobrança proporcional. O agendamento registra uma solicitação `scheduled` e somente é efetivado quando o servidor executa `php scripts/process_scheduled_plan_changes.php` no dia indicado ou depois. Configure um cron diário (por exemplo: `15 1 * * * /usr/bin/php /CAMINHO/DO/PROJETO/scripts/process_scheduled_plan_changes.php`), ajustando a rota e o timezone do PHP/servidor. Não exponha o script em HTTP.
 
 Cobranças já emitidas NÃO são modificadas em nenhum dos modos. Como o Asaas pode gerar a fatura antes da data de vencimento, a atualização agendada pode não alterar o preço da fatura da data escolhida, apenas das seguintes. Não prometa valor do próximo boleto sem verificar sua emissão. Em falha ambígua, o estado `reconciliation_required` bloqueia novas trocas; confira no Asaas e reconcilie manualmente. Solicitações antigas nesse estado também precisam de reconciliação. Não use em produção antes de validar agendamento e faturas.
+
+
+## Pagamento dentro do Bemora — primeira etapa
+A rota `/pagamento` exibe, sem sair do domínio Bemora, os códigos de Pix e boleto recuperados com `GET /payments/{id}/pixQrCode` e `GET /payments/{id}/identificationField`.
+- Checkout público usa `checkout_order_id` e token da sessão, reconciliados com o hash do pedido.
+- Upgrade exige família autenticada e só revela cobrança vinculada ao seu `tenant_id`.
+- Todos os valores, clientes e IDs de cobrança são conferidos no Asaas por consulta autenticada; o navegador não fornece esses IDs livremente.
+- Cartão de crédito ainda utiliza a fatura hospedada no Asaas enquanto o processamento transparente, 3DS e conformidade PCI não forem homologados.
+- Cartão de débito exige a fatura hospedada no Asaas: a API não aceita envio direto dos dados de débito.
+- A página não concede acesso por conta própria: a ativação continua dependente de webhook confirmado.
+- A rota funciona para cobranças já geradas. No checkout público, a primeira fatura da assinatura precisa existir antes de acessar Pix e boleto.
+- Não confundir a conclusão visual da tela com pagamento confirmado. Validar no Sandbox os fluxos Pix, boleto, crédito hospedado, débito hospedado, expiração dos códigos e login de famílias diferentes.
