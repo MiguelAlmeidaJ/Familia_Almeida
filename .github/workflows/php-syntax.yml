@@ -16,4 +16,6 @@ jobs:
           set -e
           find . -type f -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
       - name: Validate checkout documents and mobile numbers
-        run: php tests/checkout_validation_cli.php
+        run: |
+          php tests/checkout_validation_cli.php
+          php tests/coupon_benefits_cli.php
