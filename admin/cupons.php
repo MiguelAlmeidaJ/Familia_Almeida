@@ -43,7 +43,7 @@ admin_shell_start('coupons','Cupons','Crie campanhas e ofertas especiais para as
 <?php if(!$coupons): ?><div class="cp-empty"><i class="bi bi-ticket-perforated"></i><h3>Sua primeira campanha começa aqui</h3><p>Crie cupons de acesso grátis ou desconto para apresentar ofertas especiais.</p></div><?php endif; ?>
 <div class="cp-empty" id="cp-no-results" hidden>Nenhum cupom encontrado para este filtro.</div>
 </div>
-<div class="cp-info"><i class="bi bi-shield-check"></i><span><strong>Preparado para integração:</strong> os cupons já podem ser administrados. A aplicação dos benefícios nas cobranças do Asaas será liberada após implementarmos e validarmos as regras de recorrência, para evitar descontos incorretos.</span></div>
+<div class="cp-info"><i class="bi bi-shield-check"></i><span><strong>Integração disponível no Sandbox:</strong> descontos iniciais, cupons anuais e meses de cortesia dependem da migration 027 e dos testes de cobrança no Asaas antes da liberação em produção.</span></div>
 </div>
 <dialog id="cp-dialog" class="cp-dialog" aria-labelledby="cp-dialog-title"><form method="post" action="/admin/coupons_action.php" id="cp-form"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="id" value=""><input type="hidden" name="action" value="save">
 <div class="cp-dialog-head"><div><span class="cp-kicker">CAMPANHA BEMORA</span><h2 id="cp-dialog-title">Criar cupom</h2><p>Defina o benefício e quando ele pode ser utilizado.</p></div><button type="button" class="cp-close" aria-label="Fechar"><i class="bi bi-x-lg"></i></button></div>
