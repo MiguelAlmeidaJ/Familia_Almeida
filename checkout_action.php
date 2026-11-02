@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/includes/asaas.php';
 require_once __DIR__.'/includes/coupons.php';
+require_once __DIR__.'/includes/checkout_validation.php';
 if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);exit;}
 verify_csrf();
 if(!bemora_asaas_enabled() || (bemora_asaas_mode()==='production' && (string)config('asaas','production_enabled','0')!=='1')){http_response_code(503);exit('Checkout ainda não liberado.');}
@@ -14,7 +15,7 @@ try{
  if(!$plan)throw new RuntimeException('Plano indisponível.');
  $name=trim((string)($_POST['name']??''));$email=mb_strtolower(trim((string)($_POST['email']??'')));
  $doc=preg_replace('/\D/','',(string)($_POST['cpf_cnpj']??''));$phone=preg_replace('/\D/','',(string)($_POST['phone']??''));
- if(mb_strlen($name)<3||mb_strlen($name)>120||!filter_var($email,FILTER_VALIDATE_EMAIL)||!in_array(strlen($doc),[11,14],true)||strlen($phone)<10||strlen($phone)>13)throw new RuntimeException('Revise os dados do responsável.');
+ if(mb_strlen($name)<3||mb_strlen($name)>120||!filter_var($email,FILTER_VALIDATE_EMAIL)||!bemora_checkout_valid_document($doc)||!bemora_checkout_valid_phone($phone))throw new RuntimeException('Revise os dados do responsável.');
  $q=$pdo->prepare('SELECT id FROM users WHERE email=? LIMIT 1');$q->execute([$email]);if($q->fetchColumn())throw new RuntimeException('Este e-mail já possui cadastro. Entre em contato com o suporte para contratar uma nova assinatura.');
  $promo=bemora_plan_promo_active($plan);$amount=$promo?(float)$plan['promo_price']:(float)$plan['price'];
  $baseAmount=$amount;
