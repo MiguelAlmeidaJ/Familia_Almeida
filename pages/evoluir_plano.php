@@ -53,4 +53,4 @@ $cycles=bemora_plan_cycles();
   </div>
   <p class="plan-confirm-note" id="plan-confirm-note"></p>
   <div class="plan-confirm-actions"><button type="button" class="plan-confirm-cancel" id="plan-confirm-cancel">Voltar</button><button type="button" class="sub-btn" id="plan-confirm-accept">Confirmar alteração <i class="bi bi-check-lg"></i></button></div>
-</dialog><script src="/assets/bemora-plan-change.js?v=2" defer></script></body></html>
+</dialog><script src="/assets/bemora-plan-change.js?v=3" defer></script></body></html>
