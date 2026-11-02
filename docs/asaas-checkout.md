@@ -53,3 +53,12 @@ O período promocional cadastrado no admin é o **intervalo de elegibilidade par
 ## Segurança
 Não salvar números de cartão, dados sensíveis de cartão, chaves do Asaas ou tokens de webhook em Git.
 Os dados da cobrança (nome, e-mail, CPF/CNPJ e celular) são utilizados para o pedido e enviados ao Asaas. Revise a política de privacidade e LGPD antes da comercialização.
+
+
+## Cupons — Sandbox (migration 20261102_027)
+Após git pull, execute a migration `20261102_027_coupon_benefit_fulfillment` na manutenção antes de testar cupons.
+- `first_payment_discount`: assinatura Asaas criada com valor recorrente integral; a primeira cobrança gerada é ajustada via `PUT /payments/{id}`. O link só aparece depois que o valor da primeira cobrança foi confirmado pela API. Não pagar diretamente uma cobrança do Asaas antes dessa conciliação.
+- `free_months`: assinatura começa a cobrar na data futura; convite de cadastro é disponibilizado na página do pedido, na mesma sessão. O período gratuito não exige pagamento e precisa ser acompanhado para cancelar cobranças futuras quando aplicável.
+- `annual_discount`: desconto aplicado de forma recorrente ao valor anual (não apenas no primeiro ano).
+- O sistema só aceita confirmação do primeiro pagamento promocional pelo identificador da cobrança efetivamente ajustada.
+- Valide manualmente no Sandbox: BPLUS, ACREDITAR, cupom anual, valores das renovações, convite, falhas, webhooks e recuperação do link. Ainda não há teste ponta a ponta com credenciais do Asaas na automação do GitHub.
