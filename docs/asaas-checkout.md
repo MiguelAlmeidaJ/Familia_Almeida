@@ -62,3 +62,14 @@ Após git pull, execute a migration `20261102_027_coupon_benefit_fulfillment` na
 - `annual_discount`: desconto aplicado de forma recorrente ao valor anual (não apenas no primeiro ano).
 - O sistema só aceita confirmação do primeiro pagamento promocional pelo identificador da cobrança efetivamente ajustada.
 - Valide manualmente no Sandbox: BPLUS, ACREDITAR, cupom anual, valores das renovações, convite, falhas, webhooks e recuperação do link. Ainda não há teste ponta a ponta com credenciais do Asaas na automação do GitHub.
+
+
+## Evolução de plano dentro do painel — Sandbox
+Em `/evoluir-plano`, o administrador familiar pode alterar a assinatura Asaas existente. Não é criado novo cliente nem uma segunda assinatura.
+- Exige migration `20261102_028_plan_change_requests`.
+- Somente Sandbox e assinatura ACTIVE no Asaas; identidade do cliente e periodicidade são conferidas antes do PUT.
+- A API recebe `PUT /subscriptions/{id}` com novo `value`, `cycle` e `updatePendingPayments:false`. Não há cobrança proporcional imediata. Cobranças existentes permanecem inalteradas; somente faturas futuras não geradas usam o novo plano.
+- Atualiza preço, ciclo e quantidade de membros no banco somente quando o Asaas confirma resposta correspondente. Em erro de rede ou resposta ambígua, solicita conciliação manual e bloqueia novas trocas.
+- Impede mudança para plano que não comporte os membros atuais, mantém o processo exclusivo ao administrador e bloqueia mudança enquanto houver cortesia ativa.
+- Teste no Sandbox upgrade, downgrade, troca de ciclo e faturas já geradas; verifique também o estado 'reconciliation_required' antes de considerar a operação pronta para produção.
+- Não usar o fluxo automático em produção sem uma rotina administrativa de conciliação auditada e aprovação dos efeitos sobre renovações.
