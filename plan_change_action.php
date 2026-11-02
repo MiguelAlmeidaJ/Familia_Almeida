@@ -19,14 +19,16 @@ try {
  $orderQuery=$pdo->prepare("SELECT * FROM subscription_orders WHERE activated_tenant_id=? AND status='completed' ORDER BY id DESC LIMIT 1 FOR UPDATE");
  $orderQuery->execute([$tid]);$order=$orderQuery->fetch(PDO::FETCH_ASSOC);
  if(!$order||!$order['asaas_subscription_id'])throw new RuntimeException('Assinatura atual indisponível.');
- if(!empty($order['coupon_free_until']) && $order['coupon_free_until']>date('Y-m-d'))throw new RuntimeException('Durante a cortesia, solicite ao suporte uma alteração sem perder os meses gratuitos.');
+ $trialActive=!empty($order['coupon_free_until']) && $order['coupon_free_until']>date('Y-m-d');
  $targetQuery=$pdo->prepare("SELECT * FROM subscription_plans WHERE id=? AND active=1");
  $targetQuery->execute([$targetId]);$target=$targetQuery->fetch(PDO::FETCH_ASSOC);
  if(!$target||(int)$target['id']===(int)$order['plan_id'])throw new RuntimeException('Selecione um plano diferente do atual.');
  $countQuery=$pdo->prepare('SELECT COUNT(*) FROM tenant_users WHERE tenant_id=?');$countQuery->execute([$tid]);
  if((int)$target['max_members']<(int)$countQuery->fetchColumn())throw new RuntimeException('Este plano não comporta os membros atuais da família.');
- $pending=$pdo->prepare("SELECT id FROM subscription_change_requests WHERE tenant_id=? AND status IN ('pending','scheduled','processing','reconciliation_required') LIMIT 1 FOR UPDATE");
+ $pending=$pdo->prepare("SELECT id FROM subscription_change_requests WHERE tenant_id=? AND status IN ('scheduled','processing','reconciliation_required') LIMIT 1 FOR UPDATE");
  $pending->execute([$tid]);if($pending->fetchColumn())throw new RuntimeException('Já existe uma alteração em andamento. Aguarde a conciliação.');
+ // Legacy 'pending' requests never called Asaas; they may be superseded safely.
+ $pdo->prepare("UPDATE subscription_change_requests SET status='superseded' WHERE tenant_id=? AND status='pending'")->execute([$tid]);
  $amount=bemora_plan_promo_active($target)?(float)$target['promo_price']:(float)$target['price'];
  $renewalAt=null;
  if($mode==='renewal'){
@@ -52,12 +54,15 @@ try {
  if((string)($current['id']??'')!==$subscriptionId||(string)($current['status']??'')!=='ACTIVE')throw new RuntimeException('Assinatura não está ativa no Asaas.');
  if((string)($current['customer']??'')!==(string)$order['asaas_customer_id'])throw new RuntimeException('Cliente Asaas não corresponde à assinatura.');
  $expectedCycle=bemora_asaas_cycle((string)$order['billing_cycle']);
+ $originalDue=(string)($current['nextDueDate']??'');
+ if($trialActive && (!preg_match('/^\\d{4}-\\d{2}-\\d{2}$/D',$originalDue)||$originalDue<(string)$order['coupon_free_until']))throw new RuntimeException('Data de cortesia divergente no Asaas; alteração requer conciliação.');
  if((string)($current['cycle']??'')!==$expectedCycle)throw new RuntimeException('Periodicidade divergente. Concilie a assinatura antes de alterar.');
  // Do not modify an outstanding invoice or payment due date; changes apply to future ungenerated invoices only.
  $updated=bemora_asaas_request('PUT','/subscriptions/'.rawurlencode($subscriptionId),[
   'value'=>$amount,'cycle'=>bemora_asaas_cycle((string)$target['billing_cycle']),
   'description'=>'Bemora - '.$target['name'],'updatePendingPayments'=>false
  ]);
+ if($trialActive && (string)($updated['nextDueDate']??'')!==$originalDue)throw new RuntimeException('Data de cortesia alterada. Conciliação manual necessária.');
  if((string)($updated['id']??'')!==$subscriptionId
     ||(string)($updated['cycle']??'')!==bemora_asaas_cycle((string)$target['billing_cycle'])
     ||abs((float)($updated['value']??-1)-$amount)>0.009)
@@ -65,7 +70,7 @@ try {
  $pdo->beginTransaction();
  $lock=$pdo->prepare("SELECT status FROM subscription_change_requests WHERE id=? AND tenant_id=? FOR UPDATE");$lock->execute([$requestId,$tid]);
  if($lock->fetchColumn()!=='processing')throw new RuntimeException('Solicitação alterada durante a confirmação.');
- $pdo->prepare("UPDATE subscription_orders SET plan_id=?,plan_name=?,billing_cycle=?,max_members=?,recurring_amount=?,amount=?,coupon_id=NULL,coupon_kind=NULL,coupon_free_until=NULL WHERE id=?")->execute([(int)$target['id'],$target['name'],$target['billing_cycle'],(int)$target['max_members'],$amount,$amount,(int)$order['id']]);
+ $pdo->prepare("UPDATE subscription_orders SET plan_id=?,plan_name=?,billing_cycle=?,max_members=?,recurring_amount=?,amount=? WHERE id=?")->execute([(int)$target['id'],$target['name'],$target['billing_cycle'],(int)$target['max_members'],$amount,$amount,(int)$order['id']]);
  $pdo->prepare("UPDATE tenants SET max_members=? WHERE id=?")->execute([(int)$target['max_members'],$tid]);
  $pdo->prepare("UPDATE subscription_change_requests SET status='completed' WHERE id=?")->execute([$requestId]);
  $pdo->commit();
