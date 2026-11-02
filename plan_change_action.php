@@ -34,6 +34,8 @@ try{
  $sub=bemora_asaas_request('GET','/subscriptions/'.rawurlencode((string)$order['asaas_subscription_id']));
  if((string)($sub['id']??'')!==(string)$order['asaas_subscription_id']||(string)($sub['customer']??'')!==(string)$order['asaas_customer_id']||(string)($sub['status']??'')!=='ACTIVE'||(string)($sub['cycle']??'')!==bemora_asaas_cycle($order['billing_cycle']))throw new RuntimeException('Assinatura Asaas divergente.');
  $due=(string)($sub['nextDueDate']??'');if(!preg_match('/^\\d{4}-\\d{2}-\\d{2}$/D',$due))throw new RuntimeException('Vencimento não disponível.');
+ if($trialActive && $due<(string)$order['coupon_free_until'])throw new RuntimeException('Data da cortesia divergente no Asaas. Solicite conciliação antes de trocar.');
+ if(abs((float)($sub['value']??-1)-$oldPrice)>0.009)throw new RuntimeException('Valor do Asaas diferente do plano atual. Solicite conciliação.');
  $today=new DateTimeImmutable('today');$next=new DateTimeImmutable($due);
  $days=(int)$today->diff($next)->format('%r%a');if($days<=0)throw new RuntimeException('Renovação em andamento. Tente após o próximo vencimento.');
  $period=['monthly'=>31,'semiannual'=>184,'annual'=>366][$order['billing_cycle']];
