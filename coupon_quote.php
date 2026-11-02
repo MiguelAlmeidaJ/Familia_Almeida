@@ -19,5 +19,5 @@ try{
   if(!$coupon)throw new RuntimeException('Cupom não encontrado.');
   $data=bemora_coupon_quote($coupon,$plan,$base);
  }
- echo json_encode(['ok'=>true,'amount'=>number_format($data['amount'],2,'.',''),'display_amount'=>bemora_coupon_money((float)$data['amount']),'discount'=>bemora_coupon_money((float)$data['discount']),'label'=>$data['label'],'supported'=>$data['supported'],'message'=>$data['supported']?'Benefício aplicado à simulação.':'Cupom válido, mas sua modalidade requer ativação das regras de cobrança.'],JSON_UNESCAPED_UNICODE);
+ echo json_encode(['ok'=>true,'amount'=>number_format($data['amount'],2,'.',''),'display_amount'=>bemora_coupon_money((float)$data['amount']),'discount'=>bemora_coupon_money((float)$data['discount']),'recurring_amount'=>bemora_coupon_money((float)($data['recurring_amount']??$base)),'label'=>$data['label'],'supported'=>$data['supported'],'message'=>$data['supported']?'Benefício aplicado à simulação.':'Cupom válido, mas sua modalidade requer ativação das regras de cobrança.'],JSON_UNESCAPED_UNICODE);
 }catch(Throwable $e){http_response_code(422);echo json_encode(['ok'=>false,'error'=>$e->getMessage()],JSON_UNESCAPED_UNICODE);}
