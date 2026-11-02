@@ -33,6 +33,13 @@ function config(string $section, ?string $key = null, mixed $default = null): mi
     return $config[$section][$key] ?? $default;
 }
 
+/** Commercial registrations enabled by default; set environment variable to 0 for an emergency stop. */
+function bemora_multi_tenant_released(): bool
+{
+    $flag = getenv('BEMORA_MULTI_TENANT_RELEASE');
+    return $flag === false || $flag === '' || $flag === '1';
+}
+
 function db(): PDO
 {
     static $pdo = null;
