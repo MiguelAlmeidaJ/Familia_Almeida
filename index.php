@@ -7,7 +7,7 @@ try{
  require_once __DIR__.'/includes/plans.php';
  $pdo=db();
  if(bemora_plans_table_exists($pdo)){
-  $publicPlans=$pdo->query('SELECT id,name,billing_cycle,details,max_members,price,promo_price,promo_starts_at,promo_ends_at FROM subscription_plans WHERE active=1 ORDER BY FIELD(billing_cycle,\'monthly\',\'semiannual\',\'annual\'),price,id')->fetchAll(PDO::FETCH_ASSOC);
+  $publicPlans=$pdo->query('SELECT id,name,billing_cycle,details,max_members,price,promo_price,promo_starts_at,promo_ends_at FROM subscription_plans WHERE active=1 AND public_sale=1 ORDER BY FIELD(billing_cycle,\'monthly\',\'semiannual\',\'annual\'),price,id')->fetchAll(PDO::FETCH_ASSOC);
  }
 }catch(Throwable $e){error_log('Bemora landing: plan catalog unavailable.');}
 ?><!doctype html>
