@@ -8,5 +8,5 @@ return [
   $pdo->exec("ALTER TABLE subscription_plans DROP CHECK chk_plan_price");
   $pdo->exec("ALTER TABLE subscription_plans ADD CONSTRAINT chk_plan_price CHECK (price >= 0)");
   $pdo->exec("ALTER TABLE subscription_plans ADD CONSTRAINT chk_public_plan_price CHECK (public_sale = 0 OR price > 0)");
- ]
+ }
 ];
