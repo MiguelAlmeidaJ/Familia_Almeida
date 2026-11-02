@@ -72,7 +72,7 @@ function render_sidebar(string $active, string $csrf): void
 
         </nav>
 
-        <details class="bemora-account-menu" <?= in_array($active,['meu-perfil','minha-conta','minha-assinatura'],true)?'open':'' ?>>
+        <details class="bemora-account-menu">
           <summary class="sidebar-user ref-sidebar-user" title="Abrir opções da conta">
             <div class="user-avatar"><?php if($user && !empty($user['avatar_path'])): ?><img src="/meu-perfil/foto?v=<?= e(substr((string)$user['avatar_path'],0,12)) ?>" alt=""><?php else: ?><?= e($initial) ?><?php endif; ?></div>
             <div class="sidebar-user-copy"><strong><?= e($user['name']??'Usuário') ?></strong><span>Minha conta</span></div><i class="bi bi-chevron-up bemora-account-chevron" aria-hidden="true"></i>
@@ -94,6 +94,7 @@ function render_sidebar(string $active, string $csrf): void
 
     <button class="sidebar-overlay" id="sidebarOverlay" type="button" aria-label="Fechar menu"></button>
     <script src="/assets/app.js" defer></script>
+    <script src="/assets/bemora-account-menu.js?v=1" defer></script>
     <?php
 }
 
