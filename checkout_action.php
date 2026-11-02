@@ -19,14 +19,14 @@ try{
  $q=$pdo->prepare('SELECT id FROM users WHERE email=? LIMIT 1');$q->execute([$email]);if($q->fetchColumn())throw new RuntimeException('Este e-mail já possui cadastro. Entre em contato com o suporte para contratar uma nova assinatura.');
  $promo=bemora_plan_promo_active($plan);$amount=$promo?(float)$plan['promo_price']:(float)$plan['price'];
  $baseAmount=$amount;
- $coupon=null;$couponId=null;$couponKind=null;
+ $coupon=null;$couponId=null;$couponKind=null;$freeMonths=0;$recurringAmount=$baseAmount;
  $code=trim((string)($_POST['coupon_code']??''));
  if($code!==''){
   $coupon=bemora_coupon_find($pdo,$code);
   if(!$coupon)throw new RuntimeException('Cupom não encontrado.');
   $quote=bemora_coupon_quote($coupon,$plan,$amount);
   if(!$quote['supported'])throw new RuntimeException('Este tipo de cupom ainda não está habilitado para pagamento automático. Escolha outro cupom ou fale com o suporte.');
-  $couponId=(int)$coupon['id'];$couponKind=$coupon['kind'];$amount=(float)$quote['amount'];
+  $couponId=(int)$coupon['id'];$couponKind=$coupon['kind'];$amount=(float)$quote['amount'];$recurringAmount=(float)$quote['recurring_amount'];$freeMonths=(int)($quote['free_months']??0);
  }
  $quoted=(string)($_POST['quoted_amount']??'');
  if(!preg_match('/^\\d+\\.\\d{2}$/D',$quoted)||abs((float)$quoted-$baseAmount)>0.001)throw new RuntimeException('O preço deste plano foi atualizado. Confira o valor exibido antes de prosseguir.');
@@ -40,7 +40,8 @@ try{
   $verified=bemora_coupon_quote($locked,$plan,$baseAmount);
   if(abs((float)$verified['amount']-$amount)>0.001)throw new RuntimeException('O valor do cupom mudou. Recarregue o checkout.');
  }
- $pdo->prepare('INSERT INTO subscription_orders(public_token_hash,plan_id,plan_name,billing_cycle,max_members,amount,buyer_name,buyer_email,buyer_cpf_cnpj,buyer_phone,coupon_id,list_amount,coupon_kind) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')->execute([$hash,(int)$plan['id'],$plan['name'],$plan['billing_cycle'],(int)$plan['max_members'],$amount,$name,$email,$doc,$phone,$couponId,$baseAmount,$couponKind]);
+ $freeUntil=$freeMonths>0?(new DateTimeImmutable('today'))->modify('+'.$freeMonths.' months')->format('Y-m-d'):null;
+ $pdo->prepare('INSERT INTO subscription_orders(public_token_hash,plan_id,plan_name,billing_cycle,max_members,amount,buyer_name,buyer_email,buyer_cpf_cnpj,buyer_phone,coupon_id,list_amount,coupon_kind,recurring_amount,coupon_free_until) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')->execute([$hash,(int)$plan['id'],$plan['name'],$plan['billing_cycle'],(int)$plan['max_members'],$amount,$name,$email,$doc,$phone,$couponId,$baseAmount,$couponKind,$recurringAmount,$freeUntil]);
  $orderId=(int)$pdo->lastInsertId();
  if($couponId!==null){
   $pdo->prepare('INSERT INTO subscription_coupon_redemptions(coupon_id,order_id) VALUES (?,?)')->execute([$couponId,$orderId]);
@@ -51,13 +52,19 @@ try{
  $customer=bemora_asaas_request('POST','/customers',['name'=>$name,'email'=>$email,'cpfCnpj'=>$doc,'mobilePhone'=>$phone,'externalReference'=>'bemora-order-'.$orderId]);
  $customerId=(string)($customer['id']??'');if($customerId==='')throw new RuntimeException('Cliente não confirmado pelo Asaas.');
  $pdo->prepare('UPDATE subscription_orders SET asaas_customer_id=?,status=? WHERE id=?')->execute([$customerId,'customer_created',$orderId]);
- $subscription=bemora_asaas_request('POST','/subscriptions',['customer'=>$customerId,'billingType'=>'UNDEFINED','value'=>$amount,'nextDueDate'=>date('Y-m-d'),'cycle'=>bemora_asaas_cycle($plan['billing_cycle']),'description'=>'Bemora - '.$plan['name'],'externalReference'=>'bemora-order-'.$orderId]);
+ $subscription=bemora_asaas_request('POST','/subscriptions',['customer'=>$customerId,'billingType'=>'UNDEFINED','value'=>$recurringAmount,'nextDueDate'=>$freeUntil??date('Y-m-d'),'cycle'=>bemora_asaas_cycle($plan['billing_cycle']),'description'=>'Bemora - '.$plan['name'],'externalReference'=>'bemora-order-'.$orderId]);
  $subId=(string)($subscription['id']??'');if($subId==='')throw new RuntimeException('Assinatura não confirmada pelo Asaas.');
- $pdo->prepare('UPDATE subscription_orders SET asaas_subscription_id=?,status=? WHERE id=?')->execute([$subId,'awaiting_payment',$orderId]);
+ $pdo->prepare('UPDATE subscription_orders SET asaas_subscription_id=?,status=? WHERE id=?')->execute([$subId,$freeMonths>0?'complimentary':'awaiting_payment',$orderId]);
+ if($freeMonths>0){
+  require_once __DIR__.'/includes/complimentary_checkout.php';
+  bemora_fulfill_complimentary_order($pdo,$orderId);
+ }
+
+ require_once __DIR__.'/includes/complimentary_checkout.php';
  $invoice=null;$paymentId=null;
  try{
   $payments=bemora_asaas_request('GET','/subscriptions/'.rawurlencode($subId).'/payments?limit=10');
-  foreach(($payments['data']??[]) as $payment){$url=bemora_asaas_invoice_url($payment);if($url){$invoice=$url;$paymentId=(string)($payment['id']??'');break;}}
+  foreach(($payments['data']??[]) as $payment){if($couponKind==='first_payment_discount' && !bemora_adjust_first_coupon_payment($pdo,$orderId,$payment))continue;$url=bemora_asaas_invoice_url($payment);if($url){$invoice=$url;$paymentId=(string)($payment['id']??'');break;}}
  }catch(Throwable $e){error_log('Bemora: subscription payment URL not yet available.');}
  if($invoice)$pdo->prepare('UPDATE subscription_orders SET asaas_payment_id=?,invoice_url=? WHERE id=?')->execute([$paymentId,$invoice,$orderId]);
  $_SESSION['checkout_order_id']=$orderId;$_SESSION['checkout_order_token']=$publicToken;
