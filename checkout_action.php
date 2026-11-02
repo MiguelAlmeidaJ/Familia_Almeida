@@ -6,7 +6,7 @@ if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);exit;}
 verify_csrf();
 if(!bemora_asaas_enabled() || (bemora_asaas_mode()==='production' && (string)config('asaas','production_enabled','0')!=='1')){http_response_code(503);exit('Checkout ainda não liberado.');}
 if(getenv('BEMORA_MULTI_TENANT_RELEASE')!=='1'){http_response_code(503);exit('Ativação de novas famílias temporariamente indisponível.');}
-$pdo=db();
+$pdo=db();$couponReservedId=null;$couponOrderId=null;
 try{
  if(!bemora_plans_table_exists($pdo))throw new RuntimeException('Planos não configurados.');
  $id=filter_var($_POST['plan_id']??null,FILTER_VALIDATE_INT);
@@ -43,6 +43,7 @@ try{
  $orderId=(int)$pdo->lastInsertId();
  if($couponId!==null){
   $pdo->prepare('INSERT INTO subscription_coupon_redemptions(coupon_id,order_id) VALUES (?,?)')->execute([$couponId,$orderId]);
+  $couponReservedId=$couponId;$couponOrderId=$orderId;
   $pdo->prepare('UPDATE subscription_coupons SET redeemed_count=redeemed_count+1 WHERE id=?')->execute([$couponId]);
  }
  $pdo->commit();
@@ -62,6 +63,20 @@ try{
  header('Location: /checkout/aguardando',true,303);exit;
 }catch(Throwable $e){
  if($pdo->inTransaction())$pdo->rollBack();
+ // A failed remote request must not consume a voucher when no Asaas subscription exists.
+ if($couponReservedId && $couponOrderId){
+  try{
+   $q=$pdo->prepare('SELECT asaas_subscription_id FROM subscription_orders WHERE id=?');
+   $q->execute([$couponOrderId]);
+   if(!$q->fetchColumn()){
+    $pdo->beginTransaction();
+    $removed=$pdo->prepare('DELETE FROM subscription_coupon_redemptions WHERE order_id=? AND coupon_id=?');
+    $removed->execute([$couponOrderId,$couponReservedId]);
+    if($removed->rowCount())$pdo->prepare('UPDATE subscription_coupons SET redeemed_count=GREATEST(0,redeemed_count-1) WHERE id=?')->execute([$couponReservedId]);
+    $pdo->commit();
+   }
+  }catch(Throwable $ignored){if($pdo->inTransaction())$pdo->rollBack();error_log('Bemora: voucher release requires reconciliation.');}
+ }
  $_SESSION['checkout_error']=$e instanceof PDOException?'Não foi possível criar o pedido. Tente novamente.':$e->getMessage();
  header('Location: /checkout?plano='.(int)($_POST['plan_id']??0),true,303);exit;
 }
