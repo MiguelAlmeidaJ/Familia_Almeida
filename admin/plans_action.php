@@ -24,6 +24,7 @@ try{
   $priceRaw=trim((string)($_POST['price']??''));
   $promoRaw=trim((string)($_POST['promo_price']??''));
   $duration=(string)($_POST['promo_duration']??'');
+  $publicSale=($_POST['public_sale']??'0')==='1'?1:0;
   $parseMoney=static function(string $value):float {
    $value=preg_replace('/^R\$\s*/u','',$value);
    $value=preg_replace('/\s+/u','',$value);
@@ -54,14 +55,14 @@ try{
      $start=$existing['promo_starts_at'];$end=$existing['promo_ends_at'];
     }else{$start=date('Y-m-d H:i:s');$end=bemora_plan_ends_at($duration);}
    }
-   $stmt=$pdo->prepare('UPDATE subscription_plans SET name=?,billing_cycle=?,details=?,max_members=?,price=?,promo_price=?,promo_duration=?,promo_starts_at=?,promo_ends_at=? WHERE id=?');
-   $stmt->execute([$name,$cycle,$details,$members,$price,$promo,$promo===null?null:$duration,$start,$end,$id]);
+   $stmt=$pdo->prepare('UPDATE subscription_plans SET name=?,billing_cycle=?,details=?,max_members=?,price=?,promo_price=?,promo_duration=?,promo_starts_at=?,promo_ends_at=?,public_sale=? WHERE id=?');
+   $stmt->execute([$name,$cycle,$details,$members,$price,$promo,$promo===null?null:$duration,$start,$end,$publicSale,$id]);
    flash('success','Plano atualizado com sucesso.');
   }else{
    if($promo!==null){$start=date('Y-m-d H:i:s');$end=bemora_plan_ends_at($duration);}
-   $stmt=$pdo->prepare('INSERT INTO subscription_plans(name,billing_cycle,details,max_members,price,promo_price,promo_duration,promo_starts_at,promo_ends_at) VALUES (?,?,?,?,?,?,?,?,?)');
-   $stmt->execute([$name,$cycle,$details,$members,$price,$promo,$promo===null?null:$duration,$start,$end]);
-   flash('success','Plano cadastrado e publicado.');
+   $stmt=$pdo->prepare('INSERT INTO subscription_plans(name,billing_cycle,details,max_members,price,promo_price,promo_duration,promo_starts_at,promo_ends_at,public_sale) VALUES (?,?,?,?,?,?,?,?,?,?)');
+   $stmt->execute([$name,$cycle,$details,$members,$price,$promo,$promo===null?null:$duration,$start,$end,$publicSale]);
+   flash('success','Plano cadastrado com a visibilidade escolhida.');
   }
  }else{throw new RuntimeException('Ação inválida.');}
 }catch(Throwable $e){flash('error',$e instanceof PDOException?'Erro ao gravar o plano no banco de dados.':$e->getMessage());}
