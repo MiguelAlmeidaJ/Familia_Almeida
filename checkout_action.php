@@ -11,7 +11,7 @@ $pdo=db();$couponReservedId=null;$couponOrderId=null;
 try{
  if(!bemora_plans_table_exists($pdo))throw new RuntimeException('Planos não configurados.');
  $id=filter_var($_POST['plan_id']??null,FILTER_VALIDATE_INT);
- $q=$pdo->prepare('SELECT * FROM subscription_plans WHERE id=? AND active=1');$q->execute([$id?:0]);$plan=$q->fetch(PDO::FETCH_ASSOC);
+ $q=$pdo->prepare('SELECT * FROM subscription_plans WHERE id=? AND active=1 AND public_sale=1');$q->execute([$id?:0]);$plan=$q->fetch(PDO::FETCH_ASSOC);
  if(!$plan)throw new RuntimeException('Plano indisponível.');
  $name=trim((string)($_POST['name']??''));$email=mb_strtolower(trim((string)($_POST['email']??'')));
  $doc=preg_replace('/\D/','',(string)($_POST['cpf_cnpj']??''));$phone=preg_replace('/\D/','',(string)($_POST['phone']??''));
