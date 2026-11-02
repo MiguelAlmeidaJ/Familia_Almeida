@@ -37,8 +37,9 @@ try{
   if($details===''||mb_strlen($details)>3000)throw new RuntimeException('Informe detalhes do plano (até 3000 caracteres).');
   if(!$members||$members<1||$members>30)throw new RuntimeException('O limite de membros deve ser de 1 a 30.');
   $price=$parseMoney($priceRaw);
-  if(!is_finite($price)||$price<=0||$price>99999999)throw new RuntimeException('Informe um preço válido.');
+  if(!is_finite($price)||$price<0||$price>99999999||($publicSale===1&&$price<=0))throw new RuntimeException('Planos públicos exigem preço maior que zero. Planos internos podem ser gratuitos.');
   $promo=null;$start=null;$end=null;
+  if($publicSale===0 && $price===0.0){$promoRaw='';$duration='';}
   if($promoRaw!==''){
    $promo=$parseMoney($promoRaw);
    if(!is_finite($promo)||$promo<=0||$promo>=$price)throw new RuntimeException('A promoção deve ser maior que zero e menor que o preço normal.');
