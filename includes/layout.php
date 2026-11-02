@@ -41,10 +41,16 @@ function render_sidebar(string $active, string $csrf): void
         ['key' => 'contas', 'href' => '/contas', 'label' => 'Contas previstas'],
         ['key' => 'categorias', 'href' => '/categorias', 'label' => 'Categorias'],
         ['key' => 'membros', 'href' => '/membros', 'label' => 'Membros'],
-        ['key' => 'meu-perfil', 'href' => '/meu-perfil', 'label' => 'Meu perfil'],
     ];
 
     $user = function_exists('current_user') ? current_user() : null;
+    $memberLimit=2;
+    if($user && !empty($user['tenant_id'])){
+        $limitQuery=db()->prepare('SELECT max_members FROM tenants WHERE id=? AND active=1');
+        $limitQuery->execute([(int)$user['tenant_id']]);
+        $memberLimit=(int)$limitQuery->fetchColumn();
+    }
+    if($memberLimit<=1)$items=array_values(array_filter($items,static fn(array $item):bool=>$item['key']!=='membros'));
     $initial = $user && !empty($user['name']) ? strtoupper(substr((string) $user['name'], 0, 1)) : 'F';
     ?>
     <aside class="sidebar ref-sidebar" id="sidebar">
@@ -64,22 +70,19 @@ function render_sidebar(string $active, string $csrf): void
                 </a>
             <?php endforeach; ?>
 
-            <div class="ref-nav-divider"></div>
-
-            <a class="nav-item <?= $active === 'minha-conta' ? 'active' : '' ?>" href="/minha-conta" title="Configurações da conta">
-                <span class="nav-icon"><?= nav_icon('configuracoes') ?></span>
-                <span class="nav-item-label">Configurações</span>
-            </a>
         </nav>
 
-        <a class="sidebar-user ref-sidebar-user" href="/meu-perfil" title="Editar meu perfil" style="text-decoration:none;color:inherit">
-            <div class="user-avatar"><?php if($user && !empty($user['avatar_path'])): ?><img src="/meu-perfil/foto?v=<?= e(substr((string)$user['avatar_path'],0,12)) ?>" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover"><?php else: ?><?= e($initial) ?><?php endif; ?></div>
-            <div class="sidebar-user-copy">
-                <strong><?= e($user['name'] ?? 'Usuário') ?></strong>
-                <span>Ver meu perfil</span>
-            </div>
-        </a>
-
+        <details class="bemora-account-menu" <?= in_array($active,['meu-perfil','minha-conta','minha-assinatura'],true)?'open':'' ?>>
+          <summary class="sidebar-user ref-sidebar-user" title="Abrir opções da conta">
+            <div class="user-avatar"><?php if($user && !empty($user['avatar_path'])): ?><img src="/meu-perfil/foto?v=<?= e(substr((string)$user['avatar_path'],0,12)) ?>" alt=""><?php else: ?><?= e($initial) ?><?php endif; ?></div>
+            <div class="sidebar-user-copy"><strong><?= e($user['name']??'Usuário') ?></strong><span>Minha conta</span></div><i class="bi bi-chevron-up bemora-account-chevron" aria-hidden="true"></i>
+          </summary>
+          <nav class="bemora-account-links" aria-label="Opções da conta">
+            <a href="/meu-perfil"><i class="bi bi-person-circle"></i> Meu perfil</a>
+            <a href="/minha-assinatura"><i class="bi bi-credit-card"></i> Minha assinatura</a>
+            <a href="/minha-conta"><i class="bi bi-sliders2"></i> Configurações</a>
+          </nav>
+        </details>
         <form method="post" action="/sair" class="sidebar-logout">
             <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
             <button class="logout modern-logout" type="submit" title="Sair da conta">
