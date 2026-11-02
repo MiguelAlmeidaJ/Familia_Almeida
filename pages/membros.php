@@ -7,6 +7,7 @@ $q=$pdo->prepare('SELECT name,max_members FROM tenants WHERE id=? AND active=1')
 $q=$pdo->prepare("SELECT role FROM tenant_users WHERE tenant_id=? AND user_id=?");$q->execute([$tid,(int)$user['id']]);$isAdmin=$q->fetchColumn()==='family_admin';
 $q=$pdo->prepare("SELECT u.id,u.name,u.email,u.avatar_path,tu.role,tu.created_at FROM tenant_users tu JOIN users u ON u.id=tu.user_id WHERE tu.tenant_id=? ORDER BY (tu.role='family_admin') DESC,u.name");
 $q->execute([$tid]);$members=$q->fetchAll();$count=count($members);$max=(int)($family['max_members']??0);
+if($max<=1)redirect_to('/minha-assinatura');
 $temporary=$_SESSION['members_temporary_password']??null;unset($_SESSION['members_temporary_password']);
 ?><!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Membros • Bemora</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=3"><link rel="stylesheet" href="/assets/bemora-members.css?v=1"></head>
