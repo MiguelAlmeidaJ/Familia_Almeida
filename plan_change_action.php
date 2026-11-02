@@ -8,10 +8,13 @@ verify_csrf();
 $pdo=db();$tid=(int)$user['tenant_id'];$requestId=0;
 try {
  if(!bemora_asaas_enabled()||bemora_asaas_mode()!=='sandbox')throw new RuntimeException('Trocas automáticas estão disponíveis somente no Asaas Sandbox nesta etapa.');
+ // Safety gate: do not grant paid plan benefits before confirmed payment.
+ // Full paid-change orchestration will be implemented separately.
  $targetId=filter_var($_POST['plan_id']??null,FILTER_VALIDATE_INT);
  $mode=(string)($_POST['change_mode']??'');
  if(!in_array($mode,['immediate','renewal'],true))throw new RuntimeException('Escolha quando deseja mudar seu plano.');
  if(!$targetId||$targetId<1)throw new RuntimeException('Escolha um plano válido.');
+ throw new RuntimeException('Troca automática temporariamente suspensa: o novo plano exige confirmação de pagamento pelo Asaas antes da ativação. Sua assinatura atual permanece inalterada.');
  $pdo->beginTransaction();
  $role=$pdo->prepare("SELECT role FROM tenant_users WHERE tenant_id=? AND user_id=? FOR UPDATE");
  $role->execute([$tid,(int)$user['id']]);
