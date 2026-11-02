@@ -17,7 +17,7 @@ try{
  if($role->fetchColumn()!=='family_admin')throw new RuntimeException('Somente o administrador familiar pode mudar o plano.');
  $q=$pdo->prepare("SELECT * FROM subscription_orders WHERE activated_tenant_id=? AND status='completed' ORDER BY id DESC LIMIT 1 FOR UPDATE");$q->execute([$tid]);$order=$q->fetch(PDO::FETCH_ASSOC);
  if(!$order||!$order['asaas_subscription_id']||!$order['asaas_customer_id'])throw new RuntimeException('Assinatura não disponível.');
- if(!empty($order['coupon_free_until'])&&$order['coupon_free_until']>date('Y-m-d'))throw new RuntimeException('Aguarde o fim da cortesia para não perder meses gratuitos.');
+ $trialActive=!empty($order['coupon_free_until']) && $order['coupon_free_until']>date('Y-m-d');
  $q=$pdo->prepare("SELECT * FROM subscription_plans WHERE id=? AND active=1");$q->execute([$targetId]);$target=$q->fetch(PDO::FETCH_ASSOC);
  if(!$target||(int)$target['id']===(int)$order['plan_id'])throw new RuntimeException('Selecione outro plano.');
  if((string)$target['billing_cycle']!==(string)$order['billing_cycle'])throw new RuntimeException('Mudança de periodicidade será habilitada após validação da renovação.');
