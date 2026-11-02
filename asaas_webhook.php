@@ -31,6 +31,7 @@ try{
       ||(string)($verified['subscription']??'')!==$sub)throw new RuntimeException('Cobrança ainda não confirmada pela API.');
    $payment=$verified;
    if((string)($payment['customer']??'')!==(string)$order['asaas_customer_id'])throw new RuntimeException('Cliente da cobrança não corresponde ao pedido.');
+   if($order['coupon_kind']==='first_payment_discount' && !(int)$order['first_payment_adjusted'])throw new RuntimeException('Primeira cobrança promocional ainda não ajustada.');
    if(abs((float)($payment['value']??0)-(float)$order['amount'])>0.01)throw new RuntimeException('Valor de pagamento divergente.');
    // A paid subscription never creates a tenant directly. Buyer must finish
    // member registration using the one-use invitation created here.
