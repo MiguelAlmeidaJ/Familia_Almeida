@@ -8,7 +8,7 @@ $kind=(string)($_GET['tipo']??'checkout');
 $paymentId='';$back='/';$title='Pagamento Bemora';$amount=0.0;$invoice=null;
 if($kind==='upgrade'){
  $user=require_family_access();
- $q=db()->prepare("SELECT c.*,p.name target_name FROM subscription_change_requests c JOIN subscription_plans p ON p.id=c.to_plan_id WHERE c.id=? AND c.tenant_id=? AND c.status IN ('awaiting_payment','completed') LIMIT 1");
+ $q=db()->prepare("SELECT c.*,p.name target_name,o.asaas_customer_id FROM subscription_change_requests c JOIN subscription_plans p ON p.id=c.to_plan_id JOIN subscription_orders o ON o.id=c.order_id WHERE c.id=? AND c.tenant_id=? AND c.status IN ('awaiting_payment','completed') LIMIT 1");
  $q->execute([(int)($_GET['id']??0),(int)$user['tenant_id']]);$change=$q->fetch(PDO::FETCH_ASSOC);
  if(!$change){http_response_code(404);exit('Pagamento indisponível.');}
  $paymentId=(string)$change['asaas_payment_id'];$amount=(float)$change['payment_amount'];$invoice=$change['invoice_url'];$title='Evolução para '.$change['target_name'];$back='/evoluir-plano';
@@ -24,10 +24,8 @@ $error='';$pix=null;$boleto=null;$payment=null;
 try{
  $payment=bemora_asaas_request('GET','/payments/'.rawurlencode($paymentId));
  if(abs((float)($payment['value']??-1)-$amount)>.009)throw new RuntimeException('Valor da cobrança divergente. Contate o suporte.');
- if($kind==='upgrade' && ((string)($payment['externalReference']??'')!=='bemora-change-'.$change['id'] || (string)$payment['customer']!==(string)($change['asaas_customer_id']??$payment['customer']))) {
-  if((string)($payment['externalReference']??'')!=='bemora-change-'.$change['id'])throw new RuntimeException('Cobrança não corresponde à mudança solicitada.');
- }
- if($kind!=='upgrade' && (string)($payment['subscription']??'')!==(string)$order['asaas_subscription_id'])throw new RuntimeException('Cobrança não corresponde à assinatura.');
+ if($kind==='upgrade' && ((string)($payment['externalReference']??'')!=='bemora-change-'.$change['id'] || (string)($payment['customer']??'')!==(string)$change['asaas_customer_id'] || !empty($payment['subscription'])))throw new RuntimeException('Cobrança não corresponde ao upgrade.');
+ if($kind!=='upgrade' && ((string)($payment['subscription']??'')!==(string)$order['asaas_subscription_id'] || (string)($payment['customer']??'')!==(string)$order['asaas_customer_id']))throw new RuntimeException('Cobrança não corresponde à assinatura.');
  if(in_array((string)($payment['status']??''),['PENDING','OVERDUE'],true)){
   try{$pix=bemora_asaas_request('GET','/payments/'.rawurlencode($paymentId).'/pixQrCode');}catch(Throwable $ignore){}
   try{$boleto=bemora_asaas_request('GET','/payments/'.rawurlencode($paymentId).'/identificationField');}catch(Throwable $ignore){}
