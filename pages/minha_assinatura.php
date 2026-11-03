@@ -61,7 +61,7 @@ $cycles=bemora_plan_cycles();
 ?><!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Minha assinatura • Bemora</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?>
-<link rel="stylesheet" href="/assets/bemora-sidebar.css?v=5"><link rel="stylesheet" href="/assets/bemora-subscription.css?v=5"></head>
+<link rel="stylesheet" href="/assets/bemora-sidebar.css?v=6"><link rel="stylesheet" href="/assets/bemora-subscription.css?v=5"></head>
 <body class="bemora-finance"><div class="shell ref-shell"><?php render_sidebar('minha-assinatura',$csrf); ?><main><?php render_topbar($user); ?><div class="content bemora-subscription"><?php page_header('MINHA CONTA','Minha assinatura','Acompanhe seu plano, próximas cobranças e faturas em um só lugar.'); ?>
 <?php if($flash): $flashIsSuccess=($flash['type']??'')==='success'; $flashMessage=(string)($flash['message']??''); $isSupportReport=$flashIsSuccess && preg_match('/^Relato #(\\d+)\\b/u',$flashMessage,$ticketMatch)===1; ?>
 <section class="bemora-feedback <?= $flashIsSuccess?'is-success':'is-error' ?>" id="bemora-feedback" role="<?= $flashIsSuccess?'status':'alert' ?>" aria-live="<?= $flashIsSuccess?'polite':'assertive' ?>" aria-labelledby="bemora-feedback-title">
