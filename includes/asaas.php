@@ -17,7 +17,7 @@ function bemora_asaas_request(string $method,string $path,?array $data=null):arr
  $output=curl_exec($ch);$code=(int)curl_getinfo($ch,CURLINFO_RESPONSE_CODE);$error=curl_error($ch);curl_close($ch);
  if($output===false){error_log('Bemora Asaas: network failure '.$error);throw new RuntimeException('Não foi possível conectar ao meio de pagamento.');}
  $decoded=json_decode((string)$output,true);
- if($code<200||$code>=300){error_log('Bemora Asaas: HTTP '.$code);throw new RuntimeException('O Asaas não aceitou a solicitação. Verifique os dados e tente novamente.');}
+ if($code<200||$code>=300){error_log('Bemora Asaas: HTTP '.$code);throw new RuntimeException('O Asaas não aceitou a solicitação. Verifique os dados e tente novamente.',$code);}
  if(!is_array($decoded))throw new RuntimeException('Resposta inválida da plataforma de pagamento.');
  return $decoded;
 }
