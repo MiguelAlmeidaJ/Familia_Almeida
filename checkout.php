@@ -15,7 +15,7 @@ $legalApproved=bemora_legal_approved();
 $commercialRequiresLegal=bemora_asaas_mode()==='production';
 if($commercialRequiresLegal&&!$legalApproved)$error='Contratação temporariamente indisponível enquanto os documentos legais são finalizados.';
 $csrf=csrf_token();$checkoutError=(string)($_SESSION['checkout_error']??'');unset($_SESSION['checkout_error']);
-?><!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><title>Assinar Bemora</title><link rel="icon" href="/assets/brand/favicon.png"><link rel="stylesheet" href="/assets/bemora-checkout.css?v=6"></head><body>
+?><!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><title>Assinar Bemora</title><link rel="icon" href="/assets/brand/favicon.png"><link rel="stylesheet" href="/assets/bemora-checkout.css?v=7"></head><body>
 <header class="checkout-header"><a href="/"><img src="/assets/brand/logo.png" alt="Bemora by Anoar"></a><span class="checkout-secure-label">🔒 Checkout seguro</span></header><main class="checkout-main">
 <div class="checkout-head"><a href="/#planos">← Voltar aos planos</a><h1>Vamos começar sua nova fase financeira?</h1><p>Confira sua assinatura e informe os dados do responsável pelo pagamento.</p></div>
 <?php if($checkoutError): ?><div class="checkout-alert"><?= htmlspecialchars($checkoutError,ENT_QUOTES,'UTF-8') ?></div><?php endif; ?>
@@ -26,7 +26,26 @@ $csrf=csrf_token();$checkoutError=(string)($_SESSION['checkout_error']??'');unse
 <label>E-mail<input type="email" name="email" autocomplete="email" maxlength="254" placeholder="voce@exemplo.com.br" required></label>
 <div class="checkout-row"><label>CPF ou CNPJ<input id="checkout-document" name="cpf_cnpj" autocomplete="off" inputmode="numeric" maxlength="18" placeholder="000.000.000-00" aria-describedby="checkout-document-help" required><small id="checkout-document-help" class="checkout-field-hint">CPF ou CNPJ do responsável pelo pagamento</small></label><label>Celular com DDD<input id="checkout-phone" name="phone" autocomplete="tel" inputmode="numeric" maxlength="15" placeholder="(00) 90000-0000" aria-describedby="checkout-phone-help" required><small id="checkout-phone-help" class="checkout-field-hint">Para atualizações sobre a assinatura</small></label></div>
 <div class="checkout-coupon"><label for="checkout-coupon-code">Tem um cupom?</label><div class="checkout-coupon-entry"><input id="checkout-coupon-code" name="coupon_code" maxlength="32" placeholder="Digite seu código" autocomplete="off"><button id="checkout-coupon-apply" type="button">Aplicar</button></div><p id="checkout-coupon-feedback" aria-live="polite">Aplique o cupom para conferir seu benefício antes de contratar.</p></div><div class="checkout-note"><strong>🔒 Seus dados estão protegidos.</strong> Após continuar, você será encaminhado à cobrança segura do Asaas. Nenhum dado de cartão é solicitado pelo Bemora.</div>
-<?php if($legalApproved): ?><label class="checkout-legal-accept"><input type="checkbox" name="legal_accept" value="yes" required><span class="checkout-legal-text">Li e concordo com os <a href="/termos" target="_blank" rel="noopener noreferrer">Termos de uso e contratação</a> e estou ciente da <a href="/privacidade" target="_blank" rel="noopener noreferrer">Política de privacidade</a>.</span></label>
+<?php if($legalApproved): ?>
+<section class="checkout-legal-consents" aria-labelledby="checkout-legal-title">
+<div class="checkout-legal-heading"><span class="checkout-legal-eyebrow">ANTES DO PAGAMENTO</span><h3 id="checkout-legal-title">Documentos e confirmações</h3><p>Abra cada documento para ler e confirmar. As duas etapas são necessárias para continuar.</p></div>
+<div class="checkout-legal-items">
+<div class="checkout-legal-item" data-consent-item="terms">
+<span class="checkout-legal-item-icon" aria-hidden="true">01</span>
+<div class="checkout-legal-item-copy"><strong>Termos de uso e contratação</strong><small>Condições do plano, renovação e cancelamento.</small><span class="checkout-legal-status" data-consent-status="terms">Aguardando aceite</span></div>
+<button type="button" class="checkout-legal-open" data-open-legal="terms" aria-haspopup="dialog">Ler e aceitar <span aria-hidden="true">→</span></button>
+</div>
+<div class="checkout-legal-item" data-consent-item="privacy">
+<span class="checkout-legal-item-icon" aria-hidden="true">02</span>
+<div class="checkout-legal-item-copy"><strong>Política de privacidade</strong><small>Como seus dados são utilizados e protegidos.</small><span class="checkout-legal-status" data-consent-status="privacy">Aguardando ciência</span></div>
+<button type="button" class="checkout-legal-open" data-open-legal="privacy" aria-haspopup="dialog">Ler e confirmar <span aria-hidden="true">→</span></button>
+</div>
+</div>
+<p class="checkout-legal-message" id="checkout-legal-message" role="status" aria-live="polite">Confirme os dois documentos para liberar o pagamento.</p>
+</section>
+<input type="hidden" name="legal_accept" id="checkout-legal-accept" value="">
+<input type="hidden" name="terms_accepted" id="checkout-terms-accepted" value="">
+<input type="hidden" name="privacy_acknowledged" id="checkout-privacy-acknowledged" value="">
 <input type="hidden" name="terms_version" value="<?= e(BEMORA_TERMS_VERSION) ?>">
 <input type="hidden" name="privacy_version" value="<?= e(BEMORA_PRIVACY_VERSION) ?>">
 <?php else: ?><p class="checkout-small">Ambiente de homologação: documentos legais ainda não publicados. Não utilize dados reais de clientes nesta contratação.</p><?php endif; ?>
@@ -39,4 +58,21 @@ $csrf=csrf_token();$checkoutError=(string)($_SESSION['checkout_error']??'');unse
 <footer class="checkout-legal-footer">
 <?php if($legalApproved): ?><p>Fornecedor: <strong><?= bemora_legal_label('company_name') ?></strong> · CNPJ <?= bemora_legal_label('company_tax_id') ?> · <?= bemora_legal_label('company_address') ?>. Atendimento: <a href="mailto:<?= bemora_legal_label('support_email') ?>"><?= bemora_legal_label('support_email') ?></a>. Direito de arrependimento e condições de cancelamento disponíveis nos Termos.</p><?php endif; ?>
 <a href="/termos" target="_blank" rel="noopener noreferrer">Termos de uso</a><a href="/privacidade" target="_blank" rel="noopener noreferrer">Privacidade</a><a href="/#contato">Atendimento</a>
-</footer></main><script src="/assets/bemora-checkout.js?v=5" defer></script></body></html>
+</footer>
+<?php if($legalApproved): ?>
+<dialog class="checkout-legal-dialog" id="checkout-legal-dialog" aria-labelledby="checkout-legal-dialog-title" aria-describedby="checkout-legal-dialog-description">
+<div class="checkout-legal-dialog-shell">
+<div class="checkout-legal-dialog-top">
+<div><span class="checkout-legal-eyebrow">BEMORA · DOCUMENTAÇÃO</span><h2 id="checkout-legal-dialog-title">Documento legal</h2><p id="checkout-legal-dialog-description">Leia as informações antes de confirmar.</p></div>
+<button type="button" class="checkout-legal-close" id="checkout-legal-close" aria-label="Fechar documento">×</button>
+</div>
+<iframe class="checkout-legal-frame" id="checkout-legal-frame" title="Conteúdo do documento legal" loading="lazy" referrerpolicy="same-origin"></iframe>
+<div class="checkout-legal-dialog-actions">
+<a class="checkout-legal-full" id="checkout-legal-full" href="/termos" target="_blank" rel="noopener noreferrer">Abrir em nova aba</a>
+<button type="button" class="checkout-legal-back" id="checkout-legal-back">Voltar</button>
+<button type="button" class="checkout-legal-confirm" id="checkout-legal-confirm" disabled>Li e aceito os termos</button>
+</div>
+</div>
+</dialog>
+<?php endif; ?>
+</main><script src="/assets/bemora-checkout.js?v=6" defer></script><script src="/assets/bemora-checkout-legal.js?v=1" defer></script></body></html>
