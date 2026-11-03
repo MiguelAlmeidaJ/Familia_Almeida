@@ -1,17 +1,24 @@
 {
-  "name": "Bemora — Compras",
+  "id": "/painel",
+  "name": "Bemora — Finanças em família",
   "short_name": "Bemora",
-  "start_url": "/compras/offline",
+  "start_url": "/painel",
   "scope": "/",
   "display": "standalone",
   "background_color": "#F7FAF8",
   "theme_color": "#06463F",
-  "description": "Bemora: seu dinheiro em ordem. Sua vida mais leve. Lista de compras com acesso offline.",
+  "description": "Organize as finanças pessoais, do casal e da família com o Bemora.",
   "icons": [
     {
       "src": "/assets/bemora-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/brand/favicon.png",
+      "sizes": "any",
+      "type": "image/png",
       "purpose": "any"
     }
   ]
