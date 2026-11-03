@@ -56,13 +56,13 @@ try{
    $notify=['email'=>$order['buyer_email'],'token'=>$token,'members'=>(int)$order['max_members']];
   }
  }
- if($sub!=='' && in_array($event,['PAYMENT_OVERDUE','PAYMENT_REFUNDED','PAYMENT_CHARGEBACK_REQUESTED'],true)){
+ if($sub!=='' && in_array($event,['PAYMENT_OVERDUE','PAYMENT_REFUNDED','PAYMENT_PARTIALLY_REFUNDED','PAYMENT_REFUND_IN_PROGRESS','PAYMENT_CHARGEBACK_REQUESTED','PAYMENT_CHARGEBACK_DISPUTE','PAYMENT_AWAITING_CHARGEBACK_REVERSAL'],true)){
   // Do not automatically destroy tenant data or invert an already paid order.
   $pdo->prepare("UPDATE subscription_orders SET status='payment_attention' WHERE asaas_subscription_id=? AND status='awaiting_payment'")->execute([$sub]);
  }
  $pdo->commit();
  // Always reconcile against Asaas, not the untrusted event body. Cron is fallback.
- if($sub!=='' && in_array($event,['PAYMENT_OVERDUE','PAYMENT_CONFIRMED','PAYMENT_RECEIVED','PAYMENT_REFUNDED','PAYMENT_DELETED','PAYMENT_RESTORED'],true) && bemora_billing_access_ready($pdo)){
+ if($sub!=='' && in_array($event,['PAYMENT_OVERDUE','PAYMENT_CONFIRMED','PAYMENT_RECEIVED','PAYMENT_REFUNDED','PAYMENT_PARTIALLY_REFUNDED','PAYMENT_REFUND_IN_PROGRESS','PAYMENT_REFUND_DENIED','PAYMENT_RECEIVED_IN_CASH_UNDONE','PAYMENT_CHARGEBACK_REQUESTED','PAYMENT_CHARGEBACK_DISPUTE','PAYMENT_AWAITING_CHARGEBACK_REVERSAL','PAYMENT_DELETED','PAYMENT_RESTORED'],true) && bemora_billing_access_ready($pdo)){
   try{
    $q=$pdo->prepare("SELECT activated_tenant_id FROM subscription_orders WHERE asaas_subscription_id=? AND activated_tenant_id IS NOT NULL LIMIT 1");
    $q->execute([$sub]);$tenantId=(int)$q->fetchColumn();
