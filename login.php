@@ -38,6 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 bemora_login_succeeded($pdo,$email,$remoteIp);
                 session_regenerate_id(true);
                 $_SESSION['user_id']=(int)$user['id'];
+                $_SESSION['auth_issued_at']=time();
+                $_SESSION['auth_last_seen']=time();
                 unset($_SESSION['tenant_id'],$_SESSION['selected_month']);
                 $adminCheck=$pdo->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='users' AND column_name='system_role'");
                 if((int)$adminCheck->fetchColumn()>0){
