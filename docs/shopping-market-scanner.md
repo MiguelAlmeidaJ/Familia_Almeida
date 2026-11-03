@@ -34,3 +34,23 @@ Se o OCR falhar ou o navegador bloquear a câmera, o nome, preço e quantidade p
 - [ ] Verificar funcionamento sem o CDN: entrada manual continua disponível
 
 Fora do escopo desta entrega inicial: sincronização offline, histórico comparativo por supermercado, cálculo de preços por peso/unidade automaticamente a partir da etiqueta e criação de despesas financeiras automáticas.
+
+
+## Atualização — carrinho reversível e controles no celular
+
+No modo **Estou no mercado**, a seção de itens é apresentada antes do formulário de conferência em telas pequenas, com progresso e total. O atalho **Ver carrinho e alterar produtos** permite chegar rapidamente a ela. Após confirmar um item escaneado no celular, a tela retorna à seção de itens.
+
+- **Desfazer compra:** altera somente `purchased` para `0`, preservando o nome, a quantidade e o preço confirmado. O item volta à lista de pendentes e seu valor deixa de integrar o total. É possível marcá-lo como comprado novamente sem precisar escanear.
+- **Retirar da lista:** exclui o produto após confirmação do usuário e recalcula o total se ele já estava comprado. Este é um comando distinto de desfazer.
+- As ações são executadas por POST autenticado, com CSRF e validação de `tenant_id` / `list_id` / `item_id`, respeitando listas concluídas e evitando edição simultânea por botões na mesma página.
+
+### Testes manuais adicionais
+
+- [ ] Em uma lista com dois produtos comprados, desfazer um deles e confirmar redução do total
+- [ ] Confirmar que o preço anterior continua no item pendente e pode ser marcado comprado novamente
+- [ ] Retirar um produto pendente e outro comprado; conferir contagem e total após confirmação
+- [ ] Cancelar a confirmação de retirada e verificar que nada mudou
+- [ ] Tentar editar uma lista concluída e verificar bloqueio no servidor
+- [ ] Abrir no celular, acessar o carrinho pelo atalho da câmera e voltar ao scanner
+- [ ] Após confirmar produto escaneado, verificar atualização da seção de carrinho
+- [ ] Tentar alterar IDs de produtos de outra família e confirmar que não há acesso
