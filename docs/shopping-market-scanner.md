@@ -54,3 +54,18 @@ No modo **Estou no mercado**, a seção de itens é apresentada antes do formul�
 - [ ] Abrir no celular, acessar o carrinho pelo atalho da câmera e voltar ao scanner
 - [ ] Após confirmar produto escaneado, verificar atualização da seção de carrinho
 - [ ] Tentar alterar IDs de produtos de outra família e confirmar que não há acesso
+
+
+## Refinamento mobile — 03/11/2026
+
+Na tela **Estou no mercado**, o formulário **Conferir produto** vem antes do carrinho tanto no desktop quanto no celular, para não exigir percorrer listas extensas antes de confirmar o OCR. Os botões globais flutuantes de suporte, novo lançamento e nova conta prevista são ocultos **somente nessa tela e em telas de até 750 px**; as funcionalidades continuam acessíveis pelo menu fora do modo mercado.
+
+Os cartões de produtos são montados em lotes de **10** conforme a rolagem pelo `IntersectionObserver`, com botão **Carregar mais produtos** como alternativa acessível. Após alterar um produto, a quantidade de cartões já exibida é preservada. Totais, progresso e correspondência com produtos planejados consideram todos os itens.
+
+**Limitação atual:** a renderização da lista é progressiva no navegador, mas o JSON inicial ainda traz os itens da lista para permitir correspondência e cálculo imediato. Portanto, isso reduz o custo de DOM e de rolagem; uma paginação real de consultas ao servidor deve ser implementada se o limite de até 300 itens por lista precisar aumentar.
+
+- [ ] Conferir que o formulário aparece antes do carrinho no celular
+- [ ] Confirmar que os três botões flutuantes não cobrem os campos no modo mercado, mas permanecem nas outras páginas
+- [ ] Com mais de 20 itens, observar os lotes de 10 surgindo ao rolar
+- [ ] Verificar botão de carregamento adicional se a observação automática não estiver disponível
+- [ ] Desfazer compra e remover item após abrir lotes adicionais, sem perder o restante da lista visível
