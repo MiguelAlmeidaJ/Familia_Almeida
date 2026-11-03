@@ -28,6 +28,12 @@ return [
         'mysql_binary' => 'mysql', // ou /usr/bin/mariadb
         'restore_test_database' => '', // Banco de homologação vazio e DIFERENTE do banco principal
     ],
+    'legal' => [
+        'approved' => '0', // Somente '1' após revisão jurídica, identificação do fornecedor e publicação formal.
+        'company_name' => '', // Razão social ou nome empresarial do fornecedor
+        'company_tax_id' => '', // CNPJ ou CPF do fornecedor conforme o caso
+        'privacy_email' => '', // Canal público para direitos LGPD, monitorado pelo responsável
+    ],
     'support' => [
         'email' => 'suporte@seudominio.com.br', // Destinatário dos relatos de suporte
     ],
