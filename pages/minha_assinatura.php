@@ -90,7 +90,7 @@ $cycles=bemora_plan_cycles();
 <p>Foi identificada uma devolução ou contestação de pagamento. O acesso fica temporariamente suspenso até que a situação financeira seja regularizada e confirmada pelo Asaas.</p>
 <?php else: ?>
 <p>Identificamos uma fatura recorrente vencida após o período de tolerância. Seus dados estão preservados. Consulte as faturas abaixo e regularize o pagamento para restabelecer o acesso após a confirmação do Asaas.</p>
-<?php endif; ?><p>Você pode consultar suas faturas e relatar um problema nesta página.</p></section>
+<?php endif; ?><p>Você pode consultar suas faturas, relatar um problema e <a href="/meus-dados">exercer seus direitos sobre dados pessoais</a>, mesmo durante a suspensão.</p></section>
 <?php elseif(($billingAccess['state']??'active')==='grace'): ?>
 <section class="sub-card sub-billing-grace" role="status"><span class="sub-kicker">PAGAMENTO PENDENTE</span><h2>Há uma cobrança em atraso</h2><p>Regularize a fatura para evitar a suspensão após o período de tolerância de 3 dias.</p></section>
 <?php endif; ?>
