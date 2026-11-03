@@ -98,3 +98,18 @@ Não liberar faturamento comercial antes desses testes em ambiente de homologaç
 8. Confirmar que o webhook de `SUBSCRIPTION_INACTIVATED` não suspende antecipadamente período pago no Bemora.
 9. Testar encerramento de prazo com e sem acesso à API para garantir suspensão pontual e preservação dos lançamentos.
 10. Validar que a aplicação só será habilitada em produção depois de ligar a flag específica, finalizar testes reais e revisar os termos comerciais.
+
+
+## Fase 3 — Continuidade operacional (implementação inicial em 2026-11-03)
+
+Ferramentas versionadas:
+- `scripts/ops_backup.php`: backup InnoDB via mysqldump, anexos, manifesto SHA-256 e retenção local;
+- `scripts/ops_verify_restore.php`: inspeção de integridade e restauração de banco **somente em base de teste preexistente e vazia**;
+- `scripts/ops_run.php`: execução exclusiva e monitorada de backup, conciliação Asaas e outras rotinas CLI;
+- `scripts/ops_watchdog.php`: alerta quando backup ou conciliação excedem 28 horas sem sucesso;
+- `admin/configuracoes` → Manutenção: status de cron e histórico resumido de backups, disponível apenas ao administrador;
+- `docs/operational-readiness.md`: configuração DirectAdmin, cron, validação de restauração e rollback seguro.
+
+O sistema **não configura o cron nem o diretório privado sozinho** e não envia backups criptografados para armazenamento externo. Antes de considerar a fase concluída, execute todos os procedimentos reais listados em `docs/operational-readiness.md`. Sem `operations.private_dir`, o sistema existente segue funcionando, mas as rotinas operacionais novas não estarão ativas.
+
+**Não exige migration**; adicione apenas o bloco `operations` no `config.php` da hospedagem.
