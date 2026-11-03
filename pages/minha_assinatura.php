@@ -55,9 +55,20 @@ $cycles=bemora_plan_cycles();
 ?><!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Minha assinatura • Bemora</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?>
-<link rel="stylesheet" href="/assets/bemora-sidebar.css?v=5"><link rel="stylesheet" href="/assets/bemora-subscription.css?v=3"></head>
+<link rel="stylesheet" href="/assets/bemora-sidebar.css?v=5"><link rel="stylesheet" href="/assets/bemora-subscription.css?v=4"></head>
 <body class="bemora-finance"><div class="shell ref-shell"><?php render_sidebar('minha-assinatura',$csrf); ?><main><?php render_topbar($user); ?><div class="content bemora-subscription"><?php page_header('MINHA CONTA','Minha assinatura','Acompanhe seu plano, próximas cobranças e faturas em um só lugar.'); ?>
-<?php if($flash): ?><p class="sub-support-notice" role="status"><?= e($flash['message']) ?></p><?php endif; ?>
+<?php if($flash): $flashIsSuccess=($flash['type']??'')==='success'; $flashMessage=(string)($flash['message']??''); $isSupportReport=$flashIsSuccess && preg_match('/^Relato #(\\d+)\\b/u',$flashMessage,$ticketMatch)===1; ?>
+<section class="bemora-feedback <?= $flashIsSuccess?'is-success':'is-error' ?>" id="bemora-feedback" role="<?= $flashIsSuccess?'status':'alert' ?>" aria-live="<?= $flashIsSuccess?'polite':'assertive' ?>" aria-labelledby="bemora-feedback-title">
+  <div class="bemora-feedback-icon"><i class="bi <?= $flashIsSuccess?'bi-check-circle-fill':'bi-exclamation-triangle-fill' ?>" aria-hidden="true"></i></div>
+  <div class="bemora-feedback-content">
+    <span class="bemora-feedback-label"><?= $flashIsSuccess?'CONFIRMAÇÃO':'ATENÇÃO' ?></span>
+    <h2 id="bemora-feedback-title"><?= $isSupportReport?'Recebemos seu relato!':($flashIsSuccess?'Tudo certo!':'Não foi possível concluir') ?></h2>
+    <p><?= e($flashMessage) ?></p>
+    <?php if($isSupportReport): ?><div class="bemora-feedback-details"><span><i class="bi bi-ticket-perforated" aria-hidden="true"></i> Protocolo <strong>#<?= e($ticketMatch[1]) ?></strong></span><span><i class="bi bi-headset" aria-hidden="true"></i> Acompanhe pelo contato escolhido</span></div><?php endif; ?>
+  </div>
+  <button type="button" class="bemora-feedback-dismiss" aria-label="Fechar mensagem" title="Dispensar mensagem" onclick="this.closest('.bemora-feedback').remove()"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+</section>
+<?php endif; ?>
 <?php if((int)($billingAccess['manual_suspended']??0)===1): ?>
 <section class="sub-card sub-billing-alert" role="alert"><span class="sub-kicker">ACESSO TEMPORARIAMENTE SUSPENSO</span><h2>Suspensão administrativa</h2><p>O acesso financeiro desta família foi suspenso pela administração do Bemora. Seus dados continuam preservados. Use o botão Relatar problema para falar com nossa equipe.</p></section>
 <?php endif; ?>
