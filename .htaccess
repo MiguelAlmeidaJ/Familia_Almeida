@@ -25,6 +25,12 @@ DirectoryIndex index.php
     RewriteRule ^(?:credit_card_action|shopping_sync)\.php$ - [G,L,NC]
     RewriteRule ^pages/(?:cartoes|estoque|compras|compras_mercado|metas|dividas)\.php$ - [G,L,NC]
 
+    RewriteRule ^termos/?$ legal.php [L,QSA,E=LEGAL_DOCUMENT:terms]
+    RewriteRule ^privacidade/?$ legal.php [L,QSA,E=LEGAL_DOCUMENT:privacy]
+    RewriteRule ^meus-dados/?$ pages/meus_dados.php [L,QSA]
+    RewriteRule ^admin/privacidade/?$ admin/privacidade.php [L,QSA]
+    RewriteRule ^admin/privacidade/acao/?$ admin/privacy_action.php [L,QSA]
+
     # Rotas amigáveis
     RewriteRule ^painel/?$ pages/painel.php [L,QSA]
     RewriteRule ^checkout/?$ checkout.php [L,QSA]
