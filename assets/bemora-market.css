@@ -21,3 +21,7 @@
  .market-price-options>div{display:grid;grid-template-columns:1fr 1fr}
  .market-page button.market-price-choice{font-size:11px;padding:10px 7px}
 }
+
+/* Keep canvas coordinates identical to the touch-selection surface. */
+.market-crop-editor>canvas{max-height:none;object-fit:fill}
+@media(max-width:650px){.market-crop-editor>canvas{max-height:none}}
