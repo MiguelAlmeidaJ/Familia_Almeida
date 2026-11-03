@@ -3,9 +3,11 @@ declare(strict_types=1);
 require_once __DIR__.'/includes/asaas.php';
 require_once __DIR__.'/includes/coupons.php';
 require_once __DIR__.'/includes/checkout_validation.php';
+require_once __DIR__.'/includes/legal.php';
 if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);exit;}
 verify_csrf();
 if(!bemora_asaas_enabled() || (bemora_asaas_mode()==='production' && (string)config('asaas','production_enabled','0')!=='1')){http_response_code(503);exit('Checkout ainda não liberado.');}
+if(bemora_asaas_mode()==='production'&&!bemora_legal_approved()){http_response_code(503);exit('Contratação aguardando aprovação dos documentos legais.');}
 if(!bemora_multi_tenant_released()){http_response_code(503);exit('Ativação de novas famílias temporariamente indisponível.');}
 $pdo=db();$couponReservedId=null;$couponOrderId=null;
 try{
@@ -13,6 +15,17 @@ try{
  $id=filter_var($_POST['plan_id']??null,FILTER_VALIDATE_INT);
  $q=$pdo->prepare('SELECT * FROM subscription_plans WHERE id=? AND active=1 AND public_sale=1');$q->execute([$id?:0]);$plan=$q->fetch(PDO::FETCH_ASSOC);
  if(!$plan)throw new RuntimeException('Plano indisponível.');
+ $legalApproved=bemora_legal_approved();
+ if($legalApproved){
+  $versions=bemora_legal_versions();
+  if(($_POST['legal_accept']??'')!=='yes'
+    ||(string)($_POST['terms_version']??'')!==$versions['terms']
+    ||(string)($_POST['privacy_version']??'')!==$versions['privacy'])
+    throw new RuntimeException('Confira e aceite os documentos legais atualizados para continuar.');
+  $columns=$pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='subscription_orders'")->fetchAll(PDO::FETCH_COLUMN);
+  foreach(['terms_version','privacy_version','terms_accepted_at'] as $column)
+   if(!in_array($column,$columns,true))throw new RuntimeException('Atualize a estrutura do banco pela migration 040 antes de contratar.');
+ }
  $name=trim((string)($_POST['name']??''));$email=mb_strtolower(trim((string)($_POST['email']??'')));
  $doc=preg_replace('/\D/','',(string)($_POST['cpf_cnpj']??''));$phone=preg_replace('/\D/','',(string)($_POST['phone']??''));
  if(mb_strlen($name)<3||mb_strlen($name)>120||!filter_var($email,FILTER_VALIDATE_EMAIL)||!bemora_checkout_valid_document($doc)||!bemora_checkout_valid_phone($phone))throw new RuntimeException('Revise os dados do responsável.');
@@ -43,6 +56,10 @@ try{
  $freeUntil=$freeMonths>0?(new DateTimeImmutable('today'))->modify('+'.$freeMonths.' months')->format('Y-m-d'):null;
  $pdo->prepare('INSERT INTO subscription_orders(public_token_hash,plan_id,plan_name,billing_cycle,max_members,amount,buyer_name,buyer_email,buyer_cpf_cnpj,buyer_phone,coupon_id,list_amount,coupon_kind,recurring_amount,coupon_free_until) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')->execute([$hash,(int)$plan['id'],$plan['name'],$plan['billing_cycle'],(int)$plan['max_members'],$amount,$name,$email,$doc,$phone,$couponId,$baseAmount,$couponKind,$recurringAmount,$freeUntil]);
  $orderId=(int)$pdo->lastInsertId();
+ if($legalApproved){
+  $pdo->prepare('UPDATE subscription_orders SET terms_version=?,privacy_version=?,terms_accepted_at=NOW() WHERE id=?')
+   ->execute([BEMORA_TERMS_VERSION,BEMORA_PRIVACY_VERSION,$orderId]);
+ }
  if($couponId!==null){
   $pdo->prepare('INSERT INTO subscription_coupon_redemptions(coupon_id,order_id) VALUES (?,?)')->execute([$couponId,$orderId]);
   $couponReservedId=$couponId;$couponOrderId=$orderId;
