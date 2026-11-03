@@ -29,10 +29,14 @@ return [
         'restore_test_database' => '', // Banco de homologação vazio e DIFERENTE do banco principal
     ],
     'legal' => [
-        'approved' => '0', // Somente '1' após revisão jurídica, identificação do fornecedor e publicação formal.
-        'company_name' => '', // Razão social ou nome empresarial do fornecedor
-        'company_tax_id' => '', // CNPJ ou CPF do fornecedor conforme o caso
-        'privacy_email' => '', // Canal público para direitos LGPD, monitorado pelo responsável
+        'approved' => '0', // Só alterar para '1' depois da revisão jurídica e da atividade econômica regularizada.
+        'approved_terms_version' => '', // Exatamente a versão BEMORA_TERMS_VERSION de includes/legal_policy.php
+        'approved_privacy_version' => '', // Exatamente a versão BEMORA_PRIVACY_VERSION de includes/legal_policy.php
+        'company_name' => '', // Razão social do CNPJ responsável (inclusive se a empresa ainda for MEI)
+        'company_tax_id' => '', // CNPJ do fornecedor (14 dígitos, com ou sem pontuação)
+        'company_address' => '', // Endereço comercial completo e verdadeiro do fornecedor
+        'support_email' => '', // Canal público de atendimento à contratação, arrependimento e reembolso
+        'privacy_email' => '', // Canal de direitos dos titulares de dados
     ],
     'support' => [
         'email' => 'suporte@seudominio.com.br', // Destinatário dos relatos de suporte
