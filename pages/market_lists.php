@@ -19,7 +19,7 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2">
 <link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3">
 <?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=6">
-<link rel="stylesheet" href="/assets/bemora-market.css?v=7"></head>
+<link rel="stylesheet" href="/assets/bemora-market.css?v=8"></head>
 <body class="bemora-finance <?= $mode==='mercado'?'market-shopping-mode':'' ?>"><div class="shell ref-shell"><?php render_sidebar('compras',$csrf); ?><main><?php render_topbar($user); ?>
 <div class="content market-page">
 <header class="market-heading"><div><p class="eyebrow">COMPRAS EM FAMÍLIA</p><h1>Lista de compras</h1><p>Planeje em casa, confira preços no mercado e acompanhe o total conforme compra.</p></div><span class="market-badge"><i class="bi bi-basket2"></i> Bemora Compras</span></header>
@@ -82,9 +82,9 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 </div>
 <small id="market-shape-hint">A moldura e o recorte se ajustam ao formato escolhido.</small>
 </div>
-<div class="market-camera" data-shape="wide"><video id="market-video" playsinline muted autoplay></video><div class="market-guides"><div>Centralize a etiqueta aqui</div></div><div class="market-placeholder" id="market-placeholder"><i class="bi bi-camera"></i><strong>Câmera desligada</strong><span>Ative a câmera ou escolha uma imagem.</span></div><canvas id="market-canvas" hidden></canvas></div>
+<div class="market-camera" data-shape="wide"><video id="market-video" playsinline muted autoplay></video><div class="market-guides"><div>Centralize a etiqueta aqui</div></div><div class="market-placeholder" id="market-placeholder"><i class="bi bi-camera"></i><strong>Câmera desligada</strong><span>Abra a câmera para ler a etiqueta.</span></div><canvas id="market-canvas" hidden></canvas></div>
 <div class="market-camera-actions"><button type="button" id="market-start">Ativar câmera</button><button type="button" id="market-capture" disabled>Capturar etiqueta</button><button type="button" id="market-stop" disabled>Desligar</button></div>
-<p class="market-muted" id="market-ocr-status" role="status" aria-live="polite">A imagem será analisada no navegador. Confira os valores antes de salvar.</p><img id="market-photo-preview" class="market-photo-preview" alt="Apenas a área recortada e analisada pelo OCR" hidden>
+<p class="market-muted" id="market-ocr-status" role="status" aria-live="polite">O recorte da câmera será analisado no navegador. Confira nome e valores antes de salvar.</p><img id="market-photo-preview" class="market-photo-preview" alt="Apenas a área recortada e analisada pelo OCR" hidden>
 </section>
 
 <section class="market-panel market-confirm-panel"><h2>Conferir produto</h2><p class="market-muted">A leitura da etiqueta é uma sugestão. Confirme ou corrija o produto, preço e quantidade.</p>
