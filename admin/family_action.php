@@ -35,12 +35,26 @@ try{
    }
   }
   flash('success',$message);
- } elseif(in_array($action,['archive','maintenance','activate','rename','set_limit','set_admin'],true)){
+ } elseif(in_array($action,['archive','maintenance','activate','rename','set_limit','set_admin','assign_internal_plan'],true)){
   $id=(int)($_POST['id']??0);if($id<1)throw new RuntimeException('Família inválida.');
   $pdo->beginTransaction();
   $stmt=$pdo->prepare('SELECT id,name,status FROM tenants WHERE id=? FOR UPDATE');$stmt->execute([$id]);$family=$stmt->fetch();
   if(!$family)throw new RuntimeException('Família não encontrada.');
-  if($action==='set_limit'){
+  if($action==='assign_internal_plan'){
+   $planId=filter_var($_POST['plan_id']??null,FILTER_VALIDATE_INT);
+   if(!$planId||$planId<1)throw new RuntimeException('Selecione um plano interno válido.');
+   $ready=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='tenant_internal_plans'")->fetchColumn();
+   if(!$ready)throw new RuntimeException('Execute a migration 033 pelo painel de Manutenção.');
+   $plan=$pdo->prepare("SELECT id,name,max_members FROM subscription_plans WHERE id=? AND public_sale=0 AND active=1 AND price=0 LIMIT 1");
+   $plan->execute([$planId]);$plan=$plan->fetch(PDO::FETCH_ASSOC);
+   if(!$plan)throw new RuntimeException('Somente planos internos gratuitos e ativos podem ser atribuídos diretamente.');
+   $membersStmt=$pdo->prepare("SELECT COUNT(*) FROM tenant_users WHERE tenant_id=?");$membersStmt->execute([$id]);
+   if((int)$membersStmt->fetchColumn()>(int)$plan['max_members'])throw new RuntimeException('O plano escolhido não comporta os membros cadastrados.');
+   $paid=$pdo->prepare("SELECT id FROM subscription_orders WHERE activated_tenant_id=? AND asaas_subscription_id IS NOT NULL AND status IN ('completed','paid','payment_attention') LIMIT 1 FOR UPDATE");
+   $paid->execute([$id]);if($paid->fetchColumn())throw new RuntimeException('Esta família possui assinatura Asaas vinculada. Não é seguro substituir o plano diretamente: gerencie primeiro a assinatura financeira.');
+   $pdo->prepare("INSERT INTO tenant_internal_plans(tenant_id,plan_id,assigned_by) VALUES(?,?,?) ON DUPLICATE KEY UPDATE plan_id=VALUES(plan_id),assigned_by=VALUES(assigned_by),assigned_at=NOW()")->execute([$id,(int)$plan['id'],(int)$_SESSION['user_id']]);
+   $pdo->prepare("UPDATE tenants SET max_members=? WHERE id=?")->execute([(int)$plan['max_members'],$id]);
+  }elseif($action==='set_limit'){
    $limit=filter_var($_POST['max_members']??null,FILTER_VALIDATE_INT);
    $membersStmt=$pdo->prepare('SELECT COUNT(*) FROM tenant_users WHERE tenant_id=?');
    $membersStmt->execute([$id]);$currentMembers=(int)$membersStmt->fetchColumn();
@@ -71,5 +85,5 @@ try{
  if($pdo->inTransaction())$pdo->rollBack();
  flash('error',$e instanceof PDOException?'Conflito de dados ou nome de família já utilizado.':$e->getMessage());
 }
-if(in_array($action,['set_limit','set_admin','rename'],true) && (int)($_POST['id']??0)>0)redirect_to('/admin/familia?id='.(int)$_POST['id']);
+if(in_array($action,['set_limit','set_admin','rename','assign_internal_plan'],true) && (int)($_POST['id']??0)>0)redirect_to('/admin/familia?id='.(int)$_POST['id']);
 redirect_to('/admin/tenants');
