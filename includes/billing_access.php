@@ -133,4 +133,6 @@ function bemora_mark_asaas_subscription_removed(PDO $pdo,string $subscriptionId,
  $q->execute([$subscriptionId,$customerId]);
  $tid=(int)$q->fetchColumn();if($tid<1)return;
  $pdo->prepare("INSERT INTO tenant_billing_access(tenant_id,state,suspended_at,checked_at) VALUES(?,'suspended',NOW(),NOW()) ON DUPLICATE KEY UPDATE state='suspended',suspended_at=COALESCE(suspended_at,NOW()),checked_at=NOW()")->execute([$tid]);
+ $ready=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='tenant_billing_access' AND column_name='reason'")->fetchColumn();
+ if($ready)$pdo->prepare("UPDATE tenant_billing_access SET reason='subscription_deleted' WHERE tenant_id=?")->execute([$tid]);
 }
