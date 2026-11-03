@@ -130,8 +130,9 @@ function render(){
  }
  // Render only the visible batch; older rows are discarded after a change
  // to keep DOM size and phone scrolling responsive for larger lists.
+ const previouslyVisible=Math.max(batchSize,shownCount);
  shownCount=0;
- appendBatch();
+ while(shownCount<Math.min(previouslyVisible,list.items.length))appendBatch();
  if([...match.options].some(x=>x.value===previous))match.value=previous;
 }
 function offerMatch(){
