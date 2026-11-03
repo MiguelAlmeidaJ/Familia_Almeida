@@ -25,3 +25,19 @@
 /* Keep canvas coordinates identical to the touch-selection surface. */
 .market-crop-editor>canvas{max-height:none;object-fit:fill}
 @media(max-width:650px){.market-crop-editor>canvas{max-height:none}}
+
+/* Camera framing presets: every guide uses matching visual and OCR geometry. */
+.market-shape-controls{display:grid;gap:10px;margin:17px 0 12px;padding:13px;background:#f4faf6;border:1px solid #d8e9dd;border-radius:13px}
+.market-shape-controls>span{font-size:12px;font-weight:800;color:#225d49}
+.market-shape-controls>small{font-size:11px;color:#719082;line-height:1.5}
+.market-shape-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.market-page .market-shape{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:#fff;color:#54796a;border:1px solid #dae9df;border-radius:10px;min-width:0;min-height:60px;padding:9px 5px;font-size:11px;line-height:1.2}
+.market-page .market-shape i{font-size:17px}
+.market-page .market-shape:hover{background:#e6f5eb;color:#08684e}
+.market-page .market-shape.active{background:#08785b;color:#fff;border-color:#08785b;box-shadow:0 3px 11px rgba(8,109,79,.15)}
+.market-camera .market-guides>div{width:92%;height:36%;max-height:94%;transition:width .18s,height .18s;box-sizing:border-box}
+.market-camera[data-shape="medium"] .market-guides>div{width:85%;height:40%}
+.market-camera[data-shape="square"] .market-guides>div{width:62%;height:70%}
+.market-camera[data-shape="tall"] .market-guides>div{width:46%;height:84%}
+.market-camera[data-shape="wide"] .market-guides>div{width:92%;height:36%}
+@media(max-width:420px){.market-shape-buttons{gap:5px}.market-page .market-shape{font-size:10px;padding:9px 3px}.market-page .market-shape i{font-size:16px}}
