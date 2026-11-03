@@ -40,6 +40,35 @@ function bemora_billing_decision(string $subscriptionStatus,array $payments,stri
  return ['state'=>$state,'reason'=>$oldest?'overdue':null,'payment_id'=>$oldest['id']??null,'overdue_since'=>$oldest['date']??null,'days_overdue'=>$days];
 }
 
+/** Review recently activated upgrades and outstanding financial reversals.
+ * A settled payment may automatically clear a reversal hold; no plan downgrade
+ * or remote subscription update is performed by this recovery path.
+ */
+function bemora_reconcile_upgrade_reversals(PDO $pdo,int $tenantId):void {
+ $q=$pdo->prepare("SELECT c.id,c.asaas_payment_id,c.status,c.failure_reason,o.asaas_customer_id
+ FROM subscription_change_requests c JOIN subscription_orders o ON o.id=c.order_id
+ WHERE c.tenant_id=? AND c.activated_at IS NOT NULL AND c.asaas_payment_id IS NOT NULL
+ AND (c.status='reconciliation_required' OR (c.status='completed' AND c.activated_at>=DATE_SUB(NOW(),INTERVAL 45 DAY)))
+ ORDER BY c.activated_at DESC LIMIT 8");
+ $q->execute([$tenantId]);
+ foreach($q->fetchAll(PDO::FETCH_ASSOC) as $change){
+  $paymentId=(string)$change['asaas_payment_id'];
+  if(!preg_match('/^[A-Za-z0-9_-]{3,100}$/D',$paymentId))throw new RuntimeException('ID de upgrade inválido.');
+  $remote=bemora_asaas_request('GET','/payments/'.rawurlencode($paymentId));
+  if((string)($remote['id']??'')!==$paymentId
+     ||(string)($remote['customer']??'')!==(string)$change['asaas_customer_id']
+     ||(string)($remote['externalReference']??'')!=='bemora-change-'.(int)$change['id'])
+     throw new RuntimeException('Conciliação de upgrade apresenta cobrança divergente.');
+  $status=(string)($remote['status']??'');
+  $reversed=in_array($status,['REFUNDED','PARTIALLY_REFUNDED','REFUND_IN_PROGRESS','CHARGEBACK_REQUESTED','CHARGEBACK_DISPUTE','AWAITING_CHARGEBACK_REVERSAL'],true);
+  if($reversed){
+   $pdo->prepare("UPDATE subscription_change_requests SET status='reconciliation_required',failure_reason='upgrade_payment_reversed' WHERE id=? AND activated_at IS NOT NULL")->execute([(int)$change['id']]);
+  }elseif(in_array($status,['CONFIRMED','RECEIVED'],true) && (string)$change['failure_reason']==='upgrade_payment_reversed'){
+   $pdo->prepare("UPDATE subscription_change_requests SET status='completed',failure_reason=NULL WHERE id=? AND status='reconciliation_required' AND failure_reason='upgrade_payment_reversed'")->execute([(int)$change['id']]);
+  }
+ }
+}
+
 function bemora_billing_access_ready(PDO $pdo):bool {
  static $ready=null;
  if($ready===null){$ready=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='tenant_billing_access'")->fetchColumn()===1;}
