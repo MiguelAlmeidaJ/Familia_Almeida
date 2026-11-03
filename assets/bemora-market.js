@@ -103,25 +103,25 @@ function setPriceChoices(options){
  }
 }
 function parseLabel(text){
- const lines=text.split(/\\r?\\n/).map(s=>s.replace(/\\s+/g,' ').trim()).filter(Boolean);
+ const lines=text.split(/\r?\n/).map(s=>s.replace(/\s+/g,' ').trim()).filter(Boolean);
  // A common Brazilian label contains different prices for varejo/atacado.
  // Do not treat a barcode or tiny fractional quantity as a product price.
  const candidates=[];
  let context='';
  for(let i=0;i<lines.length;i++){
   const line=lines[i];
-  if(/\\b(varejo|atacado|clube|promocional|oferta)\\b/i.test(line))context=line;
-  const matchAll=[...line.matchAll(/(?:R\\s*\\$\\s*)?(\\d{1,4}[,.]\\s*\\d{2})(?!\\d)/g)];
+  if(/\b(varejo|atacado|clube|promocional|oferta)\b/i.test(line))context=line;
+  const matchAll=[...line.matchAll(/(?:R\s*\$\s*)?(\d{1,4}[,.]\s*\d{2})(?!\d)/g)];
   for(const match of matchAll){
-   const n=Number(match[1].replace(/\\s/g,'').replace(',','.'));
+   const n=Number(match[1].replace(/\s/g,'').replace(',','.'));
    if(!Number.isFinite(n)||n<.50||n>=10000)continue;
    const before=line.slice(Math.max(0,match.index-30),match.index);
    const after=line.slice(match.index+match[0].length,match.index+match[0].length+25);
    const surroundings=(before+' '+after+' '+context).toLowerCase();
-   if(/\\b(?:c[oó]d(?:igo)?|ean|fabrica|validade|cep|cpf|cnpj)\\b/.test(before.toLowerCase()))continue;
+   if(/\b(?:c[oó]d(?:igo)?|ean|fabrica|validade|cep|cpf|cnpj)\b/.test(before.toLowerCase()))continue;
    const nearest=(before.match(/(?:varejo|atacado|clube)[^a-záéíóúãõç]*$/i)||[])[0]||'';
    const category=/atacado/i.test(nearest)?'Atacado':/varejo/i.test(nearest)?'Varejo':/clube/i.test(nearest)?'Clube':/atacado/i.test(line)&&!/(?:varejo|clube)/i.test(line)?'Atacado':/varejo/i.test(line)&&!/(?:atacado|clube)/i.test(line)?'Varejo':'';
-   const weight=(/R\\s*\\$/i.test(line)?4:0)+(/pre[cç]o|varejo|atacado/i.test(surroundings)?2:0)+(n>=1?1:0);
+   const weight=(/R\s*\$/i.test(line)?4:0)+(/pre[cç]o|varejo|atacado/i.test(surroundings)?2:0)+(n>=1?1:0);
    candidates.push({amount:n,label:category,weight,idx:i});
   }
  }
@@ -129,13 +129,13 @@ function parseLabel(text){
  const grouped=new Map();
  for(const c of candidates){const key=c.amount.toFixed(2);if(!grouped.has(key)||grouped.get(key).weight<c.weight)grouped.set(key,c);}
  const options=[...grouped.values()].sort((a,b)=>b.weight-a.weight||a.idx-b.idx).slice(0,5);
- const bad=/^(?:R\\s*\\$|pre[cç]o|varejo|atacado|desconto|promo[cç][aã]o|oferta|clube|total|leve|pague|mercado|supermercado|validade|c[oó]digo|ean|unit[aá]rio|unidades)/i;
+ const bad=/^(?:R\s*\$|pre[cç]o|varejo|atacado|desconto|promo[cç][aã]o|oferta|clube|total|leve|pague|mercado|supermercado|validade|c[oó]digo|ean|unit[aá]rio|unidades)/i;
  const names=lines.map((line,index)=>{
-  const value=line.replace(/(?:R\\s*\\$)?\\s*\\d{1,4}[,.]\\s*\\d{2}/g,'').replace(/[|*_=]+/g,' ').replace(/\\s+/g,' ').trim();
+  const value=line.replace(/(?:R\s*\$)?\s*\d{1,4}[,.]\s*\d{2}/g,'').replace(/[|*_=]+/g,' ').replace(/\s+/g,' ').trim();
   const letters=(value.match(/[a-záàâãéêíóôõúç]/gi)||[]).length;
-  const digits=(value.match(/\\d/g)||[]).length;
-  const hasPackage=/\\b(?:\\d+\\s*(?:kg|g|ml|l|un|und|pct)|tipo\\s*\\d+)\\b/i.test(value);
-  const badLine=bad.test(value)||/\\b(?:R\\$|CNPJ|ATACADO|VAREJO|LEVE|PAGUE|PROMO|COD|OFERTA|PRECO)\\b/i.test(value);
+  const digits=(value.match(/\d/g)||[]).length;
+  const hasPackage=/\b(?:\d+\s*(?:kg|g|ml|l|un|und|pct)|tipo\s*\d+)\b/i.test(value);
+  const badLine=bad.test(value)||/\b(?:R\$|CNPJ|ATACADO|VAREJO|LEVE|PAGUE|PROMO|COD|OFERTA|PRECO)\b/i.test(value);
   const score=(hasPackage?8:0)+Math.min(letters,30)/5-digits/5-index*.9;
   return {value,score,badLine,letters};
  }).filter(v=>!v.badLine&&v.letters>=6&&v.value.length>=7&&v.value.length<=90);
