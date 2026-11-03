@@ -136,13 +136,16 @@ function render_topbar(array $user, string $context = 'Espaço privado'): void
         </div>
     </header>
     <?php
+    require_once __DIR__.'/billing_access.php';
+    $billingLocked=!empty($user['tenant_id'])&&bemora_billing_is_blocked(bemora_billing_access(db(),(int)$user['tenant_id']));
+    ?>
     <!-- Support is always available, including while a family is suspended. -->
     <link rel="stylesheet" href="/assets/bemora-support.css?v=2">
     <button type="button" class="bemora-support-fab <?= $billingLocked?'is-suspended':'' ?>" id="bemora-support-fab" aria-label="Relatar problema" title="Relatar problema" aria-haspopup="dialog" aria-controls="bemora-support-dialog"><i class="bi bi-chat-dots" aria-hidden="true"></i></button>
     <dialog class="bemora-support-dialog" id="bemora-support-dialog" aria-labelledby="bemora-support-title">
 <div class="support-dialog-head"><div><span class="support-eyebrow">SUPORTE BEMORA</span><h2 id="bemora-support-title">Relatar problema</h2><p>Preencha os detalhes para receber ajuda da nossa equipe.</p></div><button type="button" id="bemora-report-close" aria-label="Fechar formulário"><i class="bi bi-x-lg"></i></button></div>
 <form method="post" action="/suporte/relatar" id="bemora-report-form">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+<input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
 <label for="support-description">Descrição do problema <span aria-hidden="true">*</span></label>
 <textarea name="description" id="support-description" maxlength="3000" minlength="15" rows="5" placeholder="Descreva o que aconteceu, o que tentou fazer e a mensagem exibida..." required></textarea>
 <fieldset class="support-contact-method"><legend>Como prefere receber o contato?</legend><label><input type="radio" name="contact_method" value="whatsapp" checked> WhatsApp</label><label><input type="radio" name="contact_method" value="email"> E-mail</label></fieldset>
