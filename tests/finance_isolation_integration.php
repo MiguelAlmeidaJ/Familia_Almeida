@@ -51,6 +51,15 @@ $alloc->execute([$family,1,10]);$alloc->execute([$family,2,20]);$alloc->execute(
 $alloc->execute([$other,3,100]);
 $category=$pdo->prepare("INSERT INTO categories(tenant_id,name,type) VALUES(?,'Teste','expense')");
 $category->execute([$family]);$category->execute([$other]);
+
+require_once __DIR__.'/../includes/login_protection.php';
+$limitEmail='blocked-user@example.test';$testIp='198.51.100.17';
+check(bemora_login_check($pdo,$limitEmail,$testIp),'login initially allows unblocked test identity');
+for($attempt=0;$attempt<5;$attempt++)bemora_login_failed($pdo,$limitEmail,$testIp);
+check(!bemora_login_check($pdo,$limitEmail,$testIp),'five failed login attempts temporarily block account');
+check(bemora_login_check($pdo,'other-user@example.test',$testIp),'account-specific block does not lock unrelated user');
+bemora_login_succeeded($pdo,$limitEmail,$testIp);
+check(bemora_login_check($pdo,$limitEmail,$testIp),'successful authentication resets account throttle');
 check(true,'categories and allocations unique keys isolated by tenant and owner');
 
 $_SESSION['user_id']=1;$_SESSION['tenant_id']=$family;
