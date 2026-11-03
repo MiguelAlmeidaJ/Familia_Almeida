@@ -69,6 +69,16 @@ function bemora_reconcile_upgrade_reversals(PDO $pdo,int $tenantId):void {
  }
 }
 
+/** Cancellation overrides only recurrence status; disputes and unpaid invoices still apply. */
+function bemora_cancellation_billing_decision(array $cancel,string $remoteStatus,array $payments,string $couponUntil,?DateTimeImmutable $today=null):array {
+ $today=$today??new DateTimeImmutable('today');
+ if((string)($cancel['status']??'')!=='confirmed')return bemora_billing_decision($remoteStatus,$payments,$couponUntil,$today);
+ if($remoteStatus!=='INACTIVE')throw new RuntimeException('Assinatura cancelada ainda não está inativa no Asaas.');
+ if((string)($cancel['access_until']??'')<$today->format('Y-m-d'))
+  return ['state'=>'suspended','reason'=>'subscription_canceled','payment_id'=>null,'overdue_since'=>null,'days_overdue'=>0];
+ return bemora_billing_decision('ACTIVE',$payments,$couponUntil,$today);
+}
+
 function bemora_billing_access_ready(PDO $pdo):bool {
  static $ready=null;
  if($ready===null){$ready=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='tenant_billing_access'")->fetchColumn()===1;}
@@ -159,17 +169,7 @@ function bemora_reconcile_billing_access(PDO $pdo,int $tenantId):array {
   $sub=$updated;
  }
  bemora_reconcile_upgrade_reversals($pdo,$tenantId);
- $decision=bemora_billing_decision((string)($sub['status']??''),$payments,(string)($order['coupon_free_until']??''),$today);
- if($cancellation && $cancellation['status']==='confirmed'){
-  if((string)($sub['status']??'')!=='INACTIVE')throw new RuntimeException('Renovação ainda ativa no Asaas após cancelamento registrado.');
-  $until=(string)($cancellation['access_until']??'');
-  if($until>=date('Y-m-d')){
-   // Temporary access must still respect overdue invoices, refunds and disputes.
-   $decision=bemora_billing_decision('ACTIVE',$payments,(string)($order['coupon_free_until']??''),$today);
-  }else{
-   $decision=['state'=>'suspended','reason'=>'subscription_canceled','payment_id'=>null,'overdue_since'=>null,'days_overdue'=>0];
-  }
- }
+ $decision=bemora_cancellation_billing_decision($cancellation??[],(string)($sub['status']??''),$payments,(string)($order['coupon_free_until']??''),$today);
  $upgradeReview=false;
  $review=$pdo->prepare("SELECT COUNT(*) FROM subscription_change_requests WHERE tenant_id=? AND status='reconciliation_required' AND activated_at IS NOT NULL AND failure_reason='upgrade_payment_reversed'");
  $review->execute([$tenantId]);
