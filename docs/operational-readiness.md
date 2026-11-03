@@ -108,3 +108,32 @@ Nunca execute `git reset --hard`, `DROP DATABASE` ou restauração do SQL direta
 - [ ] Logs PHP e monitoramento de disponibilidade configurados pelo provedor
 
 **Até concluir a lista, a Fase 3 permanece em homologação, não concluída.**
+
+
+## Teste controlado do e-mail de alerta (sem afetar produção)
+
+O utilitário `scripts/ops_test_alert.php` utiliza o SMTP configurado em `mail` e envia somente para `operations.alert_email`, com assunto iniciado por `[TESTE]`. Ele **não** interrompe os crons, não provoca falhas reais, não consulta o Asaas, não altera o banco e não modifica `status-backup.json` ou `status-billing.json`.
+
+Dentro de `public_html`, faça a pré-verificação sem enviar mensagens:
+```bash
+/usr/local/php83/bin/php scripts/ops_test_alert.php
+```
+Para enviar o alerta fictício de falha:
+```bash
+/usr/local/php83/bin/php scripts/ops_test_alert.php --send --scenario=failure
+```
+Confira o assunto `[TESTE] Bemora · Falha operacional simulada` na caixa de entrada (e spam) do administrador. **A aceitação pelo SMTP não comprova a entrega final ao destinatário.**
+
+Após pelo menos 60 segundos, envie a simulação de recuperação:
+```bash
+/usr/local/php83/bin/php scripts/ops_test_alert.php --send --scenario=recovery
+```
+Confira o assunto `[TESTE] Bemora · Recuperação operacional simulada`. O utilitário salva apenas a última simulação, horário UTC e resultado `smtp_accepted`, em `operations.private_dir/alert-test-last.json`, com permissão de proprietário. Essa trilha não substitui os arquivos de status reais.
+
+Por fim, execute:
+```bash
+/usr/local/php83/bin/php scripts/ops_watchdog.php
+```
+O resultado deve continuar `Rotinas essenciais dentro do prazo.`. Testes de modelo do e-mail e validação dos cenários também fazem parte dos testes PHP automatizados. Para homologar *gatilhos reais* de ausência de execução, faça posteriormente uma simulação separada em homologação, sem alterar os estados do cron de produção.
+
+Se houver falha de SMTP, confira a configuração de `operations.alert_email`, `mail`, as dependências do Composer e o log PHP privado. Não compartilhe senhas ou tokens.
