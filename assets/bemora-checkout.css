@@ -51,3 +51,38 @@
 @media(max-width:760px){
   .checkout-panel label.checkout-legal-accept{padding:14px 12px;gap:10px}
 }
+
+/* Independently reviewed legal documents, with accessible reading dialogs. */
+.checkout-legal-consents{padding:19px;border:1px solid #d6e9dd;border-radius:14px;background:#f6fcf8}
+.checkout-legal-heading{margin-bottom:17px}
+.checkout-legal-eyebrow{display:block;font-weight:800;font-size:10px;letter-spacing:.13em;color:#10856b;margin-bottom:6px}
+.checkout-legal-heading h3{margin:0 0 7px;color:#075443;font-size:17px;line-height:1.4}
+.checkout-legal-heading p{margin:0;color:#668577;font-size:12px;line-height:1.5}
+.checkout-legal-items{display:grid;gap:10px}
+.checkout-legal-item{display:flex;align-items:center;gap:12px;padding:13px;background:#fff;border:1px solid #dbece1;border-radius:12px}
+.checkout-legal-item.is-complete{border-color:#a6d9bd;background:#fbfffc}
+.checkout-legal-item-icon{display:grid;place-items:center;flex:0 0 34px;height:34px;border-radius:10px;background:#e8f6ee;color:#117a5e;font-weight:800;font-size:11px}
+.checkout-legal-item-copy{flex:1;min-width:0}
+.checkout-legal-item-copy strong{display:block;font-size:12px;color:#174f3f;line-height:1.35}
+.checkout-legal-item-copy small{display:block;font-size:10px;color:#7d9788;margin:4px 0;line-height:1.55}
+.checkout-legal-status{font-size:10px;color:#917b4d;font-weight:700}
+.checkout-legal-item.is-complete .checkout-legal-status{color:#06835c}
+.checkout-legal-open{flex:0 0 auto;border:1px solid #badfca;color:#076c54;background:#eff9f2;border-radius:9px;padding:10px 12px;font-size:11px;font-weight:800;cursor:pointer;max-width:160px}
+.checkout-legal-open:hover{background:#dcf2e5}
+.checkout-legal-message{margin:15px 0 0;color:#8b754b;font-size:11px;line-height:1.5;font-weight:650}
+.checkout-legal-message.is-complete{color:#087c5a}
+.checkout-legal-dialog{position:fixed;inset:0;margin:auto;width:min(920px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 28px);padding:0;border:1px solid #d8e8dd;border-radius:17px;box-shadow:0 24px 90px #092c2559;color:#184e3d;overflow:hidden}
+.checkout-legal-dialog::backdrop{background:rgba(9,34,27,.66);backdrop-filter:blur(3px)}
+.checkout-legal-dialog-shell{display:flex;flex-direction:column;height:min(820px,calc(100dvh - 28px));min-height:0}
+.checkout-legal-dialog-top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:22px 25px 17px;background:white;border-bottom:1px solid #e5f0e8}
+.checkout-legal-dialog-top h2{font-size:22px;margin:0 0 5px;color:#075544;line-height:1.3}
+.checkout-legal-dialog-top p{font-size:12px;color:#759084;margin:0;line-height:1.5}
+.checkout-legal-close{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;background:#f3f8f4;border:1px solid #dceae1;border-radius:10px;color:#235b47;font-size:24px;cursor:pointer}
+.checkout-legal-frame{width:100%;flex:1 1 auto;min-height:0;display:block;border:0;background:#f7faf7}
+.checkout-legal-dialog-actions{display:flex;align-items:center;justify-content:flex-end;gap:11px;padding:14px 22px;background:#fff;border-top:1px solid #e4ede6}
+.checkout-legal-full{font-size:11px;font-weight:650;color:#0f8064;margin-right:auto}
+.checkout-legal-back,.checkout-legal-confirm{border:1px solid #d8e9df;border-radius:10px;padding:12px 17px;font-size:12px;font-weight:750;cursor:pointer}
+.checkout-legal-back{background:white;color:#3e6b59}
+.checkout-legal-confirm{background:#075a48;color:white;border-color:#075a48}
+.checkout-legal-confirm:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:690px){.checkout-legal-consents{padding:15px}.checkout-legal-item{align-items:flex-start;flex-wrap:wrap}.checkout-legal-open{width:100%;max-width:none;margin-left:46px}.checkout-legal-dialog{width:100vw;max-height:100dvh;height:100dvh;border:0;border-radius:0}.checkout-legal-dialog-shell{height:100dvh}.checkout-legal-dialog-top{padding:17px}.checkout-legal-dialog-top h2{font-size:18px}.checkout-legal-dialog-actions{padding:12px;gap:8px;flex-wrap:wrap}.checkout-legal-full{flex-basis:100%;text-align:center;margin:0 0 3px}.checkout-legal-back,.checkout-legal-confirm{flex:1;padding:13px 10px}}
