@@ -161,12 +161,22 @@ start.addEventListener('click',async()=>{
  if(!navigator.mediaDevices?.getUserMedia){setStatus('Câmera indisponível neste navegador. Use a opção de selecionar uma foto.');return;}
  try{
   stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
+  if(scanDialog&&!scanDialog.open){stopCamera();return;}
   video.srcObject=stream;await video.play();placeholder.hidden=true;video.style.visibility='visible';
   capture.disabled=false;stop.disabled=false;start.disabled=true;
   setStatus('Centralize a etiqueta dentro da moldura e pressione Capturar etiqueta.');
  }catch(e){stopCamera();setStatus('Não foi possível acessar a câmera. Verifique a permissão ou selecione uma foto da etiqueta.');}
 });
 stop.addEventListener('click',stopCamera);
+const scanDialog=document.getElementById('market-scan-dialog');
+scanDialog?.addEventListener('close',stopCamera);
+document.getElementById('market-open-camera')?.addEventListener('click',()=>{
+ if(!scanDialog||list.status==='completed')return;
+ scanDialog.showModal();
+ start.click();
+});
+document.getElementById('market-close-camera')?.addEventListener('click',()=>scanDialog?.close());
+
 window.addEventListener('pagehide',()=>{stopCamera();if(worker)worker.terminate();});
 async function getWorker(){
  if(worker)return worker;
@@ -319,20 +329,20 @@ function point(e){
  const rect=cropCanvas.getBoundingClientRect();
  return {x:Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width)),y:Math.max(0,Math.min(1,(e.clientY-rect.top)/rect.height))};
 }
-cropCanvas.addEventListener('pointerdown',e=>{
+cropCanvas?.addEventListener('pointerdown',e=>{
  if(!uploadImage)return;
  cropCanvas.setPointerCapture(e.pointerId);dragOrigin=point(e);cropRect={x:dragOrigin.x,y:dragOrigin.y,w:.001,h:.001};
  drawCropEditor();
 });
-cropCanvas.addEventListener('pointermove',e=>{
+cropCanvas?.addEventListener('pointermove',e=>{
  if(!dragOrigin)return;
  const p=point(e);
  cropRect={x:Math.min(dragOrigin.x,p.x),y:Math.min(dragOrigin.y,p.y),w:Math.abs(p.x-dragOrigin.x),h:Math.abs(p.y-dragOrigin.y)};
  drawCropEditor();
 });
 function finishCrop(){dragOrigin=null;if(cropRect.w<.08||cropRect.h<.05){cropRect={...shapes[currentShape].crop};drawCropEditor();}}
-cropCanvas.addEventListener('pointerup',finishCrop);
-cropCanvas.addEventListener('pointercancel',finishCrop);
+cropCanvas?.addEventListener('pointerup',finishCrop);
+cropCanvas?.addEventListener('pointercancel',finishCrop);
 function productQuality(value){
  if(!value)return -100;
  const letters=(value.match(/[a-záàâãéêíóôõúç]/gi)||[]).length;
@@ -408,7 +418,7 @@ capture.addEventListener('click',()=>{
   recognize(cropped);
  }catch(error){setStatus('Não foi possível recortar a câmera. Tente selecionar uma foto.');}
 });
-photo.addEventListener('change',async()=>{
+photo?.addEventListener('change',async()=>{
  const file=photo.files?.[0];if(!file)return;
  if(!file.type.startsWith('image/')||file.size>12*1024*1024){setStatus('Escolha uma imagem de até 12 MB.');return;}
  try{
@@ -426,7 +436,7 @@ photo.addEventListener('change',async()=>{
   setStatus('Arraste o dedo para selecionar somente a etiqueta e toque em Ler área selecionada.');
  }catch(error){setStatus('Não foi possível abrir a imagem. Tente uma foto em JPG ou PNG.');}
 });
-cropApply.addEventListener('click',()=>{
+cropApply?.addEventListener('click',()=>{
  if(!uploadImage||recognizing)return;
  recognize(cropFrom(uploadImage,cropRect.x,cropRect.y,cropRect.w,cropRect.h));
 });
@@ -448,6 +458,7 @@ form.addEventListener('submit',async e=>{
   list=data.list;render();
   name.value='';price.value='';qty.value='1';unit.value='un';match.value='';
   setStatus('Produto e preço salvos. Você pode continuar escaneando a próxima etiqueta.');
+  if(scanDialog?.open)scanDialog.close();
   if(window.matchMedia('(max-width: 750px)').matches){$('market-shopping-items')?.scrollIntoView({behavior:'smooth',block:'start'});}
  }catch(error){setStatus(error.message||'Erro ao salvar produto.');}
  finally{save.disabled=false;}
