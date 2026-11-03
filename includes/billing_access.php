@@ -4,6 +4,7 @@ require_once __DIR__.'/asaas.php';
 
 /** Grace period after the due date; operational policy can be revised later. */
 const BEMORA_BILLING_GRACE_DAYS = 3;
+// Non-active subscriptions cannot retain unrestricted access.
 
 function bemora_billing_access_ready(PDO $pdo):bool {
  static $ready=null;
