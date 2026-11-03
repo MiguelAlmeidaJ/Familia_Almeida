@@ -125,3 +125,18 @@ A rotina diária existente `scripts/reconcile_billing_access.php` agora também 
 Em Administração → Famílias → Ações, o botão de escudo permite `Suspender acesso para teste` ou `Remover suspensão manual`. A mesma opção aparece em Detalhes da família. Este estado é independente do `state` calculado pelo Asaas e do `tenants.active`; portanto, a conciliação não remove a suspensão manual, e a reativação manual não contorna bloqueio por inadimplência. O cliente ainda pode acessar `/minha-assinatura`, perfil e logout. Não altera o Asaas nem apaga registros.
 
 **Homologar no Sandbox**: caso de conta gratuita sem Asaas, família paga em dia, fatura vencida no segundo dia e quarto dia, duplicação do cron, SMTP indisponível e confirmação tardia de pagamento. Em produção, garantir fuso horário e política de notificações compatível com os termos de assinatura.
+
+
+## Suporte durante suspensão (migration 036)
+Execute `20261103_036_support_tickets` via Administração → Configurações → Manutenção.
+A rota autenticada `/suporte/relatar` recebe relatos da família por POST com CSRF, descrição de 15 a 3000 caracteres e contato por WhatsApp (DDD + 10 ou 11 dígitos) ou e-mail. Limite de três relatos por usuário em uma hora. Não recebe uploads nem dados de cartão.
+Os relatos são gravados em `support_tickets` independentemente da entrega SMTP. A página `/admin/suporte` permite visualizar a família, o autor, o contato, a descrição e atualizar a situação; apenas o administrador global tem acesso.
+Configure no `config.php` (não versionado):
+```php
+'support' => ['email' => 'suporte@seudominio.com.br'],
+```
+Sem `support.email`, o sistema utiliza `mail.from`, se for um endereço válido. As credenciais existentes em `mail` continuam responsáveis pelo SMTP. Se a entrega falhar, o chamado permanece no admin com `email_status=failed`.
+
+Durante a suspensão, `require_auth()` permite apenas Minha assinatura, o POST de suporte e logout, além da consulta de pagamento autorizada. `render_topbar()` não inclui os popups de lançamento/contas; `render_sidebar()` oculta os links financeiros e perfil. O cliente vê faturas e pode enviar relato. O bloqueio é verificado no servidor inclusive quando alguém envia um POST direto. A tela aberta em outra aba também consulta o estado após retornar ao foco para invalidar UI antiga.
+
+Teste: suspender família no admin, tentar `POST /acao` com sessão e CSRF válidos (não pode gravar), visitar perfil (redireciona), abrir Minha assinatura, enviar relato por WhatsApp e e-mail, conferir registro e e-mail administrativo, reativar família e confirmar que os acessos retornaram.
