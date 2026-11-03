@@ -124,3 +124,5 @@ function bemora_billing_manual_suspend(PDO $pdo,int $tenantId,int $adminId,bool 
   $pdo->commit();
  }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
 }
+
+// Subscription deletion is reconciled from authenticated Asaas lifecycle events.
