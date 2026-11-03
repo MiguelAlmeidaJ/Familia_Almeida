@@ -73,7 +73,14 @@ $cycles=bemora_plan_cycles();
 <section class="sub-card sub-billing-alert" role="alert"><span class="sub-kicker">ACESSO TEMPORARIAMENTE SUSPENSO</span><h2>Suspensão administrativa</h2><p>O acesso financeiro desta família foi suspenso pela administração do Bemora. Seus dados continuam preservados. Use o botão Relatar problema para falar com nossa equipe.</p></section>
 <?php endif; ?>
 <?php if(($billingAccess['state']??'active')==='suspended'): ?>
-<section class="sub-card sub-billing-alert" role="alert"><span class="sub-kicker">REGULARIZE SUA ASSINATURA</span><h2>Acesso financeiro temporariamente suspenso</h2><p>Identificamos uma fatura recorrente vencida após o período de tolerância. Seus lançamentos e dados continuam preservados. Consulte as faturas abaixo, regularize o pagamento e o acesso será restabelecido após a confirmação do Asaas.</p><p>Você pode consultar suas faturas e relatar um problema nesta página.</p></section>
+<section class="sub-card sub-billing-alert" role="alert"><span class="sub-kicker">ASSINATURA REQUER ATENÇÃO</span><h2>Acesso financeiro temporariamente suspenso</h2>
+<?php if(in_array((string)($billingAccess['reason']??''),['subscription_inactive','subscription_deleted'],true)): ?>
+<p>Esta assinatura foi interrompida ou cancelada no Asaas. Seus dados permanecem preservados. Para reativar o serviço, entre em contato com o suporte e regularize a situação contratual.</p>
+<?php elseif(($billingAccess['reason']??'')==='payment_reversed'): ?>
+<p>Foi identificada uma devolução ou contestação de pagamento. O acesso fica temporariamente suspenso até que a situação financeira seja regularizada e confirmada pelo Asaas.</p>
+<?php else: ?>
+<p>Identificamos uma fatura recorrente vencida após o período de tolerância. Seus dados estão preservados. Consulte as faturas abaixo e regularize o pagamento para restabelecer o acesso após a confirmação do Asaas.</p>
+<?php endif; ?><p>Você pode consultar suas faturas e relatar um problema nesta página.</p></section>
 <?php elseif(($billingAccess['state']??'active')==='grace'): ?>
 <section class="sub-card sub-billing-grace" role="status"><span class="sub-kicker">PAGAMENTO PENDENTE</span><h2>Há uma cobrança em atraso</h2><p>Regularize a fatura para evitar a suspensão após o período de tolerância de 3 dias.</p></section>
 <?php endif; ?>
