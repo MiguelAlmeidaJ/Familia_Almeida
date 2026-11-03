@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/includes/auth.php';
 require_once __DIR__.'/includes/asaas.php';
+require_once __DIR__.'/includes/subscription_cancellation.php';
 $user=require_family_access();
 if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);exit;}
 verify_csrf();
@@ -12,6 +13,7 @@ try{
  $mode=(string)($_POST['change_mode']??'');
  if(!$targetId||!in_array($mode,['immediate','renewal'],true))throw new RuntimeException('Selecione um plano e quando deseja mudar.');
  if($mode!=='immediate')throw new RuntimeException('Troca na renovação ainda indisponível até a confirmação de pagamento do próximo ciclo.');
+ if(bemora_cancellation_for_family($pdo,$tid))throw new RuntimeException('Esta assinatura possui cancelamento solicitado ou confirmado. Para contratar novamente, contate o suporte.');
  $pdo->beginTransaction();
  $role=$pdo->prepare("SELECT role FROM tenant_users WHERE tenant_id=? AND user_id=? FOR UPDATE");$role->execute([$tid,(int)$user['id']]);
  if($role->fetchColumn()!=='family_admin')throw new RuntimeException('Somente o administrador familiar pode mudar o plano.');
