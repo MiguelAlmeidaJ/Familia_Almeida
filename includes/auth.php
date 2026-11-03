@@ -39,13 +39,14 @@ function current_user(): ?array
 
 function require_auth(): array
 {
+    header('Cache-Control: private, no-store, max-age=0');
     $user = current_user();
     if (!$user) {
         redirect_to('/login');
     }
     if (!empty($user['system_admin']) && empty($user['tenant_id'])) {
         $script = str_replace('\\\\','/',(string)($_SERVER['SCRIPT_NAME'] ?? ''));
-        $allowed = ['/system_admin.php','/admin/tenants.php','/admin/planos.php','/admin/assinaturas.php','/admin/cupons.php','/admin/coupons_action.php','/admin/plans_action.php','/admin/familia.php','/admin/configuracoes.php','/admin/branding_upload.php','/admin/family_action.php','/admin/registration_action.php','/pages/configuracoes.php','/pages/manutencao.php'];
+        $allowed = ['/system_admin.php','/admin/tenants.php','/admin/planos.php','/admin/assinaturas.php','/admin/cupons.php','/admin/coupons_action.php','/admin/plans_action.php','/admin/familia.php','/admin/configuracoes.php','/admin/branding_upload.php','/admin/family_action.php','/admin/registration_action.php','/admin/suporte.php','/admin/support_action.php','/pages/configuracoes.php','/pages/manutencao.php'];
         if (!in_array($script,$allowed,true)) redirect_to('/system_admin.php');
     }
     // Fail closed while the remaining legacy financial modules still lack
@@ -73,10 +74,10 @@ function require_auth(): array
                 '/pages/categorias.php','/pages/minha_conta.php',
                 '/pages/meu_perfil.php','/pages/minha_assinatura.php','/pages/evoluir_plano.php','/plan_change_action.php','/payment.php','/pages/profile_action.php','/pages/profile_avatar.php',
                 '/pages/relatorios.php','/pages/membros.php','/pages/membros_action.php','/pages/member_avatar.php',
-                '/pages/family_settings_action.php','/logout.php','/convite-familia.php'];
+                '/pages/family_settings_action.php','/support_action.php','/logout.php','/convite-familia.php'];
             $path=(string)(parse_url((string)($_SERVER['REQUEST_URI']??'/'),PHP_URL_PATH)??'/');
             $allowedRoutes=['/painel','/acao','/movimentacoes','/contas','/categorias',
-                '/categorias/acao','/minha-conta','/relatorios','/membros','/membros/acao','/membros/foto','/meu-perfil','/minha-assinatura','/evoluir-plano','/evoluir-plano/solicitar','/pagamento','/meu-perfil/acao','/meu-perfil/foto','/comprovante','/sair','/convite-familia'];
+                '/categorias/acao','/minha-conta','/relatorios','/membros','/membros/acao','/membros/foto','/meu-perfil','/minha-assinatura','/evoluir-plano','/evoluir-plano/solicitar','/pagamento','/meu-perfil/acao','/meu-perfil/foto','/comprovante','/suporte/relatar','/sair','/convite-familia'];
             if(!in_array($script,$allowed,true) && !in_array(rtrim($path,'/')?:'/',$allowedRoutes,true)){
                 http_response_code(403);
                 exit('Funcionalidade indisponível no modo de finanças individuais.');
@@ -90,9 +91,9 @@ function require_auth(): array
         $access=bemora_billing_access(db(),(int)$user['tenant_id']);
         if(bemora_billing_is_blocked($access)){
             $script=str_replace('\\\\','/',(string)($_SERVER['SCRIPT_NAME']??''));
-            $permittedScripts=['/pages/minha_assinatura.php','/pages/meu_perfil.php','/pages/profile_action.php','/pages/profile_avatar.php','/logout.php','/payment.php'];
+            $permittedScripts=['/pages/minha_assinatura.php','/support_action.php','/logout.php','/payment.php'];
             $path=rtrim((string)(parse_url((string)($_SERVER['REQUEST_URI']??'/'),PHP_URL_PATH)??'/'),'/')?:'/';
-            $permittedPaths=['/minha-assinatura','/meu-perfil','/meu-perfil/acao','/meu-perfil/foto','/sair','/pagamento'];
+            $permittedPaths=['/minha-assinatura','/suporte/relatar','/sair','/pagamento'];
             if(!in_array($script,$permittedScripts,true)&&!in_array($path,$permittedPaths,true))redirect_to('/minha-assinatura');
         }
     }
