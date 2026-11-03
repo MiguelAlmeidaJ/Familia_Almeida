@@ -59,9 +59,9 @@ function bemora_reconcile_billing_access(PDO $pdo,int $tenantId):array {
   $pdo->prepare("INSERT INTO tenant_billing_access(tenant_id,state,overdue_payment_id,overdue_since,checked_at,suspended_at)
    VALUES(?,?,?,?,NOW(),IF(?='suspended',NOW(),NULL))
    ON DUPLICATE KEY UPDATE
-    state=VALUES(state),overdue_payment_id=VALUES(overdue_payment_id),overdue_since=VALUES(overdue_since),checked_at=NOW(),
+    resumed_at=IF(state='suspended' AND VALUES(state)<>'suspended',NOW(),resumed_at),
     suspended_at=IF(VALUES(state)='suspended',COALESCE(suspended_at,NOW()),NULL),
-    resumed_at=IF(state='suspended' AND VALUES(state)<>'suspended',NOW(),resumed_at)")->execute([
+    overdue_payment_id=VALUES(overdue_payment_id),overdue_since=VALUES(overdue_since),checked_at=NOW(),state=VALUES(state)")->execute([
     $tenantId,$state,$oldest['id']??null,$oldest['date']??null,$state
    ]);
   $pdo->commit();
