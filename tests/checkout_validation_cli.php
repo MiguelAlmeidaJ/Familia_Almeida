@@ -10,3 +10,6 @@ assert_case(!bemora_checkout_valid_document('11.222.333/0001-82'),'invalid CNPJ 
 assert_case(bemora_checkout_valid_phone('(31) 99999-9999'),'mobile phone with DDD');
 assert_case(bemora_checkout_valid_phone('+55 (31) 99999-9999'),'mobile with country prefix');
 assert_case(!bemora_checkout_valid_phone('(31) 3333-4444'),'landline rejected');
+
+// Legal publication is enforced by the same public checkout validation workflow.
+require __DIR__.'/legal_readiness_cli.php';
