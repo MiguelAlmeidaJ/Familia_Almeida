@@ -126,3 +126,11 @@ function bemora_billing_manual_suspend(PDO $pdo,int $tenantId,int $adminId,bool 
 }
 
 // Subscription deletion is reconciled from authenticated Asaas lifecycle events.
+
+function bemora_mark_asaas_subscription_removed(PDO $pdo,string $subscriptionId,string $customerId):void {
+ if(!bemora_billing_access_ready($pdo)||$subscriptionId===''||$customerId==='')return;
+ $q=$pdo->prepare("SELECT activated_tenant_id FROM subscription_orders WHERE asaas_subscription_id=? AND asaas_customer_id=? AND activated_tenant_id IS NOT NULL ORDER BY id DESC LIMIT 1");
+ $q->execute([$subscriptionId,$customerId]);
+ $tid=(int)$q->fetchColumn();if($tid<1)return;
+ $pdo->prepare("INSERT INTO tenant_billing_access(tenant_id,state,suspended_at,checked_at) VALUES(?,'suspended',NOW(),NOW()) ON DUPLICATE KEY UPDATE state='suspended',suspended_at=COALESCE(suspended_at,NOW()),checked_at=NOW()")->execute([$tid]);
+}
