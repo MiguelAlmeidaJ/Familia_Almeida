@@ -73,10 +73,11 @@ $receiptInsert=$pdo->prepare("INSERT INTO transaction_receipts(tenant_id,transac
 $receiptInsert->execute([$family,1,1,'member-a.pdf']);
 $receiptInsert->execute([$family,2,2,'member-b.pdf']);
 $receiptInsert->execute([$family,3,1,'shared.pdf']);
+$receiptInsert->execute([$other,4,3,'other-tenant.pdf']);
 $a=dashboard_data($pdo,'2026-10');
 $notes=receipts_for_month($pdo,'2026-10');
 
-check(count($notes)===2,'member A cannot list private receipts of B');
+check(count($notes)===2 && !in_array('other-tenant.pdf',array_column($notes,'original_name'),true),'member A cannot list receipts from private owner or other tenant');
 $_SERVER['REQUEST_METHOD']='GET';
 $_GET['month']='2026-10';
 $_SERVER['SCRIPT_NAME']='/pages/painel.php';
