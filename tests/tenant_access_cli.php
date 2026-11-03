@@ -10,7 +10,7 @@ putenv('BEMORA_MULTI_TENANT_RELEASE='.($released?'1':'0'));
 $_SESSION['user_id']=$userId;
 $_SESSION['tenant_id']=$tenantId;
 $_SERVER['REQUEST_METHOD']='GET';
-$_SERVER['SCRIPT_NAME']=$path==='/'?'/index.php':($path==='/cartoes'?'/pages/cartoes.php':'/pages/contas.php');
+$_SERVER['SCRIPT_NAME']=$path==='/painel'?'/pages/painel.php':($path==='/cartoes'?'/pages/cartoes.php':'/pages/contas.php');
 $_SERVER['REQUEST_URI']=$path;
 $user=require_family_access();
 $scope=finance_scope(db(),$user);
