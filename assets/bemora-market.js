@@ -19,6 +19,26 @@ const basketTotal=$('market-scan-total'),basketCount=$('market-items-count');
 const basketProgress=$('market-progress-track'),basketFill=$('market-progress-fill');
 const basketFeedback=$('market-shopping-feedback');
 let basketBusy=false;
+const batchSize=10;
+const morePanel=$('market-load-more'),moreButton=$('market-load-more-button'),moreCount=$('market-load-more-count');
+let shownCount=0;
+let listObserver=null;
+function appendBatch(){
+ const from=shownCount;
+ const next=Math.min(list.items.length,from+batchSize);
+ for(let index=from;index<next;index++)rows.append(buildBasketRow(list.items[index]));
+ shownCount=next;
+ const pending=list.items.length-shownCount;
+ if(morePanel)morePanel.hidden=pending===0;
+ if(moreCount)moreCount.textContent=pending>0?'Exibindo '+shownCount+' de '+list.items.length+' produtos':'Todos os produtos exibidos';
+}
+moreButton?.addEventListener('click',appendBatch);
+if(morePanel&&'IntersectionObserver' in window){
+ listObserver=new IntersectionObserver(entries=>{
+  if(entries.some(entry=>entry.isIntersecting)&&!morePanel.hidden)appendBatch();
+ },{rootMargin:'160px 0px',threshold:0});
+ listObserver.observe(morePanel);
+}
 function feedback(message,isError=false){
  basketFeedback.textContent=message;
  basketFeedback.classList.toggle('is-error',isError);
@@ -107,8 +127,11 @@ function render(){
  }
  for(const item of list.items){
   match.add(new Option(item.name+(item.purchased?' · comprado':''),String(item.id)));
-  rows.append(buildBasketRow(item));
  }
+ // Render only the visible batch; older rows are discarded after a change
+ // to keep DOM size and phone scrolling responsive for larger lists.
+ shownCount=0;
+ appendBatch();
  if([...match.options].some(x=>x.value===previous))match.value=previous;
 }
 function offerMatch(){
