@@ -20,6 +20,8 @@ jobs:
         run: |
           node --check assets/bemora-market.js
           node tests/market_ocr_cli.js
+          node --check assets/bemora-market-popups.js
+          node tests/market_ui_cli.js
       - name: Validate checkout documents and mobile numbers
         run: |
           php tests/checkout_validation_cli.php
