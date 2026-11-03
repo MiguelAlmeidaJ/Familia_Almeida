@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/includes/legal.php';
 $approved=bemora_legal_approved();
-$privacy=(string)($_GET['document']??'')==='privacy';
+$privacy=(rtrim((string)(parse_url((string)($_SERVER['REQUEST_URI']??''),PHP_URL_PATH)??''),'/')==='/privacidade');
 $title=$privacy?'Política de privacidade':'Termos de uso e contratação';
 $version=$privacy?BEMORA_PRIVACY_VERSION:BEMORA_TERMS_VERSION;
 $contact=bemora_legal_label('privacy_email','Canal de privacidade pendente de publicação');
