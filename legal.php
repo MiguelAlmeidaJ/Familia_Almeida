@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/includes/legal.php';
 $approved=bemora_legal_approved();
+$embedded=(string)($_GET['embed']??'')==='1';
 $path=rtrim((string)(parse_url((string)($_SERVER['REQUEST_URI']??''),PHP_URL_PATH)??''),'/');
 $privacy=$path==='/privacidade';
 $version=$privacy?BEMORA_PRIVACY_VERSION:BEMORA_TERMS_VERSION;
@@ -22,8 +23,8 @@ $contactHtml=static function(string $email):string {
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="description" content="Consulte <?= e($title) ?> do Bemora, serviço de organização financeira pessoal e familiar.">
 <title><?= e($title) ?> · Bemora</title>
-<link rel="icon" href="/assets/brand/favicon.png"><link rel="stylesheet" href="/assets/bemora-legal.css?v=2">
-</head><body>
+<link rel="icon" href="/assets/brand/favicon.png"><link rel="stylesheet" href="/assets/bemora-legal.css?v=3">
+</head><body class="<?= $embedded?'legal-embedded':'' ?>">
 <a class="legal-skip" href="#legal-content">Ir para o conteúdo</a>
 <header class="legal-header">
 <a href="/" class="legal-logo" aria-label="Bemora - início"><img src="/assets/brand/logo.png" alt="Bemora by Anoar"></a>
