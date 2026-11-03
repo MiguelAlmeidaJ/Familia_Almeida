@@ -232,11 +232,11 @@ cropCanvas.addEventListener('pointercancel',finishCrop);
 function productQuality(value){
  if(!value)return -100;
  const letters=(value.match(/[a-záàâãéêíóôõúç]/gi)||[]).length;
- const digitCount=(value.match(/\\d/g)||[]).length;
- const tokens=value.split(/\\s+/).filter(Boolean);
+ const digitCount=(value.match(/\d/g)||[]).length;
+ const tokens=value.split(/\s+/).filter(Boolean);
  const coherent=tokens.filter(token=>/[a-záéíóúãõç]{3,}/i.test(token)).length;
  const suspicious=tokens.filter(token=>/[^a-záàâãéêíóôõúç0-9-]/i.test(token)).length;
- const packageHint=/\\b(?:\\d+\\s*(?:kg|g|ml|l|un|und|pct)|tipo\\s*\\d+)\\b/i.test(value);
+ const packageHint=/\b(?:\d+\s*(?:kg|g|ml|l|un|und|pct)|tipo\s*\d+)\b/i.test(value);
  return coherent*3+Math.min(letters,40)*.12+(packageHint?9:0)-digitCount*.12-suspicious*2;
 }
 function betterName(existing,candidate){
