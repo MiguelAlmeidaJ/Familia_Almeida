@@ -81,6 +81,7 @@ function bemora_reconcile_billing_access(PDO $pdo,int $tenantId):array {
   if($offset>10000)throw new RuntimeException('Limite de conciliação excedido.');
  }while($hasMore);
  $decision=bemora_billing_decision((string)($sub['status']??''),$payments,(string)($order['coupon_free_until']??''),$today);
+ $upgradeReview=false;
  $state=$decision['state'];
  $oldest=$decision['payment_id']!==null?['id'=>$decision['payment_id'],'date'=>$decision['overdue_since']]:null;
  $daysOverdue=$decision['days_overdue'];
