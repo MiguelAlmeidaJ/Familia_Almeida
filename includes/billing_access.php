@@ -88,7 +88,14 @@ function bemora_billing_access_ready(PDO $pdo):bool {
 function bemora_billing_access(PDO $pdo,int $tenantId):array {
  if(!bemora_billing_access_ready($pdo))return ['state'=>'active','overdue_since'=>null,'overdue_payment_id'=>null];
  $q=$pdo->prepare('SELECT * FROM tenant_billing_access WHERE tenant_id=? LIMIT 1');
- $q->execute([$tenantId]);return $q->fetch(PDO::FETCH_ASSOC)?:['state'=>'active','overdue_since'=>null,'overdue_payment_id'=>null];
+ $q->execute([$tenantId]);
+ $access=$q->fetch(PDO::FETCH_ASSOC)?:['state'=>'active','overdue_since'=>null,'overdue_payment_id'=>null];
+ $cancel=bemora_cancellation_for_family($pdo,$tenantId);
+ if($cancel && $cancel['status']==='confirmed' && (string)($cancel['access_until']??'')<date('Y-m-d')){
+  $access['state']='suspended';
+  $access['reason']='subscription_canceled';
+ }
+ return $access;
 }
 
 /**
