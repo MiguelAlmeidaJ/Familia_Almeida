@@ -72,3 +72,29 @@ Sem ela, a suspensão básica permanece funcional, mas as mensagens específicas
 10. Confirmar os workflows PHP e isolamento do commit implantado, atualizar o banco por migration e testar o retorno em Meu plano, Admin → Famílias e Suporte.
 
 Não liberar faturamento comercial antes desses testes em ambiente de homologação. A implementação não substitui auditoria contábil nem tratamento jurídico de reembolso.
+
+
+## Fase 2 — cancelamento pelo próprio cliente (migration 039)
+- Execute `20261103_039_subscription_cancellations` no painel Manutenção após atualizar a `main`.
+- O botão aparece em Minha assinatura somente para o administrador familiar com assinatura Asaas comprovadamente `ACTIVE`. Planos internos não têm recorrência para cancelar.
+- A opção `Cancelar renovação da assinatura` exibe um diálogo com as consequências, motivo opcional, confirmação explícita e CSRF.
+- Ao confirmar, registra solicitação exclusiva por família, confere a assinatura/cliente e faturas diretamente no Asaas, calcula prazo de acesso com base no período pago ou cortesia, e executa `PUT /subscriptions/{id}` com `status: INACTIVE`. Isso interrompe a geração de novas faturas, mas preserva cobranças pendentes e vencidas.
+- O fluxo NÃO usa `DELETE` porque o Asaas pode eliminar cobranças pendentes. Não ocorre reembolso automático nem apagamento de dados financeiros.
+- O acesso ao Bemora se mantém até a data comprovada do período pago/cortesia, desde que não haja cobrança em atraso, contestação, reembolso ou suspensão manual. Se não houver pagamento/cortesia confirmado, não se presume prazo de acesso. Após a data, o bloqueio é aplicado inclusive se a API do Asaas ou o cron estiverem indisponíveis.
+- O usuário não pode evoluir o plano enquanto existir cancelamento confirmado ou aguardando conciliação. Uma recontratação posterior deverá ter fluxo próprio; não se deve reativar a cobrança sem novo consentimento.
+- A operação evita duplicidade usando um registro único por família. Falha após a chamada externa deixa `reconciliation_required`; a rotina de conciliação recupera o estado remoto, só repetindo a inativação após a janela de segurança de 10 minutos.
+- Um e-mail de confirmação é enviado para o comprador e reentregue pela rotina financeira se o SMTP estiver indisponível.
+- O painel Admin → Assinaturas mostra cancelamentos confirmados, pendências e a data final de acesso.
+- No **Sandbox** a funcionalidade está disponível com o Asaas habilitado. Para permitir em produção, configurar explicitamente `'cancellation_production_enabled' => '1'` em `asaas` no `config.php` *somente depois da homologação*.
+
+### Testes exigidos para lançar
+1. Cancelar plano mensal com período efetivamente pago e confirmar a data de encerramento, sem nova fatura gerada após o cancelamento.
+2. Cancelar plano anual e semestral com cobrança confirmada; verificar que o acesso continua disponível até o fim do período.
+3. Cancelar plano gratuito por cupom durante a cortesia: verificar o limite do período gratuito e a interrupção da renovação.
+4. Cancelar sem pagamento confirmado: acesso não pode ser concedido além do que estiver comprovado.
+5. Simular fatura vencida, reembolso ou contestação: não ignorar o bloqueio financeiro mesmo antes do fim de acesso.
+6. Verificar permissões: apenas `family_admin` consegue postar, POST requer CSRF, requisição duplicada é rejeitada e planos internos não permitem cancelamento.
+7. Desligar SMTP e API durante operação, validar recuperação pelo cron e reenvio da notificação sem criar assinaturas duplicadas.
+8. Confirmar que o webhook de `SUBSCRIPTION_INACTIVATED` não suspende antecipadamente período pago no Bemora.
+9. Testar encerramento de prazo com e sem acesso à API para garantir suspensão pontual e preservação dos lançamentos.
+10. Validar que a aplicação só será habilitada em produção depois de ligar a flag específica, finalizar testes reais e revisar os termos comerciais.
