@@ -30,7 +30,7 @@ function bemora_send_billing_reminders(PDO $pdo,int $tenantId):int {
    $pid=(string)($p['id']??'');$due=(string)($p['dueDate']??'');
    if(!preg_match('/^[a-zA-Z0-9_-]{3,100}$/D',$pid)||!preg_match('/^\d{4}-\d{2}-\d{2}$/D',$due))continue;
    $days=(int)$today->diff(new DateTimeImmutable($due))->format('%r%a');
-   $stage=match(true){$days===0=>'due_today',$days===-2=>'late_two',$days===-4=>'suspended',default=>null};
+   $stage=match(true){$days===0=>'due_today',$days<=-2&&$days>=-3=>'late_two',$days<=-4=>'suspended',default=>null};
    if(!$stage)continue;
    $recipient=(string)$order['recipient'];
    $insert=$pdo->prepare("INSERT INTO billing_notification_log(tenant_id,payment_id,notification_type,recipient,status) VALUES(?,?,?,?,'sending')
@@ -46,7 +46,7 @@ function bemora_send_billing_reminders(PDO $pdo,int $tenantId):int {
    $url=bemora_asaas_invoice_url($p);
    $message=match($stage){
     'due_today'=>'Sua fatura do Bemora vence hoje. Você pode conferir o pagamento e manter seu acesso sem interrupções.',
-    'late_two'=>'Sua fatura está vencida há dois dias. Regularize o pagamento para evitar a suspensão do acesso financeiro após três dias completos de atraso.',
+    'late_two'=>'Sua fatura está vencida há pelo menos dois dias. Regularize o pagamento para evitar a suspensão do acesso financeiro após três dias completos de atraso.',
     default=>'Sua fatura está vencida há mais de três dias e o acesso financeiro poderá estar suspenso. Seus dados continuam preservados. Regularize o pagamento para restabelecer o acesso após confirmação do Asaas.'
    };
    $subject=match($stage){'due_today'=>'Bemora · Sua fatura vence hoje','late_two'=>'Bemora · Aviso de pagamento em atraso',default=>'Bemora · Regularize sua assinatura'};
