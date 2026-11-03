@@ -15,19 +15,99 @@ const money=n=>Number(n).toLocaleString('pt-BR',{style:'currency',currency:'BRL'
 const clean=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 const normalizeName=s=>s.replace(/\s+/g,' ').trim().slice(0,160);
 function setStatus(text){status.textContent=text;}
+const basketTotal=$('market-scan-total'),basketCount=$('market-items-count');
+const basketProgress=$('market-progress-track'),basketFill=$('market-progress-fill');
+const basketFeedback=$('market-shopping-feedback');
+let basketBusy=false;
+function feedback(message,isError=false){
+ basketFeedback.textContent=message;
+ basketFeedback.classList.toggle('is-error',isError);
+}
+async function marketAction(action,item,extra={}){
+ if(basketBusy)return;
+ if(list.status==='completed'){feedback('Reabra a lista para fazer alterações.',true);return;}
+ basketBusy=true;
+ feedback('Atualizando a lista…');
+ for(const control of rows.querySelectorAll('button'))control.disabled=true;
+ try{
+  const params=new URLSearchParams({ajax:'1',csrf_token:app.csrf,list_id:String(list.id),item_id:String(item.id),action,...extra});
+  const response=await fetch('/compras/acao',{method:'POST',body:params,credentials:'same-origin',headers:{Accept:'application/json'}});
+  const data=await response.json();
+  if(!response.ok||!data.ok)throw new Error(data.message||'Não foi possível atualizar.');
+  list=data.list;
+  render();
+  feedback(action==='remove_item'?'Produto retirado da lista.':extra.purchased==='1'?'Produto marcado como comprado.':'Compra desfeita. O valor foi retirado do total.');
+ }catch(error){
+  feedback(error.message||'Erro ao atualizar. Tente novamente.',true);
+  for(const control of rows.querySelectorAll('button'))control.disabled=false;
+ }finally{basketBusy=false;}
+}
+function buildBasketRow(item){
+ const row=document.createElement('article');
+ row.className='market-basket-item'+(item.purchased?' is-purchased':'');
+ row.dataset.itemId=String(item.id);
+ const main=document.createElement('div');main.className='market-basket-main';
+ const icon=document.createElement('span');icon.className='market-basket-check';icon.setAttribute('aria-hidden','true');
+ icon.textContent=item.purchased?'✓':'○';
+ const desc=document.createElement('div');desc.className='market-basket-description';
+ const title=document.createElement('strong');title.textContent=item.name;
+ const detail=document.createElement('small');detail.textContent=item.quantity+' '+item.unit+(item.unit_price!==null?' · '+money(item.unit_price)+'/un':' · preço pendente');
+ desc.append(title,detail);main.append(icon,desc);
+ const amount=document.createElement('strong');amount.className='market-basket-price';
+ amount.textContent=item.purchased&&item.unit_price!==null?money(item.unit_price*item.quantity):'Pendente';
+ if(item.purchased)amount.classList.add('is-counted');
+ const actions=document.createElement('div');actions.className='market-basket-actions';
+ if(item.purchased){
+  const undo=document.createElement('button');undo.type='button';undo.className='market-basket-undo';
+  undo.innerHTML='<i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Desfazer compra';
+  undo.setAttribute('aria-label','Desmarcar '+item.name+' como comprado');
+  undo.disabled=list.status==='completed';
+  undo.addEventListener('click',()=>marketAction('toggle_item',item,{purchased:'0'}));
+  actions.append(undo);
+ }else if(item.unit_price!==null){
+  const check=document.createElement('button');check.type='button';check.className='market-basket-check-buy';
+  check.innerHTML='<i class="bi bi-check2" aria-hidden="true"></i> Marcar comprado';
+  check.setAttribute('aria-label','Marcar '+item.name+' como comprado');
+  check.disabled=list.status==='completed';
+  check.addEventListener('click',()=>marketAction('toggle_item',item,{purchased:'1'}));
+  actions.append(check);
+ }else{
+  const label=document.createElement('span');label.className='market-basket-waiting';label.textContent='Aguardando preço';
+  actions.append(label);
+ }
+ const remove=document.createElement('button');remove.type='button';remove.className='market-basket-remove';
+ remove.innerHTML='<i class="bi bi-trash3" aria-hidden="true"></i> Retirar da lista';
+ remove.setAttribute('aria-label','Remover '+item.name+' da lista de compras');
+ remove.disabled=list.status==='completed';
+ remove.addEventListener('click',()=>{
+  if(window.confirm('Retirar "'+item.name+'" da lista? Esta ação remove o produto da compra.'))marketAction('remove_item',item);
+ });
+ actions.append(remove);
+ row.append(main,amount,actions);
+ return row;
+}
 function render(){
  total.textContent=money(list.total);
  progress.textContent=list.purchased;count.textContent=list.count;
  missing.textContent=list.missing_prices?'Há itens sem preço confirmado':'';
+ if(basketTotal)basketTotal.textContent=money(list.total);
+ if(basketCount)basketCount.textContent=list.purchased+'/'+list.count;
+ if(basketProgress){
+  basketProgress.setAttribute('aria-valuemax',String(Math.max(1,list.count)));
+  basketProgress.setAttribute('aria-valuenow',String(list.purchased));
+ }
+ if(basketFill)basketFill.style.width=(list.count?list.purchased/list.count*100:0)+'%';
  const previous=match.value;
  match.replaceChildren(new Option('Adicionar como novo produto',''));
  rows.replaceChildren();
+ if(!list.items.length){
+  const empty=document.createElement('div');empty.className='market-basket-empty';
+  empty.textContent='Sua lista está vazia. Escaneie uma etiqueta ou adicione produtos no planejamento.';
+  rows.append(empty);
+ }
  for(const item of list.items){
   match.add(new Option(item.name+(item.purchased?' · comprado':''),String(item.id)));
-  const row=document.createElement('div');row.className='market-scan-row'+(item.purchased?' done':'');
-  const label=document.createElement('span');label.textContent=item.name+' · '+item.quantity+' '+item.unit;
-  const value=document.createElement('strong');value.textContent=item.purchased&&item.unit_price!==null?money(item.unit_price*item.quantity):'Pendente';
-  row.append(label,value);rows.append(row);
+  rows.append(buildBasketRow(item));
  }
  if([...match.options].some(x=>x.value===previous))match.value=previous;
 }
