@@ -25,6 +25,7 @@ return [
         'enabled' => '0', // Liberar depois de validar sandbox e webhooks
         'environment' => 'sandbox', // sandbox ou production
         'production_enabled' => '0', // Segunda trava antes de cobranças reais
+        'cancellation_production_enabled' => '0', // Habilitar cancelamento em produção somente após homologação no Asaas
         'api_key' => 'CHAVE_PRIVADA_ASAAS',
         'webhook_token' => 'TOKEN_WEBHOOK_EXCLUSIVO_MINIMO_32_CARACTERES',
         'invite_secret' => 'SEGREDO_INDEPENDENTE_MINIMO_32_CARACTERES',
