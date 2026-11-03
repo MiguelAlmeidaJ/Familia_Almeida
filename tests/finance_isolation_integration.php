@@ -14,6 +14,7 @@ function check(bool $ok,string $message):void {
  echo "[PASS] {$message}\n";
 }
 require_once __DIR__.'/../includes/billing_access.php';
+$billingCheck=bemora_billing_decision('ACTIVE',[]);
 $pdo=db();
 $pdo->exec("INSERT INTO users(name,email,password_hash) VALUES
 ('Membro A','a@example.test','test'),('Membro B','b@example.test','test'),('Membro C','c@example.test','test')");
