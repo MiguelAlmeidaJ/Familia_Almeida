@@ -19,7 +19,7 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2">
 <link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3">
 <?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=6">
-<link rel="stylesheet" href="/assets/bemora-market.css?v=4"></head>
+<link rel="stylesheet" href="/assets/bemora-market.css?v=5"></head>
 <body class="bemora-finance"><div class="shell ref-shell"><?php render_sidebar('compras',$csrf); ?><main><?php render_topbar($user); ?>
 <div class="content market-page">
 <header class="market-heading"><div><p class="eyebrow">COMPRAS EM FAMÍLIA</p><h1>Lista de compras</h1><p>Planeje em casa, confira preços no mercado e acompanhe o total conforme compra.</p></div><span class="market-badge"><i class="bi bi-basket2"></i> Bemora Compras</span></header>
@@ -68,6 +68,7 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 </div>
 <div class="market-camera" data-shape="wide"><video id="market-video" playsinline muted autoplay></video><div class="market-guides"><div>Centralize a etiqueta aqui</div></div><div class="market-placeholder" id="market-placeholder"><i class="bi bi-camera"></i><strong>Câmera desligada</strong><span>Ative a câmera ou escolha uma imagem.</span></div><canvas id="market-canvas" hidden></canvas></div>
 <div class="market-camera-actions"><button type="button" id="market-start">Ativar câmera</button><button type="button" id="market-capture" disabled>Capturar etiqueta</button><button type="button" id="market-stop" disabled>Desligar</button></div>
+<a class="market-basket-shortcut" href="#market-shopping-items"><i class="bi bi-basket2" aria-hidden="true"></i> Ver carrinho e alterar produtos <span aria-hidden="true">↓</span></a>
 <label class="market-file">Ou selecione uma foto da etiqueta<input type="file" id="market-photo" accept="image/*" capture="environment"></label>
 <div class="market-crop-editor" id="market-crop-editor" hidden>
 <strong><i class="bi bi-crop"></i> Selecione somente a etiqueta</strong>
@@ -98,5 +99,5 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <?php endif; ?>
 </div></main></div>
 <script>window.BEMORA_MARKET=<?= json_encode(['csrf'=>$csrf,'list'=>$current],JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR) ?>;</script>
-<script src="/assets/bemora-market.js?v=4" defer></script>
+<script src="/assets/bemora-market.js?v=5" defer></script>
 </body></html>
