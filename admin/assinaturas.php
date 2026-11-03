@@ -4,7 +4,13 @@ require_once __DIR__.'/../includes/admin_layout.php';
 require_once __DIR__.'/../includes/plans.php';
 require_admin_access();
 $pdo=db();$exists=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='subscription_orders'")->fetchColumn()===1;
+$cancelReady=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='subscription_cancellations'")->fetchColumn()===1;
 $orders=$exists?$pdo->query("SELECT o.id,o.plan_name,o.billing_cycle,o.amount,o.buyer_name,o.buyer_email,o.status,o.asaas_subscription_id,o.activated_tenant_id,o.created_at,o.paid_at FROM subscription_orders o ORDER BY o.id DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC):[];
+$cancellations=[];
+if($cancelReady){
+ $q=$pdo->query("SELECT c.tenant_id,c.order_id,c.status,c.access_until,c.requested_at FROM subscription_cancellations c");
+ foreach($q->fetchAll(PDO::FETCH_ASSOC) as $c)$cancellations[(int)$c['order_id']]=$c;
+}
 admin_shell_start('subscriptions','Assinaturas','Acompanhe solicitações de pagamento e assinaturas vinculadas às famílias.');
 ?><link rel="stylesheet" href="/assets/bemora-plans-admin.css?v=1">
 <div class="plans-admin">
@@ -15,7 +21,10 @@ admin_shell_start('subscriptions','Assinaturas','Acompanhe solicitações de pag
 <td><strong><?= e($order['buyer_name']) ?></strong><br><small><?= e($order['buyer_email']) ?></small></td>
 <td><?= e($order['plan_name']) ?><br><small><?= e(bemora_plan_cycles()[$order['billing_cycle']]??$order['billing_cycle']) ?></small></td>
 <td><?= e(bemora_plan_price((float)$order['amount'])) ?></td>
-<td><span class="member"><?= e(['initiated'=>'Iniciado','customer_created'=>'Cliente cadastrado','awaiting_payment'=>'Aguardando pagamento','paid'=>'Pago · aguardando cadastro','completed'=>'Família cadastrada','payment_attention'=>'Pagamento pendente'][$order['status']]??$order['status']) ?></span></td>
+<td><span class="member"><?= e(['initiated'=>'Iniciado','customer_created'=>'Cliente cadastrado','awaiting_payment'=>'Aguardando pagamento','paid'=>'Pago · aguardando cadastro','completed'=>'Família cadastrada','payment_attention'=>'Pagamento pendente'][$order['status']]??$order['status']) ?></span>
+<?php $cancel=$cancellations[(int)$order['id']]??null; if($cancel): ?>
+<br><small class="plans-cancel-status"><?= $cancel['status']==='confirmed'?'Renovação cancelada': 'Cancelamento em conciliação' ?><?= $cancel['status']==='confirmed' && $cancel['access_until']?' · Acesso até '.e(date('d/m/Y',strtotime($cancel['access_until']))):'' ?></small>
+<?php endif; ?></td>
 <td><?= $order['activated_tenant_id']?(int)$order['activated_tenant_id']:'—' ?></td><td><?= e(date('d/m/Y H:i',strtotime((string)$order['created_at']))) ?></td></tr>
 <?php endforeach; ?>
 <?php if(!$orders): ?><tr><td colspan="6">Nenhuma contratação foi iniciada.</td></tr><?php endif; ?>
