@@ -42,6 +42,7 @@ try{
     ||(string)($remote['status']??'')!=='ACTIVE')throw new RuntimeException('Assinatura não está ativa ou não corresponde à família.');
  $payments=bemora_cancellation_payment_list($sid,(string)$order['asaas_customer_id']);
  $accessUntil=bemora_cancellation_entitlement($remote,$payments,(string)$order['billing_cycle'],(string)($order['coupon_free_until']??''));
+ $pdo->prepare("UPDATE subscription_cancellations SET access_until=? WHERE id=? AND status='processing'")->execute([$accessUntil,$claimId]);
  $changed=bemora_asaas_request('PUT','/subscriptions/'.rawurlencode($sid),['status'=>'INACTIVE']);
  if((string)($changed['id']??'')!==$sid||(string)($changed['status']??'')!=='INACTIVE')
   throw new RuntimeException('O Asaas ainda não confirmou a interrupção das renovações.');
