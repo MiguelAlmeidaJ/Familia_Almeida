@@ -10,7 +10,8 @@ $q=$pdo->query("SELECT DISTINCT activated_tenant_id FROM subscription_orders WHE
 $ids=$q->fetchAll(PDO::FETCH_COLUMN);$failures=0;
 foreach($ids as $id){
  try{$result=bemora_reconcile_billing_access($pdo,(int)$id);echo "Tenant ".(int)$id.": ".$result['state']."\n";
-  try{$sent=bemora_send_billing_reminders($pdo,(int)$id);echo "Notificações enviadas: ".$sent."\n";bemora_cancellation_notice($pdo,(int)$id);}catch(Throwable $mailError){$failures++;error_log("Bemora: billing email process failed for tenant ".(int)$id);fwrite(STDERR,"Falha ao verificar notificações para família ".(int)$id."\n");}}
+  try{$sent=bemora_send_billing_reminders($pdo,(int)$id);echo "Notificações enviadas: ".$sent."\n";}catch(Throwable $mailError){$failures++;error_log("Bemora: billing email process failed for tenant ".(int)$id);fwrite(STDERR,"Falha ao verificar notificações para família ".(int)$id."\n");}
+  try{bemora_cancellation_notice($pdo,(int)$id);}catch(Throwable $cancelMailError){$failures++;error_log("Bemora: cancellation notice delivery failed for tenant ".(int)$id);}}
  catch(Throwable $e){$failures++;error_log('Bemora billing reconciliation tenant '.(int)$id.': '.$e->getMessage());fwrite(STDERR,"Erro ao conciliar família ".(int)$id."\n");}
 }
 exit($failures?1:0);
