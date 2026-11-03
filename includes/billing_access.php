@@ -6,6 +6,37 @@ require_once __DIR__.'/asaas.php';
 const BEMORA_BILLING_GRACE_DAYS = 3;
 // Non-active subscriptions cannot retain unrestricted access.
 
+/**
+ * Pure decision logic; cancellation, chargebacks and refunds take precedence
+ * over a promotional grace period. Used by production reconciler and tests.
+ */
+function bemora_billing_decision(string $subscriptionStatus,array $payments,string $trialUntil='',?DateTimeImmutable $today=null):array {
+ $today=$today??new DateTimeImmutable('today');
+ $status=strtoupper($subscriptionStatus);
+ if(!in_array($status,['ACTIVE','INACTIVE','EXPIRED'],true))throw new RuntimeException('Status da assinatura Asaas não reconhecido.');
+ if($status!=='ACTIVE')return ['state'=>'suspended','reason'=>'subscription_inactive','payment_id'=>null,'overdue_since'=>null,'days_overdue'=>0];
+ $oldest=null;$risk=null;
+ // Evaluate only the most recent billing window for reversals, not an ancient refunded charge.
+ $windowStart=$today->modify('-370 days');
+ foreach($payments as $p){
+  $date=(string)($p['dueDate']??'');
+  if(!preg_match('/^\\d{4}-\\d{2}-\\d{2}$/D',$date))throw new RuntimeException('Data de cobrança inválida.');
+  $due=new DateTimeImmutable($date);$state=strtoupper((string)($p['status']??''));
+  if($state==='')throw new RuntimeException('Cobrança sem status.');
+  if(in_array($state,['REFUNDED','REFUND_IN_PROGRESS','PARTIALLY_REFUNDED','CHARGEBACK_REQUESTED','CHARGEBACK_DISPUTE','AWAITING_CHARGEBACK_REVERSAL'],true) && $due>=$windowStart && $due<=$today){
+   if($risk===null||$date>$risk['date'])$risk=['date'=>$date,'id'=>(string)($p['id']??'')];
+  }
+  if(in_array($state,['PENDING','OVERDUE'],true)&&$due<$today){
+   if($oldest===null||$date<$oldest['date'])$oldest=['date'=>$date,'id'=>(string)($p['id']??'')];
+  }
+ }
+ if($risk)return ['state'=>'suspended','reason'=>'payment_reversed','payment_id'=>$risk['id'],'overdue_since'=>$risk['date'],'days_overdue'=>0];
+ $trialActive=preg_match('/^\\d{4}-\\d{2}-\\d{2}$/D',$trialUntil)&&$trialUntil>=$today->format('Y-m-d');
+ $days=$oldest?(int)(new DateTimeImmutable($oldest['date']))->diff($today)->format('%a'):0;
+ $state=$trialActive?'active':($oldest&&$days>BEMORA_BILLING_GRACE_DAYS?'suspended':($oldest?'grace':'active'));
+ return ['state'=>$state,'reason'=>$oldest?'overdue':null,'payment_id'=>$oldest['id']??null,'overdue_since'=>$oldest['date']??null,'days_overdue'=>$days];
+}
+
 function bemora_billing_access_ready(PDO $pdo):bool {
  static $ready=null;
  if($ready===null){$ready=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='tenant_billing_access'")->fetchColumn()===1;}
@@ -32,27 +63,24 @@ function bemora_reconcile_billing_access(PDO $pdo,int $tenantId):array {
  $subscriptionId=(string)$order['asaas_subscription_id'];
  $sub=bemora_asaas_request('GET','/subscriptions/'.rawurlencode($subscriptionId));
  if((string)($sub['id']??'')!==$subscriptionId||(string)($sub['customer']??'')!==(string)$order['asaas_customer_id'])throw new RuntimeException('Assinatura ou cliente divergente.');
- $oldest=null;$offset=0;$pageSize=100;
+ $payments=[];$offset=0;$pageSize=100;
  do {
   $page=bemora_asaas_request('GET','/subscriptions/'.rawurlencode($subscriptionId).'/payments?limit='.$pageSize.'&offset='.$offset);
   $items=$page['data']??null;if(!is_array($items))throw new RuntimeException('Lista de cobranças inválida.');
   foreach($items as $payment){
-   if(!is_array($payment)||(string)($payment['subscription']??'')!==$subscriptionId||(string)($payment['customer']??'')!==(string)$order['asaas_customer_id'])continue;
-   $status=(string)($payment['status']??'');$date=(string)($payment['dueDate']??'');
-   if(!in_array($status,['OVERDUE','PENDING'],true)||!preg_match('/^\d{4}-\d{2}-\d{2}$/D',$date))continue;
-   $due=new DateTimeImmutable($date);
-   if($due >= $today)continue;
-   if($oldest===null||$date<$oldest['date'])$oldest=['date'=>$date,'id'=>(string)($payment['id']??'')];
+   if(!is_array($payment))throw new RuntimeException('Item de cobrança inválido.');
+   if((string)($payment['subscription']??'')!==$subscriptionId||(string)($payment['customer']??'')!==(string)$order['asaas_customer_id'])throw new RuntimeException('Cobrança vinculada a outra assinatura ou cliente.');
+   $payments[]=$payment;
   }
   $offset+=count($items);
   $hasMore=($page['hasMore']??false)===true;
   if($hasMore&&count($items)===0)throw new RuntimeException('Paginação de cobrança inconsistente.');
   if($offset>10000)throw new RuntimeException('Limite de conciliação excedido.');
  }while($hasMore);
- $trialUntil=(string)($order['coupon_free_until']??'');
- $trialActive=preg_match('/^\d{4}-\d{2}-\d{2}$/D',$trialUntil)&&$trialUntil>=$today->format('Y-m-d');
- $daysOverdue=$oldest?(int)(new DateTimeImmutable($oldest['date']))->diff($today)->format('%a'):0;
- $state=$trialActive?'active':($oldest&&$daysOverdue>BEMORA_BILLING_GRACE_DAYS?'suspended':($oldest?'grace':'active'));
+ $decision=bemora_billing_decision((string)($sub['status']??''),$payments,(string)($order['coupon_free_until']??''),$today);
+ $state=$decision['state'];
+ $oldest=$decision['payment_id']!==null?['id'=>$decision['payment_id'],'date'=>$decision['overdue_since']]:null;
+ $daysOverdue=$decision['days_overdue'];
  // In a race, serialize updates for this tenant and preserve the first suspension timestamp.
  $pdo->beginTransaction();
  try {
@@ -67,7 +95,7 @@ function bemora_reconcile_billing_access(PDO $pdo,int $tenantId):array {
    ]);
   $pdo->commit();
  }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
- return ['state'=>$state,'overdue_since'=>$oldest['date']??null,'overdue_payment_id'=>$oldest['id']??null,'days_overdue'=>$daysOverdue];
+ return ['state'=>$state,'reason'=>$decision['reason'],'overdue_since'=>$oldest['date']??null,'overdue_payment_id'=>$oldest['id']??null,'days_overdue'=>$daysOverdue];
 }
 
 /** Manual suspension is independent of automatic billing state. */
