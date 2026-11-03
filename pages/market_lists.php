@@ -120,7 +120,7 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <dialog id="market-product-dialog" class="market-dialog market-product-dialog" aria-labelledby="market-product-heading">
 <div class="market-dialog-header"><div><span class="market-items-kicker">PLANEJAR COMPRAS</span><h2 id="market-product-heading">Adicionar produto</h2></div><button class="market-dialog-close" id="market-close-product" type="button" aria-label="Fechar"><i class="bi bi-x-lg"></i></button></div>
 <div class="market-dialog-body">
-<form class="market-add market-product-modal-form" method="post" action="/compras/acao"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="list_id" value="<?= $current['id'] ?>"><input type="hidden" name="action" value="add_item">
+<form id="market-add-product-form" class="market-add market-product-modal-form" method="post" action="/compras/acao"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="list_id" value="<?= $current['id'] ?>"><input type="hidden" name="action" value="add_item">
 <label>Nome do produto<input name="name" maxlength="160" minlength="2" placeholder="Ex.: Arroz 5 kg" required <?= $current['status']==='completed'?'disabled':'' ?>></label>
 <div class="market-inline"><label>Quantidade<input name="quantity" type="number" min="0.001" step="0.001" value="1" required <?= $current['status']==='completed'?'disabled':'' ?>></label><label>Unidade<select name="unit"><?php foreach(['un'=>'un','kg'=>'kg','g'=>'g','L'=>'L','ml'=>'ml','pct'=>'pacote','cx'=>'caixa'] as $key=>$val): ?><option value="<?= e($key) ?>"><?= e($val) ?></option><?php endforeach; ?></select></label><button type="submit" <?= $current['status']==='completed'?'disabled':'' ?>>Adicionar</button></div>
 </form>
@@ -134,5 +134,5 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 </dialog>
 <?php endif; ?>
 <script>window.BEMORA_MARKET=<?= json_encode(['csrf'=>$csrf,'list'=>$current],JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR) ?>;</script>
-<script src="/assets/bemora-market.js?v=7" defer></script>
+<script src="/assets/bemora-market.js?v=7" defer></script><script src="/assets/bemora-market-popups.js?v=1" defer></script>
 </body></html>
