@@ -41,3 +41,54 @@
 .market-camera[data-shape="tall"] .market-guides>div{width:46%;height:84%}
 .market-camera[data-shape="wide"] .market-guides>div{width:92%;height:36%}
 @media(max-width:420px){.market-shape-buttons{gap:5px}.market-page .market-shape{font-size:10px;padding:9px 3px}.market-page .market-shape i{font-size:16px}}
+
+/* Market basket: quick reversible actions while shopping. */
+.market-confirm-panel{min-width:0}
+.market-confirm-panel>.market-scan-items{padding-top:18px;margin-top:25px}
+.market-items-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.market-items-head h3{font-size:18px;letter-spacing:-.02em;margin:3px 0 6px;color:#0c5643}
+.market-items-head p{margin:0;color:#789386;font-size:11px;line-height:1.5}
+.market-items-kicker{display:block;color:#149475;font-size:10px;font-weight:800;letter-spacing:.1em}
+.market-items-count{flex:0 0 auto;padding:7px 11px;border-radius:20px;background:#e7f6ed;color:#0b7056;font-weight:800;font-size:12px}
+.market-progress-track{height:7px;overflow:hidden;background:#e6eee8;border-radius:20px;margin:15px 0 13px}
+.market-progress-track span{display:block;height:100%;background:#1a9f77;border-radius:20px;transition:width .2s}
+.market-basket-total{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 15px;padding:12px 15px;background:#ecf7ef;border:1px solid #d5e9db;border-radius:11px}
+.market-basket-total span{font-size:12px;color:#487b64;font-weight:700}
+.market-basket-total strong{font-size:19px;color:#0a5844;font-variant-numeric:tabular-nums}
+.market-basket-list{display:grid;gap:10px;min-width:0}
+.market-basket-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;padding:13px;border:1px solid #dfece2;background:#fff;border-radius:12px;min-width:0}
+.market-basket-item.is-purchased{background:#f6fcf7;border-color:#c8e7d4}
+.market-basket-main{display:flex;align-items:center;gap:10px;min-width:0}
+.market-basket-check{flex:0 0 29px;height:29px;display:grid;place-items:center;border-radius:10px;border:1px solid #d7e6dc;color:#849f8b;font-size:18px}
+.market-basket-item.is-purchased .market-basket-check{background:#dff4e7;color:#087859;border-color:#b8dec8;font-weight:800}
+.market-basket-description{min-width:0}
+.market-basket-description strong{display:block;color:#1a5844;overflow-wrap:anywhere;line-height:1.35;font-size:12.5px}
+.market-basket-description small{display:block;color:#779285;font-size:11px;margin-top:4px;line-height:1.45}
+.market-basket-price{align-self:center;color:#849b8b;font-size:12px;white-space:nowrap}
+.market-basket-price.is-counted{color:#07644e;font-size:13px}
+.market-basket-actions{grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-left:39px}
+.market-page .market-basket-actions button{font-size:11px;font-weight:750;padding:9px 10px;border-radius:9px;min-height:39px;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.market-page .market-basket-undo{background:#e7f4eb;color:#096e55;border:1px solid #c6e5d1}
+.market-page .market-basket-undo:hover{background:#d6eddc}
+.market-page .market-basket-check-buy{background:#0a795a;color:#fff}
+.market-page .market-basket-remove{background:transparent;border:1px solid #eadedb;color:#a2534b}
+.market-page .market-basket-remove:hover{background:#fff0ee;color:#9f3f37}
+.market-basket-waiting{color:#819687;font-size:11px;font-weight:650}
+.market-basket-empty{border:1px dashed #d5e7db;border-radius:11px;padding:23px 15px;color:#7b9688;font-size:12px;line-height:1.6;text-align:center;background:#fafdfa}
+.market-shopping-feedback{min-height:17px;font-size:11px;line-height:1.6;color:#08765a;margin:12px 0 0}
+.market-shopping-feedback.is-error{color:#ac5240}
+@media(max-width:750px){
+ .market-scanner-layout{gap:13px}
+ .market-confirm-panel{display:flex;flex-direction:column}
+ .market-confirm-panel>.market-scan-items{order:1;margin:0 0 24px;padding:17px 0 21px;border-bottom:1px solid #e1ede3;border-top:0}
+ .market-confirm-panel>h2{order:2}
+ .market-confirm-panel>.market-muted{order:2}
+ .market-confirm-panel>form{order:3}
+ .market-basket-item{padding:12px 11px;gap:8px}
+ .market-basket-actions{padding-left:0;padding-right:34px}
+ .market-page .market-basket-actions button{padding:10px 9px;min-height:42px}
+ .market-basket-description strong{font-size:12px}
+ .market-basket-total{padding:12px}
+ .market-basket-total strong{font-size:18px}
+ .market-scan-items{padding-bottom:20px}
+}
