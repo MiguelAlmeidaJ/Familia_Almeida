@@ -409,6 +409,7 @@ cropApply.addEventListener('click',()=>{
 form.addEventListener('submit',async e=>{
  e.preventDefault();
  if(list.status==='completed'){setStatus('Reabra a lista antes de registrar compras.');return;}
+ if(basketBusy){setStatus('Aguarde a atualização do carrinho antes de confirmar outro produto.');return;}
  if(!form.reportValidity())return;
  const selected=list.items.find(x=>String(x.id)===match.value);
  const params=new URLSearchParams({ajax:'1',csrf_token:app.csrf,list_id:String(list.id),
@@ -423,6 +424,7 @@ form.addEventListener('submit',async e=>{
   list=data.list;render();
   name.value='';price.value='';qty.value='1';unit.value='un';match.value='';
   setStatus('Produto e preço salvos. Você pode continuar escaneando a próxima etiqueta.');
+  if(window.matchMedia('(max-width: 750px)').matches){$('market-shopping-items')?.scrollIntoView({behavior:'smooth',block:'start'});}
  }catch(error){setStatus(error.message||'Erro ao salvar produto.');}
  finally{save.disabled=false;}
 });
