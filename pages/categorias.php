@@ -18,7 +18,7 @@ $ready=categories_ready($pdo);$groups=category_list($pdo);
 .category-row:last-child{border:0}.category-row button{border:0;background:transparent;color:#b44141;cursor:pointer}
 .category-group{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media(max-width:680px){.category-group{grid-template-columns:1fr}}
-</style><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=5"><link rel="stylesheet" href="/assets/bemora-categories-refresh.css?v=1"></head><body class="bemora-finance"><div class="shell ref-shell"><?php render_sidebar('categorias',$csrf);?><main><?php render_topbar($user);?>
+</style><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=6"><link rel="stylesheet" href="/assets/bemora-categories-refresh.css?v=1"></head><body class="bemora-finance"><div class="shell ref-shell"><?php render_sidebar('categorias',$csrf);?><main><?php render_topbar($user);?>
 <div class="category-page"><p class="eyebrow">ORGANIZAÇÃO</p><h1>Categorias</h1>
 <p>Organize os tipos de lançamentos da sua família. Categorias também podem ser criadas durante o registro de uma movimentação.</p>
 
