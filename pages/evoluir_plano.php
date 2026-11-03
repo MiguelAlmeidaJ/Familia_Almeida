@@ -5,9 +5,11 @@ require_once __DIR__.'/../includes/layout.php';
 require_once __DIR__.'/../includes/plans.php';
 require_once __DIR__.'/../includes/asaas.php';
 require_once __DIR__.'/../includes/paid_plan_changes.php';
+require_once __DIR__.'/../includes/subscription_cancellation.php';
 header('Cache-Control: private, no-store, max-age=0');
 header('Pragma: no-cache');
 $user=require_family_access();$pdo=db();$tid=(int)$user['tenant_id'];$csrf=csrf_token();$flash=pull_flash();
+if(bemora_cancellation_for_family($pdo,$tid)){flash('error','Há um cancelamento de assinatura registrado. Consulte Minha assinatura.');redirect_to('/minha-assinatura');}
 $q=$pdo->prepare("SELECT o.*,t.name family_name FROM subscription_orders o JOIN tenants t ON t.id=o.activated_tenant_id WHERE o.activated_tenant_id=? AND o.status='completed' ORDER BY o.id DESC LIMIT 1");
 $q->execute([$tid]);$order=$q->fetch(PDO::FETCH_ASSOC);
 $q=$pdo->prepare("SELECT role FROM tenant_users WHERE tenant_id=? AND user_id=?");$q->execute([$tid,(int)$user['id']]);$isAdmin=$q->fetchColumn()==='family_admin';
