@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/../includes/admin_layout.php';
+require_once __DIR__.'/../includes/billing_access.php';
 require_admin_access();
 if($_SERVER['REQUEST_METHOD']!=='POST'){http_response_code(405);exit;}
 verify_csrf();
@@ -35,6 +36,11 @@ try{
    }
   }
   flash('success',$message);
+ } elseif(in_array($action,['manual_suspend','manual_resume'],true)){
+  $id=filter_var($_POST['id']??null,FILTER_VALIDATE_INT);
+  if(!$id||$id<1)throw new RuntimeException('Família inválida.');
+  bemora_billing_manual_suspend($pdo,(int)$id,(int)$_SESSION['user_id'],$action==='manual_suspend');
+  flash('success',$action==='manual_suspend'?'Suspensão administrativa ativada. Acesso financeiro bloqueado; os dados foram preservados.':'Suspensão administrativa removida. Caso haja inadimplência financeira, a suspensão automática permanece.');
  } elseif(in_array($action,['archive','maintenance','activate','rename','set_limit','set_admin','assign_internal_plan'],true)){
   $id=(int)($_POST['id']??0);if($id<1)throw new RuntimeException('Família inválida.');
   $pdo->beginTransaction();
@@ -85,5 +91,5 @@ try{
  if($pdo->inTransaction())$pdo->rollBack();
  flash('error',$e instanceof PDOException?'Conflito de dados ou nome de família já utilizado.':$e->getMessage());
 }
-if(in_array($action,['set_limit','set_admin','rename','assign_internal_plan'],true) && (int)($_POST['id']??0)>0)redirect_to('/admin/familia?id='.(int)$_POST['id']);
+if(in_array($action,['set_limit','set_admin','rename','assign_internal_plan','manual_suspend','manual_resume'],true) && (int)($_POST['id']??0)>0)redirect_to('/admin/familia?id='.(int)$_POST['id']);
 redirect_to('/admin/tenants');
