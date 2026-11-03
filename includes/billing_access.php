@@ -144,11 +144,19 @@ function bemora_reconcile_billing_access(PDO $pdo,int $tenantId):array {
   if($hasMore&&count($items)===0)throw new RuntimeException('Paginação de cobrança inconsistente.');
   if($offset>10000)throw new RuntimeException('Limite de conciliação excedido.');
  }while($hasMore);
- if($cancellation && in_array((string)$cancellation['status'],['processing','reconciliation_required'],true)
-   && (string)($sub['status']??'')==='INACTIVE'){
+ if($cancellation && in_array((string)$cancellation['status'],['processing','reconciliation_required'],true)){
   try{
-   if(bemora_cancellation_recover($pdo,$cancellation))$cancellation=bemora_cancellation_for_family($pdo,$tenantId);
+   if(bemora_cancellation_recover($pdo,$cancellation)){
+    $cancellation=bemora_cancellation_for_family($pdo,$tenantId);
+    $sub=bemora_asaas_request('GET','/subscriptions/'.rawurlencode($subscriptionId));
+   }
   }catch(Throwable $cancelError){error_log('Bemora: cancelamento pendente de conciliação.');}
+ }
+ if($cancellation && $cancellation['status']==='confirmed' && (string)($sub['status']??'')==='ACTIVE'){
+  $updated=bemora_asaas_request('PUT','/subscriptions/'.rawurlencode($subscriptionId),['status'=>'INACTIVE']);
+  if((string)($updated['id']??'')!==$subscriptionId||(string)($updated['status']??'')!=='INACTIVE')
+   throw new RuntimeException('Cancelamento não sincronizado com Asaas.');
+  $sub=$updated;
  }
  bemora_reconcile_upgrade_reversals($pdo,$tenantId);
  $decision=bemora_billing_decision((string)($sub['status']??''),$payments,(string)($order['coupon_free_until']??''),$today);
