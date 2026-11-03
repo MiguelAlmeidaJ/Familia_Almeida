@@ -55,7 +55,7 @@ $cycles=bemora_plan_cycles();
 ?><!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Minha assinatura • Bemora</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?>
-<link rel="stylesheet" href="/assets/bemora-sidebar.css?v=5"><link rel="stylesheet" href="/assets/bemora-support.css?v=1"><link rel="stylesheet" href="/assets/bemora-subscription.css?v=3"></head>
+<link rel="stylesheet" href="/assets/bemora-sidebar.css?v=5"><link rel="stylesheet" href="/assets/bemora-subscription.css?v=3"></head>
 <body class="bemora-finance"><div class="shell ref-shell"><?php render_sidebar('minha-assinatura',$csrf); ?><main><?php render_topbar($user); ?><div class="content bemora-subscription"><?php page_header('MINHA CONTA','Minha assinatura','Acompanhe seu plano, próximas cobranças e faturas em um só lugar.'); ?>
 <?php if($flash): ?><p class="sub-support-notice" role="status"><?= e($flash['message']) ?></p><?php endif; ?>
 <?php if((int)($billingAccess['manual_suspended']??0)===1): ?>
@@ -82,18 +82,6 @@ $cycles=bemora_plan_cycles();
 <?php else: ?><div class="sub-table-scroll"><table class="sub-table"><thead><tr><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Fatura</th></tr></thead><tbody>
 <?php foreach($invoices as $invoice): ?><tr><td><?= preg_match('/^\d{4}-\d{2}-\d{2}$/',$invoice['date'])?e(date('d/m/Y',strtotime($invoice['date']))):'—' ?></td><td><?= bemora_plan_price($invoice['amount']) ?></td><td><?= e(['PENDING'=>'Pendente','RECEIVED'=>'Recebida','CONFIRMED'=>'Confirmada','OVERDUE'=>'Vencida','REFUNDED'=>'Reembolsada','CANCELLED'=>'Cancelada'][$invoice['status']]??$invoice['status']) ?></td><td><?php if($invoice['url']): ?><a href="<?= e($invoice['url']) ?>" target="_blank" rel="noopener noreferrer">Visualizar <i class="bi bi-box-arrow-up-right"></i></a><?php else: ?>—<?php endif; ?></td></tr><?php endforeach; ?>
 </tbody></table></div><?php endif; ?></section>
-<?php endif; ?><section class="sub-card sub-support-entry"><div><span class="sub-kicker">PRECISA DE AJUDA?</span><h2>Podemos ajudar com sua assinatura.</h2><p>Conte o que aconteceu e escolha como prefere receber o retorno da nossa equipe.</p></div><button type="button" class="sub-btn" id="bemora-report-open"><i class="bi bi-chat-dots" aria-hidden="true"></i> Relatar problema</button></section>
-</div></main></div>
-<dialog class="bemora-support-dialog" id="bemora-support-dialog" aria-labelledby="bemora-support-title">
-<div class="support-dialog-head"><div><span class="sub-kicker">SUPORTE BEMORA</span><h2 id="bemora-support-title">Relatar problema</h2><p>Preencha os detalhes para receber ajuda da nossa equipe.</p></div><button type="button" id="bemora-report-close" aria-label="Fechar formulário"><i class="bi bi-x-lg"></i></button></div>
-<form method="post" action="/suporte/relatar" id="bemora-report-form">
-<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-<label for="support-description">Descrição do problema <span aria-hidden="true">*</span></label>
-<textarea name="description" id="support-description" maxlength="3000" minlength="15" rows="5" placeholder="Descreva o que aconteceu, o que tentou fazer e a mensagem exibida..." required></textarea>
-<fieldset class="support-contact-method"><legend>Como prefere receber o contato?</legend><label><input type="radio" name="contact_method" value="whatsapp" checked> WhatsApp</label><label><input type="radio" name="contact_method" value="email"> E-mail</label></fieldset>
-<label for="support-contact-value" id="support-contact-label">WhatsApp com DDD <span aria-hidden="true">*</span></label>
-<input id="support-contact-value" name="contact_value" type="tel" inputmode="tel" autocomplete="tel" maxlength="16" placeholder="(00) 00000-0000" required>
-<p class="support-privacy">Seus dados de contato serão usados apenas para atender este relato. Não informe senhas ou dados de cartão.</p>
-<div class="support-dialog-actions"><button type="button" class="support-cancel" id="bemora-report-cancel">Cancelar</button><button type="submit" class="sub-btn"><i class="bi bi-send" aria-hidden="true"></i> Enviar relato</button></div>
-</form></dialog>
-<script src="/assets/bemora-support.js?v=1" defer></script></body></html>
+<?php endif; ?></div></main></div>
+
+</body></html>
