@@ -4,6 +4,7 @@ require_once __DIR__.'/../includes/auth.php';
 require_once __DIR__.'/../includes/layout.php';
 require_once __DIR__.'/../includes/asaas.php';
 require_once __DIR__.'/../includes/billing_access.php';
+require_once __DIR__.'/../includes/subscription_cancellation.php';
 header('Cache-Control: private, no-store, max-age=0');
 header('Pragma: no-cache');
 $user=require_family_access();$pdo=db();$csrf=csrf_token();$tenantId=(int)$user['tenant_id'];
@@ -27,6 +28,10 @@ if(!$order){
   $q->execute([$tenantId]);$internalPlan=$q->fetch(PDO::FETCH_ASSOC)?:null;
  }
 }
+$cancellation=bemora_cancellation_for_family($pdo,$tenantId);
+$isCancelled=($cancellation['status']??'')==='confirmed';
+$cancelPending=in_array((string)($cancellation['status']??''),['processing','reconciliation_required'],true);
+$isFamilyAdmin=($family['role']??'')==='family_admin';
 $billingAccess=bemora_billing_access($pdo,$tenantId);
 if(($billingAccess['state']??'active')==='suspended' && !empty($billingAccess['checked_at']) && strtotime((string)$billingAccess['checked_at'])<time()-120){
  try{$billingAccess=bemora_reconcile_billing_access($pdo,$tenantId);}
@@ -50,12 +55,13 @@ if($order && !empty($order['asaas_subscription_id'])){
 $freeUntil=null;
 if($order && !empty($order['coupon_free_until'])){try{$freeUntil=new DateTimeImmutable((string)$order['coupon_free_until']);}catch(Throwable $ignored){}}
 $referenceDate=$freeUntil && $freeUntil>new DateTimeImmutable('today')?$freeUntil:$nextDue;
+if($isCancelled)$referenceDate=!empty($cancellation['access_until'])?new DateTimeImmutable((string)$cancellation['access_until']):null;
 $days=$referenceDate?(int)(new DateTimeImmutable('today'))->diff($referenceDate)->format('%r%a'):null;
 $cycles=bemora_plan_cycles();
 ?><!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Minha assinatura • Bemora</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?>
-<link rel="stylesheet" href="/assets/bemora-sidebar.css?v=5"><link rel="stylesheet" href="/assets/bemora-subscription.css?v=4"></head>
+<link rel="stylesheet" href="/assets/bemora-sidebar.css?v=5"><link rel="stylesheet" href="/assets/bemora-subscription.css?v=5"></head>
 <body class="bemora-finance"><div class="shell ref-shell"><?php render_sidebar('minha-assinatura',$csrf); ?><main><?php render_topbar($user); ?><div class="content bemora-subscription"><?php page_header('MINHA CONTA','Minha assinatura','Acompanhe seu plano, próximas cobranças e faturas em um só lugar.'); ?>
 <?php if($flash): $flashIsSuccess=($flash['type']??'')==='success'; $flashMessage=(string)($flash['message']??''); $isSupportReport=$flashIsSuccess && preg_match('/^Relato #(\\d+)\\b/u',$flashMessage,$ticketMatch)===1; ?>
 <section class="bemora-feedback <?= $flashIsSuccess?'is-success':'is-error' ?>" id="bemora-feedback" role="<?= $flashIsSuccess?'status':'alert' ?>" aria-live="<?= $flashIsSuccess?'polite':'assertive' ?>" aria-labelledby="bemora-feedback-title">
@@ -74,7 +80,9 @@ $cycles=bemora_plan_cycles();
 <?php endif; ?>
 <?php if(($billingAccess['state']??'active')==='suspended'): ?>
 <section class="sub-card sub-billing-alert" role="alert"><span class="sub-kicker">ASSINATURA REQUER ATENÇÃO</span><h2>Acesso financeiro temporariamente suspenso</h2>
-<?php if(in_array((string)($billingAccess['reason']??''),['subscription_inactive','subscription_deleted','subscription_missing'],true)): ?>
+<?php if(($billingAccess['reason']??'')==='subscription_canceled'): ?>
+<p>O período de acesso da sua assinatura cancelada terminou. Suas informações continuam preservadas. Para contratar novamente, entre em contato com o suporte.</p>
+<?php elseif(in_array((string)($billingAccess['reason']??''),['subscription_inactive','subscription_deleted','subscription_missing'],true)): ?>
 <p>Esta assinatura foi interrompida ou cancelada no Asaas. Seus dados permanecem preservados. Para reativar o serviço, entre em contato com o suporte e regularize a situação contratual.</p>
 <?php elseif(($billingAccess['reason']??'')==='upgrade_payment_reversed'): ?>
 <p>Uma cobrança relacionada à evolução do seu plano foi estornada ou contestada. A assinatura requer conciliação financeira. Seus dados continuam preservados. Entre em contato com o suporte.</p>
@@ -91,17 +99,53 @@ $cycles=bemora_plan_cycles();
 <?php elseif(!$order): ?>
 <section class="sub-card"><h2>Assinatura não vinculada</h2><p>Não encontramos uma contratação comercial vinculada a esta família. Isso pode ocorrer em contas anteriores ao lançamento dos planos.</p><a class="sub-btn" href="/#planos">Conhecer planos</a></section>
 <?php else: ?>
-<div class="sub-grid"><section class="sub-card sub-main"><span class="sub-kicker">SEU PLANO ATUAL</span><div class="sub-heading"><h2><?= e($order['plan_name']) ?></h2><span class="sub-pill"><?= $freeUntil && $freeUntil>new DateTimeImmutable('today')?'Período gratuito':($subscriptionState==='ACTIVE'?'Assinatura ativa':'Situação: '.e($subscriptionState?:$order['status'])) ?></span></div>
+<div class="sub-grid"><section class="sub-card sub-main"><span class="sub-kicker">SEU PLANO ATUAL</span><div class="sub-heading"><h2><?= e($order['plan_name']) ?></h2><span class="sub-pill"><?= $isCancelled?'Renovação cancelada':($cancelPending?'Cancelamento em análise':($freeUntil && $freeUntil>new DateTimeImmutable('today')?'Período gratuito':($subscriptionState==='ACTIVE'?'Assinatura ativa':'Situação: '.e($subscriptionState?:$order['status'])))) ?></span></div>
 <p><?= e($cycles[$order['billing_cycle']]??$order['billing_cycle']) ?> · Até <?= (int)$order['max_members'] ?> <?= (int)$order['max_members']===1?'membro':'membros' ?></p>
-<div class="sub-metrics"><div><small>Valor recorrente</small><strong><?= bemora_plan_price((float)($order['recurring_amount']??$order['amount'])) ?></strong></div><div><small><?= $freeUntil && $freeUntil>new DateTimeImmutable('today')?'Fim do período gratuito':'Próxima cobrança prevista' ?></small><strong><?= $referenceDate?e($referenceDate->format('d/m/Y')):'A confirmar' ?></strong></div><div><small>Dias até a próxima cobrança</small><strong><?= $days!==null && $days>=0?$days.' dias':'A confirmar' ?></strong></div></div>
-<p class="sub-note">Planos recorrentes não possuem uma data fixa de expiração enquanto permanecerem ativos. A data acima indica a próxima cobrança prevista, não o encerramento do acesso.</p></section>
-<?php if(!bemora_billing_is_blocked($billingAccess)): ?><section class="sub-card"><span class="sub-kicker">EVOLUA COM O BEMORA</span><h2>Precisa de mais espaço?</h2><p>Consulte os planos disponíveis para incluir mais membros ou mudar sua modalidade.</p><a class="sub-btn" href="/evoluir-plano">Comparar e evoluir meu plano <i class="bi bi-arrow-up-right"></i></a><p class="sub-note">Compare planos e registre sua solicitação. A troca da assinatura existente depende de confirmação; não fazemos uma nova cobrança automaticamente.</p></section><?php endif; ?></div>
+<div class="sub-metrics"><div><small>Valor recorrente</small><strong><?= bemora_plan_price((float)($order['recurring_amount']??$order['amount'])) ?></strong></div><div><small><?= $isCancelled?'Acesso disponível até':($freeUntil && $freeUntil>new DateTimeImmutable('today')?'Fim do período gratuito':'Próxima cobrança prevista') ?></small><strong><?= $referenceDate?e($referenceDate->format('d/m/Y')):($isCancelled?'Encerrado':'A confirmar') ?></strong></div><div><small><?= $isCancelled?'Dias restantes de acesso':'Dias até a próxima cobrança' ?></small><strong><?= $days!==null && $days>=0?$days.' dias':'A confirmar' ?></strong></div></div>
+<p class="sub-note"><?= $isCancelled?'A renovação automática foi interrompida. Nenhuma nova cobrança recorrente será gerada pelo Asaas. Seus dados estão preservados.':'Planos recorrentes não possuem uma data fixa de expiração enquanto permanecerem ativos. A data acima indica a próxima cobrança prevista, não o encerramento do acesso.' ?></p></section>
+<?php if(!bemora_billing_is_blocked($billingAccess) && !$cancellation): ?><section class="sub-card"><span class="sub-kicker">EVOLUA COM O BEMORA</span><h2>Precisa de mais espaço?</h2><p>Consulte os planos disponíveis para incluir mais membros ou mudar sua modalidade.</p><a class="sub-btn" href="/evoluir-plano">Comparar e evoluir meu plano <i class="bi bi-arrow-up-right"></i></a><p class="sub-note">Compare planos e registre sua solicitação. A troca da assinatura existente depende de confirmação; não fazemos uma nova cobrança automaticamente.</p></section><?php endif; ?></div>
 <section class="sub-card"><div class="sub-heading"><div><span class="sub-kicker">HISTÓRICO DE PAGAMENTOS</span><h2>Minhas faturas</h2></div><span class="sub-count"><?= count($invoices) ?> encontrada(s)</span></div>
 <?php if($billingWarning): ?><p class="sub-warning" role="status"><?= e($billingWarning) ?></p><?php endif; ?>
 <?php if(!$invoices): ?><p class="sub-empty">Ainda não há faturas disponíveis para esta assinatura. As próximas cobranças aparecerão aqui quando forem geradas pelo Asaas.</p>
 <?php else: ?><div class="sub-table-scroll"><table class="sub-table"><thead><tr><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Fatura</th></tr></thead><tbody>
 <?php foreach($invoices as $invoice): ?><tr><td><?= preg_match('/^\d{4}-\d{2}-\d{2}$/',$invoice['date'])?e(date('d/m/Y',strtotime($invoice['date']))):'—' ?></td><td><?= bemora_plan_price($invoice['amount']) ?></td><td><?= e(['PENDING'=>'Pendente','RECEIVED'=>'Recebida','CONFIRMED'=>'Confirmada','OVERDUE'=>'Vencida','REFUNDED'=>'Reembolsada','CANCELLED'=>'Cancelada'][$invoice['status']]??$invoice['status']) ?></td><td><?php if($invoice['url']): ?><a href="<?= e($invoice['url']) ?>" target="_blank" rel="noopener noreferrer">Visualizar <i class="bi bi-box-arrow-up-right"></i></a><?php else: ?>—<?php endif; ?></td></tr><?php endforeach; ?>
 </tbody></table></div><?php endif; ?></section>
+<section class="sub-card bemora-cancellation">
+<?php if($isCancelled): ?>
+ <span class="sub-kicker">CANCELAMENTO CONFIRMADO</span>
+ <h2>Renovação automática encerrada</h2>
+ <p>Não serão geradas novas cobranças recorrentes. <?= !empty($cancellation['access_until'])?'O acesso financeiro permanece até '.e(date('d/m/Y',strtotime((string)$cancellation['access_until']))).'.':'O acesso financeiro já foi encerrado.' ?> Os dados da família estão preservados.</p>
+ <p class="sub-note">Faturas emitidas antes do cancelamento continuam disponíveis, quando aplicável. Para uma nova contratação, fale com o suporte.</p>
+<?php elseif($cancelPending): ?>
+ <span class="sub-kicker">CANCELAMENTO EM CONCILIAÇÃO</span>
+ <h2>Estamos verificando seu cancelamento</h2>
+ <p>A solicitação foi registrada, mas ainda precisa de confirmação do Asaas. Entre em contato pelo botão Relatar problema para obter ajuda. Não realize uma segunda solicitação.</p>
+<?php elseif($isFamilyAdmin): ?>
+ <span class="sub-kicker">GERENCIAMENTO DA ASSINATURA</span>
+ <h2>Deseja cancelar sua assinatura?</h2>
+ <p>Você pode interromper as próximas renovações sem apagar as informações da sua família. O prazo restante será verificado pelas cobranças confirmadas no Asaas.</p>
+ <button type="button" id="bemora-cancel-open" class="bemora-cancel-button" aria-haspopup="dialog" aria-controls="bemora-cancel-dialog"><i class="bi bi-x-circle" aria-hidden="true"></i> Cancelar renovação da assinatura</button>
+<?php else: ?>
+ <span class="sub-kicker">GERENCIAMENTO</span><h2>Cancelamento de assinatura</h2>
+ <p>Somente o administrador familiar pode cancelar a renovação desta assinatura.</p>
+<?php endif; ?>
+</section>
 <?php endif; ?></div></main></div>
+<?php if($order && $isFamilyAdmin && !$cancellation): ?>
+<dialog class="bemora-cancel-dialog" id="bemora-cancel-dialog" aria-labelledby="bemora-cancel-title" aria-describedby="bemora-cancel-description">
+ <div class="bemora-cancel-dialog-top"><i class="bi bi-exclamation-circle" aria-hidden="true"></i><button type="button" id="bemora-cancel-close" aria-label="Fechar"><i class="bi bi-x-lg"></i></button></div>
+ <span class="sub-kicker">CONFIRMAÇÃO DO CANCELAMENTO</span>
+ <h2 id="bemora-cancel-title">Cancelar a renovação?</h2>
+ <p id="bemora-cancel-description">O Asaas deixará de emitir novas cobranças recorrentes. Você poderá utilizar o Bemora até o fim do período efetivamente pago ou gratuito, quando houver. Nenhum lançamento financeiro será apagado.</p>
+ <p class="bemora-cancel-note">Faturas já emitidas continuam válidas. O cancelamento não gera reembolso automático. Para contratar novamente após o encerramento, será necessário solicitar uma nova assinatura.</p>
+ <form method="post" action="/minha-assinatura/cancelar">
+  <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+  <label class="bemora-cancel-reason" for="cancel-reason">Motivo (opcional)<textarea id="cancel-reason" name="reason" rows="2" maxlength="500" placeholder="Como podemos melhorar?"></textarea></label>
+  <label class="bemora-cancel-check"><input type="checkbox" name="confirm_cancel" value="yes" required> Entendo que a renovação será interrompida e as faturas já emitidas não serão automaticamente estornadas.</label>
+  <div class="bemora-cancel-actions"><button type="button" id="bemora-cancel-back">Manter minha assinatura</button><button type="submit" class="bemora-cancel-danger"><i class="bi bi-check2"></i> Confirmar cancelamento</button></div>
+ </form>
+</dialog>
+<script src="/assets/bemora-cancellation.js?v=1" defer></script>
+<?php endif; ?>
 
 </body></html>
