@@ -50,6 +50,9 @@ $cycles=bemora_plan_cycles();
 <link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?>
 <link rel="stylesheet" href="/assets/bemora-sidebar.css?v=5"><link rel="stylesheet" href="/assets/bemora-subscription.css?v=2"></head>
 <body class="bemora-finance"><div class="shell ref-shell"><?php render_sidebar('minha-assinatura',$csrf); ?><main><?php render_topbar($user); ?><div class="content bemora-subscription"><?php page_header('MINHA CONTA','Minha assinatura','Acompanhe seu plano, próximas cobranças e faturas em um só lugar.'); ?>
+<?php if((int)($billingAccess['manual_suspended']??0)===1): ?>
+<section class="sub-card sub-billing-alert" role="alert"><span class="sub-kicker">ACESSO TEMPORARIAMENTE SUSPENSO</span><h2>Suspensão administrativa</h2><p>O acesso financeiro desta família foi suspenso pela administração do Bemora. Seus dados continuam preservados. Entre em contato com o suporte para solicitar a reativação.</p></section>
+<?php endif; ?>
 <?php if(($billingAccess['state']??'active')==='suspended'): ?>
 <section class="sub-card sub-billing-alert" role="alert"><span class="sub-kicker">REGULARIZE SUA ASSINATURA</span><h2>Acesso financeiro temporariamente suspenso</h2><p>Identificamos uma fatura recorrente vencida após o período de tolerância. Seus lançamentos e dados continuam preservados. Consulte as faturas abaixo, regularize o pagamento e o acesso será restabelecido após a confirmação do Asaas.</p><p>Você continua podendo acessar esta página e seu perfil.</p></section>
 <?php elseif(($billingAccess['state']??'active')==='grace'): ?>
