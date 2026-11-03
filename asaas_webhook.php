@@ -17,7 +17,8 @@ try{
  if(!preg_match('/^[a-zA-Z0-9_\-]{4,150}$/D',$eventId)||strlen($event)>100)throw new RuntimeException('Evento inválido.');
  $payment=$payload['payment']??[];
  if(!is_array($payment))$payment=[];
- $sub=(string)($payment['subscription']??'');
+ $subscriptionEvent=is_array($payload['subscription']??null)?$payload['subscription']:[];
+ $sub=(string)($payment['subscription']??($subscriptionEvent['id']??''));
  // Standalone upgrade payments have no subscription field. Confirm through Asaas before activation.
  if($sub==='' && in_array($event,['PAYMENT_CONFIRMED','PAYMENT_RECEIVED'],true)){
   $id=(string)($payment['id']??'');
@@ -61,6 +62,21 @@ try{
   $pdo->prepare("UPDATE subscription_orders SET status='payment_attention' WHERE asaas_subscription_id=? AND status='awaiting_payment'")->execute([$sub]);
  }
  $pdo->commit();
+ // Subscription events are distinct from payment events. On deletion the
+ // subscription cannot be fetched again; the authenticated event is verified
+ // against the order's subscription/customer binding before access is restricted.
+ if($event==='SUBSCRIPTION_DELETED'){
+  try{bemora_mark_asaas_subscription_removed($pdo,$sub,(string)($subscriptionEvent['customer']??''));}
+  catch(Throwable $lifecycleError){error_log('Bemora: subscription deletion requires reconciliation.');}
+ }
+ if(in_array($event,['SUBSCRIPTION_UPDATED','SUBSCRIPTION_INACTIVATED'],true)&&bemora_billing_access_ready($pdo)){
+  try{
+   $q=$pdo->prepare('SELECT activated_tenant_id FROM subscription_orders WHERE asaas_subscription_id=? AND asaas_customer_id=? LIMIT 1');
+   $q->execute([$sub,(string)($subscriptionEvent['customer']??'')]);
+   $tenantId=(int)$q->fetchColumn();
+   if($tenantId>0)bemora_reconcile_billing_access($pdo,$tenantId);
+  }catch(Throwable $lifecycleError){error_log('Bemora: subscription lifecycle reconciliation deferred to cron.');}
+ }
  // Always reconcile against Asaas, not the untrusted event body. Cron is fallback.
  if($sub!=='' && in_array($event,['PAYMENT_OVERDUE','PAYMENT_CONFIRMED','PAYMENT_RECEIVED','PAYMENT_REFUNDED','PAYMENT_PARTIALLY_REFUNDED','PAYMENT_REFUND_IN_PROGRESS','PAYMENT_REFUND_DENIED','PAYMENT_RECEIVED_IN_CASH_UNDONE','PAYMENT_CHARGEBACK_REQUESTED','PAYMENT_CHARGEBACK_DISPUTE','PAYMENT_AWAITING_CHARGEBACK_REVERSAL','PAYMENT_DELETED','PAYMENT_RESTORED'],true) && bemora_billing_access_ready($pdo)){
   try{
