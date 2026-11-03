@@ -194,3 +194,22 @@
  .market-scanner-modal-grid .market-confirm-panel>form{order:initial}
  .market-finish-total{padding:14px}
 }
+
+/* Product dialog lives outside .market-page, so its controls need scoped styles. */
+.market-product-dialog .market-add label{display:grid;gap:7px;font-size:12px;color:#305b4a;font-weight:750}
+.market-product-dialog .market-add input,.market-product-dialog .market-add select{
+ display:block;width:100%;min-width:0;min-height:44px;padding:10px 12px;
+ border:1px solid #d7e8dc;border-radius:10px;background:#fbfefc;color:#1c5643;font-size:14px
+}
+.market-product-dialog .market-add input:focus,.market-product-dialog .market-add select:focus{outline:2px solid #a2d9bd}
+.market-product-dialog .market-add>.market-inline{align-items:end}
+.market-product-dialog .market-dialog-buttons>button{
+ border:0;border-radius:10px;padding:12px 15px;min-height:45px;
+ font-weight:800;font-size:12px;cursor:pointer
+}
+.market-product-dialog #market-product-save-close{background:#0c7659;color:#fff}
+.market-product-dialog #market-product-save-close:hover{background:#075840}
+.market-product-dialog #market-product-save-continue{background:#064c3e;color:#fff}
+.market-product-dialog #market-product-save-continue:hover{background:#063d32}
+.market-product-dialog .market-dialog-buttons>button:disabled{opacity:.55;cursor:wait}
+.market-page .market-scan-dialog .market-dialog-close{display:grid}
