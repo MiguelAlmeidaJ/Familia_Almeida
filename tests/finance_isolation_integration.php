@@ -48,6 +48,7 @@ $income->execute([$family,1,'Receita A',100]);
 $income->execute([$family,2,'Receita B',200]);
 $income->execute([$family,null,'Receita compartilhada',50]);
 $income->execute([$other,3,'Receita externa',1000]);
+$pdo->exec("UPDATE recurring_incomes SET created_at='2026-09-01 12:00:00' WHERE name IN ('Receita A','Receita B','Receita compartilhada','Receita externa')");
 $alloc=$pdo->prepare("INSERT INTO monthly_allocations(tenant_id,month,category,owner_user_id,amount) VALUES(?,'2026-10','Mercado',?,?)");
 $alloc->execute([$family,1,10]);$alloc->execute([$family,2,20]);$alloc->execute([$family,0,5]);
 $alloc->execute([$other,3,100]);
