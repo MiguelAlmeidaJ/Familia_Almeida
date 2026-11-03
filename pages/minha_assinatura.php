@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__.'/../includes/auth.php';
 require_once __DIR__.'/../includes/layout.php';
 require_once __DIR__.'/../includes/asaas.php';
+require_once __DIR__.'/../includes/billing_access.php';
 header('Cache-Control: private, no-store, max-age=0');
 header('Pragma: no-cache');
 $user=require_family_access();$pdo=db();$csrf=csrf_token();$tenantId=(int)$user['tenant_id'];
@@ -18,6 +19,11 @@ if(!$order){
   $q=$pdo->prepare("SELECT p.name,p.billing_cycle,p.max_members FROM tenant_internal_plans x JOIN subscription_plans p ON p.id=x.plan_id WHERE x.tenant_id=?");
   $q->execute([$tenantId]);$internalPlan=$q->fetch(PDO::FETCH_ASSOC)?:null;
  }
+}
+$billingAccess=bemora_billing_access($pdo,$tenantId);
+if(($billingAccess['state']??'active')==='suspended' && !empty($billingAccess['checked_at']) && strtotime((string)$billingAccess['checked_at'])<time()-120){
+ try{$billingAccess=bemora_reconcile_billing_access($pdo,$tenantId);}
+ catch(Throwable $error){error_log('Bemora: billing status refresh deferred to scheduled reconciliation.');}
 }
 $invoices=[];$billingWarning='';$nextDue=null;$subscriptionState='';
 if($order && !empty($order['asaas_subscription_id'])){
@@ -42,8 +48,13 @@ $cycles=bemora_plan_cycles();
 ?><!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Minha assinatura • Bemora</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?>
-<link rel="stylesheet" href="/assets/bemora-sidebar.css?v=5"><link rel="stylesheet" href="/assets/bemora-subscription.css?v=1"></head>
+<link rel="stylesheet" href="/assets/bemora-sidebar.css?v=5"><link rel="stylesheet" href="/assets/bemora-subscription.css?v=2"></head>
 <body class="bemora-finance"><div class="shell ref-shell"><?php render_sidebar('minha-assinatura',$csrf); ?><main><?php render_topbar($user); ?><div class="content bemora-subscription"><?php page_header('MINHA CONTA','Minha assinatura','Acompanhe seu plano, próximas cobranças e faturas em um só lugar.'); ?>
+<?php if(($billingAccess['state']??'active')==='suspended'): ?>
+<section class="sub-card sub-billing-alert" role="alert"><span class="sub-kicker">REGULARIZE SUA ASSINATURA</span><h2>Acesso financeiro temporariamente suspenso</h2><p>Identificamos uma fatura recorrente vencida após o período de tolerância. Seus lançamentos e dados continuam preservados. Consulte as faturas abaixo, regularize o pagamento e o acesso será restabelecido após a confirmação do Asaas.</p><p>Você continua podendo acessar esta página e seu perfil.</p></section>
+<?php elseif(($billingAccess['state']??'active')==='grace'): ?>
+<section class="sub-card sub-billing-grace" role="status"><span class="sub-kicker">PAGAMENTO PENDENTE</span><h2>Há uma cobrança em atraso</h2><p>Regularize a fatura para evitar a suspensão após o período de tolerância de 3 dias.</p></section>
+<?php endif; ?>
 <?php if(!$order && $internalPlan): ?>
 <div class="sub-grid"><section class="sub-card sub-main"><span class="sub-kicker">SEU ACESSO ATUAL</span><div class="sub-heading"><h2><?= e($internalPlan['name']) ?></h2><span class="sub-pill">Acesso interno gratuito</span></div><p>Até <?= (int)$internalPlan['max_members'] ?> membros · <?= e(bemora_plan_cycles()[$internalPlan['billing_cycle']]??$internalPlan['billing_cycle']) ?></p><div class="sub-metrics"><div><small>Mensalidade</small><strong>R$ 0,00</strong></div><div><small>Tipo de acesso</small><strong>Administrativo</strong></div><div><small>Cobrança</small><strong>Não aplicável</strong></div></div><p class="sub-note">Plano disponibilizado pela administração do Bemora, sem assinatura financeira no Asaas.</p></section><section class="sub-card"><span class="sub-kicker">SEU PLANO</span><h2>Gerenciado pela administração</h2><p>Este plano é atribuído diretamente pelo administrador da plataforma. Para alterações, entre em contato com o suporte.</p></section></div>
 <?php elseif(!$order): ?>
