@@ -153,7 +153,7 @@ function bemora_reconcile_billing_access(PDO $pdo,int $tenantId):array {
    ON DUPLICATE KEY UPDATE
     resumed_at=IF(state='suspended' AND VALUES(state)<>'suspended',NOW(),resumed_at),
     suspended_at=IF(VALUES(state)='suspended',COALESCE(suspended_at,NOW()),NULL),
-    overdue_payment_id=VALUES(overdue_payment_id),overdue_since=VALUES(overdue_since),checked_at=NOW(),state=VALUES(state)".$reasonUpdate;
+    overdue_payment_id=VALUES(overdue_payment_id),overdue_since=VALUES(overdue_since),last_error_at=NULL,checked_at=NOW(),state=VALUES(state)".$reasonUpdate;
   $values=[$tenantId,$state,$oldest['id']??null,$oldest['date']??null,$state];
   if($reasonReady)$values[]=$decision['reason'];
   $pdo->prepare($sql)->execute($values);
