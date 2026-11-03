@@ -16,8 +16,7 @@ function bemora_billing_decision(string $subscriptionStatus,array $payments,stri
  if(!in_array($status,['ACTIVE','INACTIVE','EXPIRED'],true))throw new RuntimeException('Status da assinatura Asaas não reconhecido.');
  if($status!=='ACTIVE')return ['state'=>'suspended','reason'=>'subscription_inactive','payment_id'=>null,'overdue_since'=>null,'days_overdue'=>0];
  $oldest=null;$risk=null;$lastSettled=null;
- // Evaluate only the most recent billing window for reversals, not an ancient refunded charge.
- $windowStart=$today->modify('-370 days');
+ // A reversal remains relevant until a later settled recurring charge is verified.
  foreach($payments as $p){
   $date=(string)($p['dueDate']??'');
   if(!preg_match('/^\\d{4}-\\d{2}-\\d{2}$/D',$date))throw new RuntimeException('Data de cobrança inválida.');
@@ -26,7 +25,7 @@ function bemora_billing_decision(string $subscriptionStatus,array $payments,stri
   if(in_array($state,['CONFIRMED','RECEIVED','RECEIVED_IN_CASH'],true) && $due<=$today){
    if($lastSettled===null||$date>$lastSettled)$lastSettled=$date;
   }
-  if(in_array($state,['REFUNDED','REFUND_IN_PROGRESS','PARTIALLY_REFUNDED','CHARGEBACK_REQUESTED','CHARGEBACK_DISPUTE','AWAITING_CHARGEBACK_REVERSAL'],true) && $due>=$windowStart && $due<=$today){
+  if(in_array($state,['REFUNDED','REFUND_IN_PROGRESS','PARTIALLY_REFUNDED','CHARGEBACK_REQUESTED','CHARGEBACK_DISPUTE','AWAITING_CHARGEBACK_REVERSAL'],true) && $due<=$today){
    if($risk===null||$date>$risk['date'])$risk=['date'=>$date,'id'=>(string)($p['id']??'')];
   }
   if(in_array($state,['PENDING','OVERDUE'],true)&&$due<$today){
