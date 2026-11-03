@@ -136,8 +136,7 @@ $cycles=bemora_plan_cycles();
  <div class="bemora-cancel-dialog-top"><i class="bi bi-exclamation-circle" aria-hidden="true"></i><button type="button" id="bemora-cancel-close" aria-label="Fechar"><i class="bi bi-x-lg"></i></button></div>
  <span class="sub-kicker">CONFIRMAÇÃO DO CANCELAMENTO</span>
  <h2 id="bemora-cancel-title">Cancelar a renovação?</h2>
- <p id="bemora-cancel-description">O Asaas deixará de emitir novas cobranças recorrentes. Você poderá utilizar o Bemora até o fim do período efetivamente pago ou gratuito, quando houver. Nenhum lançamento financeiro será apagado.</p>
- <p class="bemora-cancel-note">Faturas já emitidas continuam válidas. O cancelamento não gera reembolso automático. Para contratar novamente após o encerramento, será necessário solicitar uma nova assinatura.</p>
+ <p id="bemora-cancel-description">Faturas já emitidas continuam válidas. O cancelamento não gera reembolso automático. Para contratar novamente após o encerramento, será necessário solicitar uma nova assinatura.</p>
  <form method="post" action="/minha-assinatura/cancelar">
   <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
   <label class="bemora-cancel-reason" for="cancel-reason">Motivo (opcional)<textarea id="cancel-reason" name="reason" rows="2" maxlength="500" placeholder="Como podemos melhorar?"></textarea></label>
