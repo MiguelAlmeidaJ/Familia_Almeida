@@ -20,3 +20,30 @@
 @keyframes bemora-feedback-enter{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.bemora-feedback{animation:none}}
 @media(max-width:600px){.bemora-feedback{padding:18px 48px 20px 15px;gap:12px}.bemora-feedback-icon{width:39px;height:39px;flex-basis:39px;border-radius:11px;font-size:22px}.bemora-feedback h2{font-size:18px}.bemora-feedback-details{flex-direction:column;align-items:flex-start}}
+
+/* Self-service recurrence cancellation */
+.bemora-cancellation{margin-top:18px;border:1px solid #e0e9e3!important}
+.bemora-cancellation h2{font-size:21px;color:#134f42;margin:10px 0}
+.bemora-cancellation>p{max-width:690px;color:#687f73;font-size:13px;line-height:1.7}
+.bemora-cancel-button{display:inline-flex;align-items:center;gap:9px;border:1px solid #d3a89d;background:#fffaf8;color:#a24e3e;border-radius:10px;padding:12px 18px;font-size:13px;font-weight:750;cursor:pointer;margin-top:10px}
+.bemora-cancel-button:hover{background:#fff0ea}
+.bemora-cancel-dialog{box-sizing:border-box;border:1px solid #eadbd7;border-radius:20px;padding:28px;width:min(520px,calc(100vw - 30px));max-height:calc(100dvh - 24px);overflow-y:auto;color:#154b3e;box-shadow:0 32px 90px #142d273d}
+.bemora-cancel-dialog::backdrop{background:rgba(6,33,26,.58);backdrop-filter:blur(4px)}
+.bemora-cancel-dialog-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.bemora-cancel-dialog-top>i{font-size:27px;color:#c47457}
+.bemora-cancel-dialog-top button{border:0;background:#edf4ef;color:#50786a;border-radius:9px;width:35px;height:35px}
+.bemora-cancel-dialog .sub-kicker{font-weight:800;font-size:10px;letter-spacing:.1em}
+.bemora-cancel-dialog h2{font-size:23px;margin:10px 0}
+.bemora-cancel-dialog p{line-height:1.65;font-size:13px;color:#668175}
+.bemora-cancel-note{padding:12px;border-radius:10px;background:#fff7f1;border:1px solid #f4e2d3}
+.bemora-cancel-reason{display:grid;gap:7px;font-size:12px;font-weight:750;margin-top:15px}
+.bemora-cancel-reason textarea{width:100%;border:1px solid #d6e5dd;border-radius:9px;padding:10px 12px;color:#154b3e;font:inherit;resize:vertical}
+.bemora-cancel-check{display:flex;align-items:flex-start;gap:10px;font-size:12px;color:#466c5d;line-height:1.5;margin:15px 0}
+.bemora-cancel-check input{margin-top:3px;accent-color:#0b775d}
+.bemora-cancel-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:17px}
+.bemora-cancel-actions button{border-radius:10px;padding:12px 16px;font-weight:700;font-size:12px;cursor:pointer}
+#bemora-cancel-back{background:white;border:1px solid #dbe9df;color:#28624d}
+.bemora-cancel-danger{border:1px solid #ad493a;background:#ad493a;color:white;display:inline-flex;gap:6px;align-items:center}
+.bemora-cancel-danger:hover{background:#922e26}
+.bemora-cancel-danger:disabled{opacity:.6;cursor:wait}
+@media(max-width:540px){.bemora-cancel-dialog{padding:18px}.bemora-cancel-actions{flex-direction:column}.bemora-cancel-actions button{width:100%}}
