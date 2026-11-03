@@ -41,6 +41,8 @@ $bill->execute([$family,1,'Conta A',20]);
 $bill->execute([$family,2,'Conta B',30]);
 $bill->execute([$family,null,'Conta compartilhada',10]);
 $bill->execute([$other,3,'Conta externa',1000]);
+// Seeded bills must predate the tested month; the production engine correctly hides future-created bills.
+$pdo->exec("UPDATE fixed_bills SET created_at='2026-09-01 12:00:00' WHERE name IN ('Conta A','Conta B','Conta compartilhada','Conta externa')");
 $income=$pdo->prepare("INSERT INTO recurring_incomes(tenant_id,owner_user_id,name,amount) VALUES(?,?,?,?)");
 $income->execute([$family,1,'Receita A',100]);
 $income->execute([$family,2,'Receita B',200]);
