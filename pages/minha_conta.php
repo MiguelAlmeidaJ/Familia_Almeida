@@ -40,7 +40,7 @@ if($familyAdmin){
 <link rel="stylesheet" href="/assets/bemora-finance.css?v=2">
 <link rel="stylesheet" href="/assets/bemora-finish.css?v=3">
 <?php brand_head_tags(); ?>
-<link rel="stylesheet" href="/assets/bemora-sidebar.css?v=5">
+<link rel="stylesheet" href="/assets/bemora-sidebar.css?v=6">
 <link rel="stylesheet" href="/assets/bemora-family-settings.css?v=3">
 </head>
 <body class="bemora-finance"><div class="shell">
