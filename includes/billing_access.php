@@ -85,6 +85,25 @@ function bemora_billing_access(PDO $pdo,int $tenantId):array {
  * Fail open on provider errors: do not suspend a family based on incomplete evidence.
  * Billing suspension does NOT change tenants.active or tenants.status.
  */
+/** Require persistent Asaas 404 evidence before suspending on a missing subscription. */
+function bemora_billing_subscription_missing(PDO $pdo,int $tenantId):void {
+ $pdo->beginTransaction();
+ try{
+  $q=$pdo->prepare('SELECT last_error_at,state FROM tenant_billing_access WHERE tenant_id=? FOR UPDATE');
+  $q->execute([$tenantId]);$row=$q->fetch(PDO::FETCH_ASSOC);
+  if(!$row){
+   $pdo->prepare("INSERT INTO tenant_billing_access(tenant_id,state,last_error_at,checked_at) VALUES(?,'active',NOW(),NOW())")->execute([$tenantId]);
+  }elseif(empty($row['last_error_at'])){
+   $pdo->prepare('UPDATE tenant_billing_access SET last_error_at=NOW() WHERE tenant_id=?')->execute([$tenantId]);
+  }elseif(strtotime((string)$row['last_error_at'])<=time()-20*3600){
+   $pdo->prepare("UPDATE tenant_billing_access SET state='suspended',suspended_at=COALESCE(suspended_at,NOW()),checked_at=NOW() WHERE tenant_id=?")->execute([$tenantId]);
+   $q=$pdo->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='tenant_billing_access' AND column_name='reason'");
+   if((int)$q->fetchColumn())$pdo->prepare("UPDATE tenant_billing_access SET reason='subscription_missing' WHERE tenant_id=?")->execute([$tenantId]);
+  }
+  $pdo->commit();
+ }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
+}
+
 function bemora_reconcile_billing_access(PDO $pdo,int $tenantId):array {
  if(!bemora_billing_access_ready($pdo))throw new RuntimeException('Execute a migration de acesso financeiro 034.');
  $q=$pdo->prepare("SELECT o.asaas_subscription_id,o.asaas_customer_id,o.coupon_free_until FROM subscription_orders o WHERE o.activated_tenant_id=? AND o.asaas_subscription_id IS NOT NULL AND o.status IN ('completed','paid','payment_attention') ORDER BY o.id DESC LIMIT 1");
