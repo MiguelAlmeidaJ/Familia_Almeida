@@ -74,6 +74,15 @@ try{
     throw new RuntimeException('Outro produto nesta lista já possui esse nome.');
   $pdo->prepare('UPDATE bemora_market_items SET name=?,quantity=?,unit=?,unit_price=?,purchased=?,price_source=? WHERE id=? AND tenant_id=? AND list_id=?')
    ->execute([$name,$quantity,$unit,$price,$purchased?1:0,$source,$itemId,$tenant,$listId]);
+ }elseif($action==='toggle_item'){
+  if($list['status']==='completed')throw new RuntimeException('Reabra a lista antes de alterar os produtos.');
+  $itemId=filter_var($_POST['item_id']??null,FILTER_VALIDATE_INT);
+  if(!$itemId||$itemId<1)throw new RuntimeException('Produto inválido.');
+  $item=bemora_market_item($pdo,$tenant,$listId,(int)$itemId,true);
+  $purchased=(string)($_POST['purchased']??'')==='1';
+  if($purchased&&$item['unit_price']===null)throw new RuntimeException('Confira o preço antes de marcar como comprado.');
+  $pdo->prepare('UPDATE bemora_market_items SET purchased=? WHERE tenant_id=? AND list_id=? AND id=?')
+   ->execute([$purchased?1:0,$tenant,$listId,$itemId]);
  }elseif($action==='remove_item'){
   if($list['status']==='completed')throw new RuntimeException('Reabra a lista para remover produtos.');
   $itemId=filter_var($_POST['item_id']??null,FILTER_VALIDATE_INT);
