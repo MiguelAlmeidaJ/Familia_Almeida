@@ -15,7 +15,7 @@ function bemora_billing_decision(string $subscriptionStatus,array $payments,stri
  $status=strtoupper($subscriptionStatus);
  if(!in_array($status,['ACTIVE','INACTIVE','EXPIRED'],true))throw new RuntimeException('Status da assinatura Asaas não reconhecido.');
  if($status!=='ACTIVE')return ['state'=>'suspended','reason'=>'subscription_inactive','payment_id'=>null,'overdue_since'=>null,'days_overdue'=>0];
- $oldest=null;$risk=null;
+ $oldest=null;$risk=null;$lastSettled=null;
  // Evaluate only the most recent billing window for reversals, not an ancient refunded charge.
  $windowStart=$today->modify('-370 days');
  foreach($payments as $p){
@@ -23,6 +23,9 @@ function bemora_billing_decision(string $subscriptionStatus,array $payments,stri
   if(!preg_match('/^\\d{4}-\\d{2}-\\d{2}$/D',$date))throw new RuntimeException('Data de cobrança inválida.');
   $due=new DateTimeImmutable($date);$state=strtoupper((string)($p['status']??''));
   if($state==='')throw new RuntimeException('Cobrança sem status.');
+  if(in_array($state,['CONFIRMED','RECEIVED','RECEIVED_IN_CASH'],true) && $due<=$today){
+   if($lastSettled===null||$date>$lastSettled)$lastSettled=$date;
+  }
   if(in_array($state,['REFUNDED','REFUND_IN_PROGRESS','PARTIALLY_REFUNDED','CHARGEBACK_REQUESTED','CHARGEBACK_DISPUTE','AWAITING_CHARGEBACK_REVERSAL'],true) && $due>=$windowStart && $due<=$today){
    if($risk===null||$date>$risk['date'])$risk=['date'=>$date,'id'=>(string)($p['id']??'')];
   }
@@ -30,7 +33,7 @@ function bemora_billing_decision(string $subscriptionStatus,array $payments,stri
    if($oldest===null||$date<$oldest['date'])$oldest=['date'=>$date,'id'=>(string)($p['id']??'')];
   }
  }
- if($risk)return ['state'=>'suspended','reason'=>'payment_reversed','payment_id'=>$risk['id'],'overdue_since'=>$risk['date'],'days_overdue'=>0];
+ if($risk && ($lastSettled===null || $risk['date']>=$lastSettled))return ['state'=>'suspended','reason'=>'payment_reversed','payment_id'=>$risk['id'],'overdue_since'=>$risk['date'],'days_overdue'=>0];
  $trialActive=preg_match('/^\\d{4}-\\d{2}-\\d{2}$/D',$trialUntil)&&$trialUntil>=$today->format('Y-m-d');
  $days=$oldest?(int)(new DateTimeImmutable($oldest['date']))->diff($today)->format('%a'):0;
  $state=$trialActive?'active':($oldest&&$days>BEMORA_BILLING_GRACE_DAYS?'suspended':($oldest?'grace':'active'));
