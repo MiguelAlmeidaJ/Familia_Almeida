@@ -79,7 +79,7 @@ DirectoryIndex index.php
     RewriteRule ^configuracoes/manutencao/?$ pages/manutencao.php [L,QSA]
 </IfModule>
 
-<FilesMatch "^(config\.php|schema\.sql|config\.example\.php)$">
+<FilesMatch "(?i)(^\\.env|\\.(?:log|sql|gz|zip|bak|old|ini)$|^config\\.(?:php|example\\.php)$)">
     Require all denied
 </FilesMatch>
 
