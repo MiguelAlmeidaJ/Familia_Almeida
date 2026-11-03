@@ -138,7 +138,7 @@ function render_topbar(array $user, string $context = 'Espaço privado'): void
     <?php
     <!-- Support is always available, including while a family is suspended. -->
     <link rel="stylesheet" href="/assets/bemora-support.css?v=2">
-    <button type="button" class="bemora-support-fab" id="bemora-support-fab" aria-label="Relatar problema" title="Relatar problema" aria-haspopup="dialog" aria-controls="bemora-support-dialog"><i class="bi bi-chat-dots" aria-hidden="true"></i></button>
+    <button type="button" class="bemora-support-fab <?= $billingLocked?'is-suspended':'' ?>" id="bemora-support-fab" aria-label="Relatar problema" title="Relatar problema" aria-haspopup="dialog" aria-controls="bemora-support-dialog"><i class="bi bi-chat-dots" aria-hidden="true"></i></button>
     <dialog class="bemora-support-dialog" id="bemora-support-dialog" aria-labelledby="bemora-support-title">
 <div class="support-dialog-head"><div><span class="support-eyebrow">SUPORTE BEMORA</span><h2 id="bemora-support-title">Relatar problema</h2><p>Preencha os detalhes para receber ajuda da nossa equipe.</p></div><button type="button" id="bemora-report-close" aria-label="Fechar formulário"><i class="bi bi-x-lg"></i></button></div>
 <form method="post" action="/suporte/relatar" id="bemora-report-form">
@@ -152,9 +152,8 @@ function render_topbar(array $user, string $context = 'Espaço privado'): void
 <div class="support-dialog-actions"><button type="button" class="support-cancel" id="bemora-report-cancel">Cancelar</button><button type="submit" class="support-submit"><i class="bi bi-send" aria-hidden="true"></i> Enviar relato</button></div>
 </form></dialog>
     <script src="/assets/bemora-support.js?v=2" defer></script>
-    // Never render quick-entry dialogs or finance actions while billing access is suspended.
-    require_once __DIR__.'/billing_access.php';
-    $billingLocked=!empty($user['tenant_id'])&&bemora_billing_is_blocked(bemora_billing_access(db(),(int)$user['tenant_id']));
+    <?php
+    // Only finance action buttons are hidden while suspended; the support control remains.
     if($billingLocked)return;
     // A single quick-entry action shared by authenticated family pages.
     $quickCsrf=csrf_token();
