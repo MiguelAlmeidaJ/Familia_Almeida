@@ -98,7 +98,9 @@ function render_sidebar(string $active, string $csrf): void
 
     <button class="sidebar-overlay" id="sidebarOverlay" type="button" aria-label="Fechar menu"></button>
     <script src="/assets/app.js" defer></script>
+    <script>window.__bemoraBillingLocked=<?= $suspended?'true':'false' ?>;</script>
     <script src="/assets/bemora-account-menu.js?v=1" defer></script>
+    <script src="/assets/bemora-access-refresh.js?v=1" defer></script>
     <?php
 }
 
