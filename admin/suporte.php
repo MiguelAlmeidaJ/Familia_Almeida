@@ -11,7 +11,7 @@ if($ready){
  foreach($pdo->query('SELECT status,COUNT(*) total FROM support_tickets GROUP BY status') as $r){$counts[$r['status']]=(int)$r['total'];}
 }
 admin_shell_start('support','Suporte','Relatos enviados pelas famílias e acompanhamento de atendimento.');
-?><link rel="stylesheet" href="/assets/bemora-support.css?v=1">
+?><link rel="stylesheet" href="/assets/bemora-admin-support.css?v=1">
 <?php if($flash): ?><div class="notice" role="status"><?= e($flash['message']) ?></div><?php endif; ?>
 <?php if(!$ready): ?><section class="panel"><p class="notice">Execute a migration 20261103_036_support_tickets em Manutenção para ativar o suporte.</p></section>
 <?php else: ?>
