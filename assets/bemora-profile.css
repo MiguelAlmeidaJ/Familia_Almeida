@@ -73,3 +73,9 @@
 .income-period-note{display:flex;align-items:flex-start;gap:9px;margin:14px 0 18px!important;padding:11px 13px!important;background:#f1f8f4;color:#487768;font-size:12px;line-height:1.55;border:1px solid #dcece1;border-radius:10px}
 .income-period-note i{color:#0d8e71;font-size:15px;margin-top:1px}
 .income-period-note strong{color:#116b53}
+
+.profile-privacy-link{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;background:linear-gradient(105deg,#f1fbf5,#fff);border:1px solid #d8eadd;border-radius:13px;padding:16px 19px;margin:18px 0}
+.profile-privacy-link>div{display:flex;align-items:center;gap:13px}.profile-privacy-link>div>i{font-size:22px;color:#138765;background:#e4f6ea;padding:9px;border-radius:10px}
+.profile-privacy-link strong{display:block;font-size:13px;color:#145848}.profile-privacy-link small{display:block;margin-top:4px;font-size:11px;color:#82968a}
+.profile-privacy-link a{color:#0b765a;font-weight:750;text-decoration:none;font-size:12px}
+.profile-privacy-link a:hover{text-decoration:underline}
