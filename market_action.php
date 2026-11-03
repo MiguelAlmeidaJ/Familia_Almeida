@@ -2,6 +2,8 @@
 declare(strict_types=1);
 require_once __DIR__.'/includes/auth.php';
 require_once __DIR__.'/includes/market_lists.php';
+require_once __DIR__.'/includes/finance_scope.php';
+require_once __DIR__.'/includes/categories.php';
 $user=require_family_access();
 if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);exit;}
 header('Cache-Control: no-store');
@@ -32,13 +34,46 @@ try{
  if(!$listId||$listId<1)throw new RuntimeException('Escolha uma lista válida.');
  $pdo->beginTransaction();
  $list=bemora_market_list($pdo,$tenant,$listId,true);
+ if($action==='finish_purchase'){
+  // A locked row plus transaction reference ensures retries cannot charge twice.
+  $columns=$pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='bemora_market_lists'")->fetchAll(PDO::FETCH_COLUMN);
+  if(!in_array('transaction_id',$columns,true))throw new RuntimeException('Execute a migration 042 antes de finalizar compras.');
+  if($list['transaction_id']!==null)throw new RuntimeException('Esta compra já foi finalizada e lançada nas finanças.');
+  if($list['status']==='completed')throw new RuntimeException('Esta lista já está concluída.');
+  $query=$pdo->prepare('SELECT COUNT(*) purchased_count, SUM(CASE WHEN unit_price IS NULL THEN 1 ELSE 0 END) missing_prices, ROUND(SUM(quantity*unit_price),2) total FROM bemora_market_items WHERE tenant_id=? AND list_id=? AND purchased=1');
+  $query->execute([$tenant,$listId]);$values=$query->fetch(PDO::FETCH_ASSOC);
+  $purchased=(int)($values['purchased_count']??0);
+  $missing=(int)($values['missing_prices']??0);
+  $amount=(float)($values['total']??0);
+  if($purchased<1||$missing>0||$amount<=0||$amount>9999999999.99)
+   throw new RuntimeException('Confirme ao menos um produto comprado com preço válido antes de finalizar.');
+  $scope=finance_scope($pdo,$user);
+  // Shopping lists are family-shared. The corresponding transaction is shared,
+  // including when family finances use individual mode (NULL owner).
+  $category=category_ensure($pdo,'Supermercado','expense');
+  $market=trim((string)($list['market_name']??''));
+  $description='Compras · '.$list['name'].($market!==''?' · '.$market:'');
+  $description=mb_substr($description,0,180);
+  $pdo->prepare('INSERT INTO transactions(tenant_id,owner_user_id,created_by,type,description,category,amount,occurred_on) VALUES(?,?,?,\'expense\',?,?,?,CURRENT_DATE())')
+    ->execute([$tenant,null,$uid,$description,$category,number_format($amount,2,'.','')]);
+  $transactionId=(int)$pdo->lastInsertId();
+  $pdo->prepare("UPDATE bemora_market_lists SET status='completed',completed_at=NOW(),transaction_id=? WHERE tenant_id=? AND id=? AND transaction_id IS NULL")
+    ->execute([$transactionId,$tenant,$listId]);
+  $pdo->commit();
+  $_POST['modo']='mercado';
+  if($ajax)market_reply(true,'Compra finalizada e gasto registrado em Movimentações.',['transaction_id'=>$transactionId,'list'=>bemora_market_response($pdo,$tenant,$listId)]);
+  flash('success','Compra finalizada. Gasto de R$ '.number_format($amount,2,',','.').' registrado nas Movimentações.');
+  redirect_to('/compras?lista='.$listId.'&modo=mercado');
+ }
  if($action==='set_market'){
+  if($list['status']==='completed')throw new RuntimeException('Compra finalizada não pode ser modificada.');
   $name=trim((string)($_POST['market_name']??''));
   if(mb_strlen($name)>120)throw new RuntimeException('O nome do mercado é muito longo.');
   $pdo->prepare('UPDATE bemora_market_lists SET market_name=? WHERE tenant_id=? AND id=?')->execute([$name===''?null:$name,$tenant,$listId]);
  }elseif($action==='set_status'){
   $status=(string)($_POST['status']??'');
-  if(!in_array($status,['planned','shopping','completed'],true))throw new RuntimeException('Situação inválida.');
+  if(!in_array($status,['planned','shopping'],true))throw new RuntimeException('Para concluir e lançar a compra como gasto, use Finalizar compra.');
+  if($list['status']==='completed')throw new RuntimeException('Compra finalizada não pode ser reaberta ou editada.');
   $pdo->prepare('UPDATE bemora_market_lists SET status=?,completed_at=IF(?="completed",NOW(),NULL) WHERE id=? AND tenant_id=?')->execute([$status,$status,$listId,$tenant]);
  }elseif($action==='add_item'){
   if($list['status']==='completed')throw new RuntimeException('Reabra a lista para adicionar produtos.');
