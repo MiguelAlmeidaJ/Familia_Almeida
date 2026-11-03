@@ -33,8 +33,19 @@ admin_shell_start('tenants','Gerenciar família','Plano, assinatura, membros e p
 <a href="/admin/tenants" class="family-back"><i class="bi bi-arrow-left"></i> Voltar às famílias</a>
 <?php if($flash): ?><div class="notice" role="status"><?= e($flash['message']) ?></div><?php endif; ?>
 <section class="panel"><div class="panel-head"><div><h2><?= e($family['name']) ?></h2><p class="sub">Identificador: <?= e($family['slug']) ?> · Situação: <?= e($family['status']) ?></p></div><span class="member"><?= count($members) ?> de <?= (int)$family['max_members'] ?> membros</span></div>
+<?php if((int)($billingAccess['manual_suspended']??0)===1): ?><div class="notice" role="status"><strong>Suspensão administrativa ativa.</strong> O acesso financeiro está bloqueado por decisão do administrador, independentemente da situação da cobrança.</div><?php endif; ?>
 <?php if(($billingAccess['state']??'active')==='suspended'): ?><div class="notice" role="status"><strong>Acesso financeiro suspenso por inadimplência.</strong> A família pode consultar suas faturas; o acesso financeiro será restabelecido após a confirmação do pagamento pelo Asaas.</div>
 <?php elseif(($billingAccess['state']??'active')==='grace'): ?><div class="notice" role="status"><strong>Fatura em atraso.</strong> O acesso permanece liberado durante a tolerância de 3 dias após o vencimento.</div><?php endif; ?>
+<?php
+$manualReady=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='tenant_billing_access' AND column_name='manual_suspended'")->fetchColumn()===1;
+?>
+<?php if($manualReady): ?>
+<section class="panel family-manual-access"><div class="panel-head"><div><h2>Controle de acesso</h2><p class="sub">Suspenda o acesso financeiro desta família sem cancelar assinaturas ou apagar lançamentos.</p></div></div>
+<form method="post" action="/admin/family_action.php" onsubmit="return confirm('<?= (int)($billingAccess['manual_suspended']??0)===1?'Remover suspensão administrativa?':'Suspender acesso financeiro desta família? Seus dados serão preservados.' ?>')">
+<input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="id" value="<?= $id ?>"><input type="hidden" name="action" value="<?= (int)($billingAccess['manual_suspended']??0)===1?'manual_resume':'manual_suspend' ?>">
+<button type="submit" class="family-create-button"><i class="bi <?= (int)($billingAccess['manual_suspended']??0)===1?'bi-unlock':'bi-shield-slash' ?>" aria-hidden="true"></i> <?= (int)($billingAccess['manual_suspended']??0)===1?'Remover suspensão administrativa':'Suspender acesso para teste' ?></button>
+</form><p class="sub">A reativação administrativa não remove uma suspensão por inadimplência. Não modifica as cobranças no Asaas.</p></section>
+<?php endif; ?>
 <div class="family-detail-kpis">
 <div><small>Plano vinculado</small><strong><?= e($latestOrder['plan_name']??$internalPlan['name']??'Sem plano vinculado') ?></strong><p class="sub"><?= $latestOrder?e(bemora_plan_cycles()[$latestOrder['billing_cycle']]??$latestOrder['billing_cycle']):($internalPlan?'Plano interno gratuito':'Convite administrativo ou cadastro legado') ?></p></div>
 <div><small>Valor recorrente registrado</small><strong><?= $latestOrder?e('R$ '.number_format((float)($latestOrder['recurring_amount']??$latestOrder['amount']),2,',','.')):'—' ?></strong><p class="sub">Não representa confirmação de pagamentos futuros</p></div>
