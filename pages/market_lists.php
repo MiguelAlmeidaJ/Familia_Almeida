@@ -19,8 +19,8 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2">
 <link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3">
 <?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=6">
-<link rel="stylesheet" href="/assets/bemora-market.css?v=5"></head>
-<body class="bemora-finance"><div class="shell ref-shell"><?php render_sidebar('compras',$csrf); ?><main><?php render_topbar($user); ?>
+<link rel="stylesheet" href="/assets/bemora-market.css?v=6"></head>
+<body class="bemora-finance <?= $mode==='mercado'?'market-shopping-mode':'' ?>"><div class="shell ref-shell"><?php render_sidebar('compras',$csrf); ?><main><?php render_topbar($user); ?>
 <div class="content market-page">
 <header class="market-heading"><div><p class="eyebrow">COMPRAS EM FAMÍLIA</p><h1>Lista de compras</h1><p>Planeje em casa, confira preços no mercado e acompanhe o total conforme compra.</p></div><span class="market-badge"><i class="bi bi-basket2"></i> Bemora Compras</span></header>
 <?php if($flash): ?><div class="market-alert <?= $flash['type']==='success'?'success':'error' ?>" role="status"><?= e($flash['message']) ?></div><?php endif; ?>
@@ -91,6 +91,10 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <div class="market-progress-track" role="progressbar" aria-label="Progresso da lista" aria-valuemin="0" aria-valuemax="<?= max(1,$current['count']) ?>" aria-valuenow="<?= $current['purchased'] ?>" id="market-progress-track"><span id="market-progress-fill" style="width:<?= $current['count']?round($current['purchased']/$current['count']*100):0 ?>%"></span></div>
 <div class="market-basket-total"><span>Total no carrinho</span><strong id="market-scan-total"><?= money($current['total']) ?></strong></div>
 <div id="market-scan-items" class="market-basket-list" aria-live="polite"></div>
+<div class="market-load-more" id="market-load-more" hidden>
+  <button type="button" id="market-load-more-button">Carregar mais produtos</button>
+  <p id="market-load-more-count" aria-live="polite"></p>
+</div>
 <p class="market-shopping-feedback" id="market-shopping-feedback" role="status" aria-live="polite"></p>
 </section>
 </section></div>
@@ -99,5 +103,5 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <?php endif; ?>
 </div></main></div>
 <script>window.BEMORA_MARKET=<?= json_encode(['csrf'=>$csrf,'list'=>$current],JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR) ?>;</script>
-<script src="/assets/bemora-market.js?v=5" defer></script>
+<script src="/assets/bemora-market.js?v=6" defer></script>
 </body></html>
