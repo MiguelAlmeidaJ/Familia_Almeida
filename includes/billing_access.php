@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/asaas.php';
+require_once __DIR__.'/subscription_cancellation.php';
 
 /** Grace period after the due date; operational policy can be revised later. */
 const BEMORA_BILLING_GRACE_DAYS = 3;
@@ -111,8 +112,23 @@ function bemora_reconcile_billing_access(PDO $pdo,int $tenantId):array {
  if(!$order)return bemora_billing_access($pdo,$tenantId); // legacy/internals are never auto-suspended
  $today=new DateTimeImmutable('today');
  $subscriptionId=(string)$order['asaas_subscription_id'];
+ $cancellation=bemora_cancellation_for_family($pdo,$tenantId);
+ if($cancellation && (string)$cancellation['asaas_subscription_id']!==$subscriptionId)
+  throw new RuntimeException('Cancelamento vinculado a outra assinatura. Requer conciliação.');
  try{$sub=bemora_asaas_request('GET','/subscriptions/'.rawurlencode($subscriptionId));}
- catch(RuntimeException $ex){if($ex->getCode()!==404)throw $ex;bemora_billing_subscription_missing($pdo,$tenantId);return bemora_billing_access($pdo,$tenantId);}
+ catch(RuntimeException $ex){
+  if($ex->getCode()!==404)throw $ex;
+  if($cancellation && $cancellation['status']==='confirmed'){
+   $activeUntil=(string)($cancellation['access_until']??'');
+   $state=$activeUntil>=date('Y-m-d')?'active':'suspended';
+   $pdo->prepare("INSERT INTO tenant_billing_access(tenant_id,state,checked_at) VALUES(?,?,NOW()) ON DUPLICATE KEY UPDATE state=VALUES(state),checked_at=NOW()")->execute([$tenantId,$state]);
+   $hasReason=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='tenant_billing_access' AND column_name='reason'")->fetchColumn();
+   if($hasReason)$pdo->prepare('UPDATE tenant_billing_access SET reason=? WHERE tenant_id=?')->execute([$state==='active'?null:'subscription_canceled',$tenantId]);
+   return bemora_billing_access($pdo,$tenantId);
+  }
+  bemora_billing_subscription_missing($pdo,$tenantId);
+  return bemora_billing_access($pdo,$tenantId);
+ }
  if((string)($sub['id']??'')!==$subscriptionId||(string)($sub['customer']??'')!==(string)$order['asaas_customer_id'])throw new RuntimeException('Assinatura ou cliente divergente.');
  $payments=[];$offset=0;$pageSize=100;
  do {
@@ -128,8 +144,24 @@ function bemora_reconcile_billing_access(PDO $pdo,int $tenantId):array {
   if($hasMore&&count($items)===0)throw new RuntimeException('Paginação de cobrança inconsistente.');
   if($offset>10000)throw new RuntimeException('Limite de conciliação excedido.');
  }while($hasMore);
+ if($cancellation && in_array((string)$cancellation['status'],['processing','reconciliation_required'],true)
+   && (string)($sub['status']??'')==='INACTIVE'){
+  try{
+   if(bemora_cancellation_recover($pdo,$cancellation))$cancellation=bemora_cancellation_for_family($pdo,$tenantId);
+  }catch(Throwable $cancelError){error_log('Bemora: cancelamento pendente de conciliação.');}
+ }
  bemora_reconcile_upgrade_reversals($pdo,$tenantId);
  $decision=bemora_billing_decision((string)($sub['status']??''),$payments,(string)($order['coupon_free_until']??''),$today);
+ if($cancellation && $cancellation['status']==='confirmed'){
+  if((string)($sub['status']??'')!=='INACTIVE')throw new RuntimeException('Renovação ainda ativa no Asaas após cancelamento registrado.');
+  $until=(string)($cancellation['access_until']??'');
+  if($until>=date('Y-m-d')){
+   // Temporary access must still respect overdue invoices, refunds and disputes.
+   $decision=bemora_billing_decision('ACTIVE',$payments,(string)($order['coupon_free_until']??''),$today);
+  }else{
+   $decision=['state'=>'suspended','reason'=>'subscription_canceled','payment_id'=>null,'overdue_since'=>null,'days_overdue'=>0];
+  }
+ }
  $upgradeReview=false;
  $review=$pdo->prepare("SELECT COUNT(*) FROM subscription_change_requests WHERE tenant_id=? AND status='reconciliation_required' AND activated_at IS NOT NULL AND failure_reason='upgrade_payment_reversed'");
  $review->execute([$tenantId]);
@@ -188,6 +220,8 @@ function bemora_mark_asaas_subscription_removed(PDO $pdo,string $subscriptionId,
  $q=$pdo->prepare("SELECT activated_tenant_id FROM subscription_orders WHERE asaas_subscription_id=? AND asaas_customer_id=? AND activated_tenant_id IS NOT NULL ORDER BY id DESC LIMIT 1");
  $q->execute([$subscriptionId,$customerId]);
  $tid=(int)$q->fetchColumn();if($tid<1)return;
+ $cancellation=bemora_cancellation_for_family($pdo,$tid);
+ if($cancellation && $cancellation['status']==='confirmed' && (string)($cancellation['access_until']??'')>=date('Y-m-d'))return;
  $pdo->prepare("INSERT INTO tenant_billing_access(tenant_id,state,suspended_at,checked_at) VALUES(?,'suspended',NOW(),NOW()) ON DUPLICATE KEY UPDATE state='suspended',suspended_at=COALESCE(suspended_at,NOW()),checked_at=NOW()")->execute([$tid]);
  $ready=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='tenant_billing_access' AND column_name='reason'")->fetchColumn();
  if($ready)$pdo->prepare("UPDATE tenant_billing_access SET reason='subscription_deleted' WHERE tenant_id=?")->execute([$tid]);
