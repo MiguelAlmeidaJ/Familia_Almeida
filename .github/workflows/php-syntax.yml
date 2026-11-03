@@ -19,3 +19,4 @@ jobs:
         run: |
           php tests/checkout_validation_cli.php
           php tests/coupon_benefits_cli.php
+          php tests/subscription_cancellation_policy.php
