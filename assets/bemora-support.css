@@ -12,3 +12,37 @@
 /* When finance quick actions are absent, support occupies the lowest FAB position. */
 .bemora-support-fab.is-suspended{bottom:20px!important}
 @media(max-width:600px){.bemora-support-fab.is-suspended{bottom:14px!important}}
+
+/* Compact dialog: all actions visible without an internal scrollbar at normal viewport sizes. */
+.bemora-support-dialog{
+  box-sizing:border-box;
+  width:min(540px,calc(100vw - 28px));
+  max-width:calc(100vw - 28px);
+  max-height:calc(100dvh - 28px);
+  padding:20px 24px;
+  overflow:visible;
+  margin:auto;
+}
+.bemora-support-dialog .support-dialog-head{align-items:flex-start;padding-bottom:12px;margin-bottom:12px}
+.bemora-support-dialog .support-dialog-head h2{font-size:22px;margin:3px 0 4px}
+.bemora-support-dialog .support-dialog-head p{font-size:12px;line-height:1.4;margin:0}
+.bemora-support-dialog .support-dialog-head button{flex:0 0 32px;width:32px;height:32px}
+.bemora-support-dialog form>label,.bemora-support-dialog .support-contact-method legend{margin:8px 0 5px;font-size:12px}
+.bemora-support-dialog textarea{height:105px;min-height:90px;max-height:130px;padding:11px 12px;font-size:13px;line-height:1.45;resize:vertical}
+.bemora-support-dialog input[type=email],.bemora-support-dialog input[type=tel]{min-height:42px;padding:9px 12px;font-size:13px}
+.bemora-support-dialog .support-contact-method{margin:12px 0 8px}
+.bemora-support-dialog .support-contact-method legend{margin-bottom:3px}
+.bemora-support-dialog .support-contact-method label{margin:3px 18px 0 0;font-size:13px}
+.bemora-support-dialog .support-privacy{margin-top:10px;padding:9px 11px;font-size:10.5px;line-height:1.45}
+.bemora-support-dialog .support-dialog-actions{margin-top:12px}
+.bemora-support-dialog .support-submit,.bemora-support-dialog .support-cancel{padding:10px 16px;font-size:12px}
+@media(max-width:650px){
+ .bemora-support-dialog{padding:16px 18px}
+ .bemora-support-dialog .support-dialog-actions{flex-direction:row}
+ .bemora-support-dialog .support-dialog-actions button{width:auto}
+}
+@media(max-height:570px){
+ /* On exceptionally short viewports, allow scrolling rather than clipping fields. */
+ .bemora-support-dialog{overflow-y:auto;max-height:calc(100dvh - 16px)}
+ .bemora-support-dialog textarea{height:80px;min-height:75px}
+}
