@@ -19,7 +19,7 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2">
 <link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3">
 <?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=6">
-<link rel="stylesheet" href="/assets/bemora-market.css?v=1"></head>
+<link rel="stylesheet" href="/assets/bemora-market.css?v=2"></head>
 <body class="bemora-finance"><div class="shell ref-shell"><?php render_sidebar('compras',$csrf); ?><main><?php render_topbar($user); ?>
 <div class="content market-page">
 <header class="market-heading"><div><p class="eyebrow">COMPRAS EM FAMÍLIA</p><h1>Lista de compras</h1><p>Planeje em casa, confira preços no mercado e acompanhe o total conforme compra.</p></div><span class="market-badge"><i class="bi bi-basket2"></i> Bemora Compras</span></header>
@@ -59,6 +59,12 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <div class="market-camera"><video id="market-video" playsinline muted autoplay></video><div class="market-guides"><div>Centralize a etiqueta aqui</div></div><div class="market-placeholder" id="market-placeholder"><i class="bi bi-camera"></i><strong>Câmera desligada</strong><span>Ative a câmera ou escolha uma imagem.</span></div><canvas id="market-canvas" hidden></canvas></div>
 <div class="market-camera-actions"><button type="button" id="market-start">Ativar câmera</button><button type="button" id="market-capture" disabled>Capturar etiqueta</button><button type="button" id="market-stop" disabled>Desligar</button></div>
 <label class="market-file">Ou selecione uma foto da etiqueta<input type="file" id="market-photo" accept="image/*" capture="environment"></label>
+<div class="market-crop-editor" id="market-crop-editor" hidden>
+<strong><i class="bi bi-crop"></i> Selecione somente a etiqueta</strong>
+<p class="market-muted">Arraste o dedo sobre a foto para marcar o retângulo que contém o nome e o preço. Não inclua a tela ou as etiquetas vizinhas.</p>
+<canvas id="market-crop-canvas" aria-label="Fotografia da etiqueta com seleção de recorte"></canvas>
+<button type="button" id="market-crop-apply"><i class="bi bi-scan"></i> Ler área selecionada</button>
+</div>
 <p class="market-muted" id="market-ocr-status" role="status" aria-live="polite">A imagem será analisada no navegador. Confira os valores antes de salvar.</p><img id="market-photo-preview" class="market-photo-preview" alt="Recorte analisado" hidden>
 </section>
 <section class="market-panel"><h2>Conferir produto</h2><p class="market-muted">A leitura da etiqueta é uma sugestão. Confirme ou corrija o produto, preço e quantidade.</p>
@@ -66,6 +72,7 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <label>Produto<input id="market-name" maxlength="160" minlength="2" required placeholder="Ex.: Leite integral 1L"></label>
 <div class="market-inline"><label>Preço unitário (R$)<input id="market-price" type="number" step="0.01" min="0.01" required placeholder="0,00"></label><label>Quantidade<input id="market-qty" type="number" step="0.001" min="0.001" value="1" required></label></div>
 <label>Unidade<select id="market-unit"><?php foreach(['un'=>'Unidade','kg'=>'kg','g'=>'g','L'=>'L','ml'=>'ml','pct'=>'Pacote','cx'=>'Caixa'] as $unit=>$label): ?><option value="<?= e($unit) ?>"><?= e($label) ?></option><?php endforeach; ?></select></label>
+<div class="market-price-options" id="market-price-options" hidden><strong>Encontramos mais de um preço</strong><p>Escolha o valor unitário da sua compra. Preços de atacado podem exigir uma quantidade mínima.</p><div id="market-price-buttons"></div></div>
 <label>Produto na lista<select id="market-match"><option value="">Adicionar como novo</option></select></label><small class="market-muted" id="market-match-tip">Se já estiver planejado, selecione-o para registrar a compra e o preço.</small>
 <button id="market-save" type="submit" <?= $current['status']==='completed'?'disabled':'' ?>>Confirmar produto e preço</button></form>
 <div class="market-scan-items"><h3>Progresso da compra</h3><div id="market-scan-items"></div></div>
@@ -75,5 +82,5 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <?php endif; ?>
 </div></main></div>
 <script>window.BEMORA_MARKET=<?= json_encode(['csrf'=>$csrf,'list'=>$current],JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR) ?>;</script>
-<script src="/assets/bemora-market.js?v=1" defer></script>
+<script src="/assets/bemora-market.js?v=2" defer></script>
 </body></html>
