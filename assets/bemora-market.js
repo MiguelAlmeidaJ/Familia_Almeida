@@ -119,7 +119,8 @@ function parseLabel(text){
    const after=line.slice(match.index+match[0].length,match.index+match[0].length+25);
    const surroundings=(before+' '+after+' '+context).toLowerCase();
    if(/\\b(?:c[oó]d(?:igo)?|ean|fabrica|validade|cep|cpf|cnpj)\\b/.test(before.toLowerCase()))continue;
-   const category=/atacado/i.test(before+' '+line)?'Atacado':/varejo/i.test(before+' '+line)?'Varejo':/clube/i.test(before+' '+line)?'Clube':'';
+   const nearest=(before.match(/(?:varejo|atacado|clube)[^a-záéíóúãõç]*$/i)||[])[0]||'';
+   const category=/atacado/i.test(nearest)?'Atacado':/varejo/i.test(nearest)?'Varejo':/clube/i.test(nearest)?'Clube':/atacado/i.test(line)&&!/(?:varejo|clube)/i.test(line)?'Atacado':/varejo/i.test(line)&&!/(?:atacado|clube)/i.test(line)?'Varejo':'';
    const weight=(/R\\s*\\$/i.test(line)?4:0)+(/pre[cç]o|varejo|atacado/i.test(surroundings)?2:0)+(n>=1?1:0);
    candidates.push({amount:n,label:category,weight,idx:i});
   }
