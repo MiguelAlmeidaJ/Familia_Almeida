@@ -13,15 +13,29 @@
 
 ## Publicação dos documentos
 
-A configuração `legal` em `config.php` exige:
+A versão atual das páginas foi revisada para cobrir identificação comercial, arrependimento em compras online, informações de cobrança, modo financeiro familiar, direitos LGPD e formas de contato. **Isso não equivale a parecer jurídico**, nem resolve sozinho o enquadramento do CNPJ/MEI.
+
+A configuração `legal` em `config.php` exige os dados reais da empresa:
+
 ```php
 'legal' => [
   'approved' => '0',
-  'company_name' => 'RAZÃO SOCIAL/NOME DO FORNECEDOR',
-  'company_tax_id' => 'CNPJ/CPF CONFORME CADASTRO',
-  'privacy_email' => 'PRIVACIDADE@DOMINIO',
+  'approved_terms_version' => '',
+  'approved_privacy_version' => '',
+  'company_name' => 'RAZÃO SOCIAL QUE APARECE NO CNPJ',
+  'company_tax_id' => 'CNPJ REAL DA ANOAR',
+  'company_address' => 'ENDEREÇO COMERCIAL COMPLETO DO FORNECEDOR',
+  'support_email' => 'CANAL_DE_ATENDIMENTO@DOMINIO',
+  'privacy_email' => 'CANAL_PRIVACIDADE@DOMINIO',
 ],
 ```
+
+Os campos públicos exigem CNPJ, endereço comercial e contatos reais. Não invente endereço e não substitua a razão social por marca fantasia. Se o endereço for também residencial, avalie com orientação profissional o endereço comercial/cadastral permitido; a apresentação de endereço exigida pelo comércio eletrônico deve ser atendida.
+
+Quando as versões **atuais** do texto estiverem aprovadas formalmente, preencha `approved_terms_version` e `approved_privacy_version` com os identificadores exatos definidos em `includes/legal_policy.php`, e somente então altere `approved` para `'1'`. Qualquer alteração futura relevante das páginas deve incrementar as versões, exigindo nova revisão. O sistema impede abertura do checkout de produção com a aprovação desatualizada.
+
+Para o fornecedor ainda enquadrado no MEI, confirme com um contador se a atividade efetivamente exercida (comercialização recorrente de software próprio) consta nas ocupações autorizadas. **Não libere a venda real apenas para testar documentos legais.**
+
 **Não altere `approved` para 1 sem:**
 
 1. Revisar com profissional jurídico a identificação do fornecedor, condições dos planos, cobrança, renovação, reembolso, arrependimento, cancelamento, obrigações e responsabilidades.
