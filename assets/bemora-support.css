@@ -10,5 +10,5 @@
 .bemora-support-dialog .support-submit:hover:not(:disabled){background:#087a5d}
 @media(max-width:600px){.bemora-support-fab{right:14px!important;bottom:124px!important;width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important}}
 /* When finance quick actions are absent, support occupies the lowest FAB position. */
-body.bemora-billing-suspended .bemora-support-fab{bottom:20px!important}
-@media(max-width:600px){body.bemora-billing-suspended .bemora-support-fab{bottom:14px!important}}
+.bemora-support-fab.is-suspended{bottom:20px!important}
+@media(max-width:600px){.bemora-support-fab.is-suspended{bottom:14px!important}}
