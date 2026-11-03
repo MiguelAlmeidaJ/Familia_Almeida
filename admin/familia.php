@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/../includes/admin_layout.php';
 require_once __DIR__.'/../includes/plans.php';
+require_once __DIR__.'/../includes/billing_access.php';
 require_admin_access();
 $pdo=db();$id=filter_var($_GET['id']??null,FILTER_VALIDATE_INT);
 if(!$id||$id<1){http_response_code(400);exit('Família inválida.');}
@@ -24,13 +25,16 @@ if($internalReady){
 }
 $availablePrivatePlans=$pdo->query("SELECT id,name,max_members FROM subscription_plans WHERE public_sale=0 AND active=1 AND price=0 ORDER BY name,id")->fetchAll(PDO::FETCH_ASSOC);
 $hasAsaas=!empty($latestOrder['asaas_subscription_id']);
+$billingAccess=bemora_billing_access($pdo,$id);
 $flash=pull_flash();$csrf=csrf_token();
 admin_shell_start('tenants','Gerenciar família','Plano, assinatura, membros e permissões da família.');
-?><link rel="stylesheet" href="/assets/bemora-families-admin.css?v=2"><?php
+?><link rel="stylesheet" href="/assets/bemora-families-admin.css?v=3"><?php
 ?>
 <a href="/admin/tenants" class="family-back"><i class="bi bi-arrow-left"></i> Voltar às famílias</a>
 <?php if($flash): ?><div class="notice" role="status"><?= e($flash['message']) ?></div><?php endif; ?>
 <section class="panel"><div class="panel-head"><div><h2><?= e($family['name']) ?></h2><p class="sub">Identificador: <?= e($family['slug']) ?> · Situação: <?= e($family['status']) ?></p></div><span class="member"><?= count($members) ?> de <?= (int)$family['max_members'] ?> membros</span></div>
+<?php if(($billingAccess['state']??'active')==='suspended'): ?><div class="notice" role="status"><strong>Acesso financeiro suspenso por inadimplência.</strong> A família pode consultar suas faturas; o acesso financeiro será restabelecido após a confirmação do pagamento pelo Asaas.</div>
+<?php elseif(($billingAccess['state']??'active')==='grace'): ?><div class="notice" role="status"><strong>Fatura em atraso.</strong> O acesso permanece liberado durante a tolerância de 3 dias após o vencimento.</div><?php endif; ?>
 <div class="family-detail-kpis">
 <div><small>Plano vinculado</small><strong><?= e($latestOrder['plan_name']??$internalPlan['name']??'Sem plano vinculado') ?></strong><p class="sub"><?= $latestOrder?e(bemora_plan_cycles()[$latestOrder['billing_cycle']]??$latestOrder['billing_cycle']):($internalPlan?'Plano interno gratuito':'Convite administrativo ou cadastro legado') ?></p></div>
 <div><small>Valor recorrente registrado</small><strong><?= $latestOrder?e('R$ '.number_format((float)($latestOrder['recurring_amount']??$latestOrder['amount']),2,',','.')):'—' ?></strong><p class="sub">Não representa confirmação de pagamentos futuros</p></div>
