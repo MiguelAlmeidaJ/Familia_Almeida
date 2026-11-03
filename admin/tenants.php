@@ -11,8 +11,10 @@ $internalPlans=[];
 $internalReady=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='tenant_internal_plans'")->fetchColumn()===1;
 if($internalReady){$rows=$pdo->query("SELECT x.tenant_id,p.name,p.billing_cycle,p.max_members FROM tenant_internal_plans x JOIN subscription_plans p ON p.id=x.plan_id")->fetchAll(PDO::FETCH_ASSOC);foreach($rows as $row)$internalPlans[(int)$row['tenant_id']]=$row;}
 $billingStates=[];
+$manualSuspensionReady=false;
 if(bemora_billing_access_ready($pdo)){
- $rows=$pdo->query("SELECT tenant_id,state,overdue_since,manual_suspended FROM tenant_billing_access")->fetchAll(PDO::FETCH_ASSOC);
+ $manualSuspensionReady=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='tenant_billing_access' AND column_name='manual_suspended'")->fetchColumn()===1;
+ $rows=$pdo->query($manualSuspensionReady?"SELECT tenant_id,state,overdue_since,manual_suspended FROM tenant_billing_access":"SELECT tenant_id,state,overdue_since,0 AS manual_suspended FROM tenant_billing_access")->fetchAll(PDO::FETCH_ASSOC);
  foreach($rows as $row)$billingStates[(int)$row['tenant_id']]=$row;
 }
 $latestOrders=[];
@@ -51,11 +53,11 @@ admin_shell_start('tenants','Famílias','Visão centralizada dos espaços, membr
 <td><span class="family-tag <?= $activeFamily?'is-good':'is-neutral' ?>"><?= e(['active'=>'Ativa','archived'=>'Arquivada','maintenance'=>'Manutenção','pending'=>'Pendente'][$t['status']]??$t['status']) ?></span></td>
 <td><div class="family-row-actions"><a class="family-manage" href="/admin/familia?id=<?= (int)$t['id'] ?>"><i class="bi bi-arrow-up-right-square" aria-hidden="true"></i> Detalhes</a>
 <?php $availableActions=$activeFamily?['archive'=>['Arquivar','bi-archive'],'maintenance'=>['Manutenção','bi-tools']]:['activate'=>['Ativar','bi-check-circle']];foreach($availableActions as $action=>$config): ?>
-<form method="post" action="/admin/family_action.php" onsubmit="return confirm('<?= e($config[0]) ?> esta família?')"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="<?= e($action) ?>"><input type="hidden" name="id" value="<?= (int)$t['id'] ?>"><button class="family-icon-button <?= e($action) ?>" type="submit" title="<?= e($config[0]) ?>" aria-label="<?= e($config[0]) ?>"><i class="bi <?= e($config[1]) ?>" aria-hidden="true"></i></button></form>
+<?php if($manualSuspensionReady): ?><form method="post" action="/admin/family_action.php" onsubmit="return confirm('<?= e($config[0]) ?> esta família?')"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="<?= e($action) ?>"><input type="hidden" name="id" value="<?= (int)$t['id'] ?>"><button class="family-icon-button <?= e($action) ?>" type="submit" title="<?= e($config[0]) ?>" aria-label="<?= e($config[0]) ?>"><i class="bi <?= e($config[1]) ?>" aria-hidden="true"></i></button></form>
 <?php endforeach; ?>
 <form method="post" action="/admin/family_action.php" onsubmit="return confirm('<?= (int)($billing['manual_suspended']??0)===1?'Remover a suspensão administrativa desta família? Ela continuará bloqueada se houver inadimplência.':'Suspender o acesso financeiro desta família para teste? Os dados e a assinatura no Asaas serão preservados.' ?>')">
 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="id" value="<?= (int)$t['id'] ?>"><input type="hidden" name="action" value="<?= (int)($billing['manual_suspended']??0)===1?'manual_resume':'manual_suspend' ?>">
-<button type="submit" class="family-icon-button <?= (int)($billing['manual_suspended']??0)===1?'activate':'maintenance' ?>" title="<?= (int)($billing['manual_suspended']??0)===1?'Remover suspensão manual':'Suspender acesso para teste' ?>" aria-label="<?= (int)($billing['manual_suspended']??0)===1?'Remover suspensão manual':'Suspender acesso para teste' ?>"><i class="bi <?= (int)($billing['manual_suspended']??0)===1?'bi-unlock':'bi-shield-slash' ?>" aria-hidden="true"></i></button></form>
+<button type="submit" class="family-icon-button <?= (int)($billing['manual_suspended']??0)===1?'activate':'maintenance' ?>" title="<?= (int)($billing['manual_suspended']??0)===1?'Remover suspensão manual':'Suspender acesso para teste' ?>" aria-label="<?= (int)($billing['manual_suspended']??0)===1?'Remover suspensão manual':'Suspender acesso para teste' ?>"><i class="bi <?= (int)($billing['manual_suspended']??0)===1?'bi-unlock':'bi-shield-slash' ?>" aria-hidden="true"></i></button></form><?php endif; ?>
 </div></td></tr>
 <?php endforeach; ?>
 <?php if(!$tenants): ?><tr><td colspan="6">Nenhuma família cadastrada.</td></tr><?php endif; ?>
