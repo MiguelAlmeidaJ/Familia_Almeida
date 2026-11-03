@@ -111,7 +111,8 @@ function bemora_reconcile_billing_access(PDO $pdo,int $tenantId):array {
  if(!$order)return bemora_billing_access($pdo,$tenantId); // legacy/internals are never auto-suspended
  $today=new DateTimeImmutable('today');
  $subscriptionId=(string)$order['asaas_subscription_id'];
- $sub=bemora_asaas_request('GET','/subscriptions/'.rawurlencode($subscriptionId));
+ try{$sub=bemora_asaas_request('GET','/subscriptions/'.rawurlencode($subscriptionId));}
+ catch(RuntimeException $ex){if($ex->getCode()!==404)throw $ex;bemora_billing_subscription_missing($pdo,$tenantId);return bemora_billing_access($pdo,$tenantId);}
  if((string)($sub['id']??'')!==$subscriptionId||(string)($sub['customer']??'')!==(string)$order['asaas_customer_id'])throw new RuntimeException('Assinatura ou cliente divergente.');
  $payments=[];$offset=0;$pageSize=100;
  do {
