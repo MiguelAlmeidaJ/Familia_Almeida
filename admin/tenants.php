@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/../includes/admin_layout.php';
+require_once __DIR__.'/../includes/plans.php';
 require_admin_access();
 $pdo=db();$flash=pull_flash();
 $ordersReady=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='subscription_orders'")->fetchColumn()===1;
