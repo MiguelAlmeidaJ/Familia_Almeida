@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/admin_layout.php';
 require_once __DIR__ . '/../includes/migrations.php';
+require_once __DIR__ . '/../includes/operations.php';
 
 $user = require_admin_access();
 $csrf = csrf_token();
@@ -44,8 +45,30 @@ $flash = pull_flash();
 $diagnostics = database_diagnostics($pdo);
 $migrations = migration_status($pdo);
 $pendingCount = count(array_filter($migrations, fn(array $migration) => !$migration['applied']));
+$opsConfigured=false;$opsError=null;$opsTasks=[];$recentBackups=[];
+try{
+ $privateDir=bemora_ops_dir();$opsConfigured=true;
+ foreach(['backup'=>'Backup diário','billing'=>'Conciliação Asaas','plans'=>'Mudanças programadas (pausadas)'] as $key=>$name){
+  $status=bemora_ops_status($key);
+  $lastSuccess=isset($status['last_success'])?strtotime((string)$status['last_success']):false;
+  $hours=$lastSuccess?(time()-$lastSuccess)/3600:null;
+  $late=$key!=='plans'&&($hours===null||$hours>28);
+  $opsTasks[]=['key'=>$key,'name'=>$name,'status'=>$status,'late'=>$late,'hours'=>$hours];
+ }
+ $folders=glob($privateDir.'/backups/[0-9]*',GLOB_ONLYDIR)?:[];
+ rsort($folders,SORT_STRING);
+ foreach(array_slice($folders,0,5) as $path){
+  if(is_link($path)||!preg_match('/^\\d{8}_\\d{6}_[a-f0-9]{8}$/D',basename($path)))continue;
+  $manifest=$path.'/manifest.json';
+  if(!is_file($manifest))continue;
+  $meta=json_decode((string)file_get_contents($manifest),true);
+  if(!is_array($meta)||($meta['format']??'')!=='bemora-ops-v1')continue;
+  $recentBackups[]=['date'=>(string)($meta['created_at']??''),'size'=>(int)($meta['files']['database.sql.gz']['bytes']??0)+(int)($meta['files']['files.zip']['bytes']??0),'files'=>(int)($meta['archive_entries']??0)];
+ }
+}catch(Throwable $opsException){$opsError='Armazenamento privado de operações não configurado ou inacessível.';}
+
 ?>
-<?php admin_shell_start('settings','Manutenção','Migrations, diagnóstico e verificação dos serviços da plataforma.'); ?><link rel="stylesheet" href="/assets/bemora-smtp-maintenance.css?v=1">
+<?php admin_shell_start('settings','Manutenção','Migrations, diagnóstico e verificação dos serviços da plataforma.'); ?><link rel="stylesheet" href="/assets/bemora-smtp-maintenance.css?v=1"><link rel="stylesheet" href="/assets/bemora-operations.css?v=1">
 <div class="admin-maintenance">
 <?php if ($flash): ?><div class="alert <?= $flash['type'] === 'success' ? 'success' : '' ?>"><?= e($flash['message']) ?></div><?php endif; ?>
 
@@ -86,6 +109,34 @@ $pendingCount = count(array_filter($migrations, fn(array $migration) => !$migrat
 </section>
 </div>
 
+<section class="card recent ops-maintenance" aria-labelledby="ops-heading">
+<div class="card-head"><div><p class="eyebrow">CONTINUIDADE DO SERVIÇO</p><h2 id="ops-heading">Backups e monitoramento</h2></div>
+<span class="pill <?= $opsConfigured?'success':'warning' ?>"><?= $opsConfigured?'Armazenamento protegido':'Configuração pendente' ?></span></div>
+<p class="muted-copy">Acompanhe a última execução das rotinas e os backups locais. As cópias ficam fora da pasta pública e não são disponibilizadas por download nesta página.</p>
+<?php if(!$opsConfigured): ?>
+<div class="ops-message"><i class="bi bi-shield-exclamation"></i><div><strong>Configuração necessária</strong><p><?= e((string)$opsError) ?> Configure <code>operations.private_dir</code>, proteja a pasta com <code>chmod 700</code> e instale os crons descritos na documentação.</p></div></div>
+<?php else: ?>
+<div class="ops-monitor-grid">
+<?php foreach($opsTasks as $task): $st=$task['status']; $last=$st['last_success']??null; $bad=$task['late']||($st['state']??'')==='failed'; ?>
+<div class="ops-monitor-card">
+<div class="ops-monitor-head"><i class="bi <?= $task['key']==='backup'?'bi-cloud-arrow-up':($task['key']==='billing'?'bi-arrow-repeat':'bi-calendar-check') ?>"></i><strong><?= e($task['name']) ?></strong></div>
+<span class="pill <?= $task['key']==='plans'?'warning':($bad?'warning':'success') ?>"><?= $task['key']==='plans'?'Pausada':($st===null?'Sem execução':($bad?'Atenção':'Monitorada')) ?></span>
+<small>Última execução bem-sucedida: <strong><?= $last?e(date('d/m/Y H:i',strtotime($last))):'Ainda não registrada' ?></strong></small>
+<?php if(($st['state']??'')==='failed'): ?><p>Última tentativa falhou. Consulte os logs privados do servidor.</p><?php elseif($task['late']): ?><p>Execução ausente ou com mais de 28 horas.</p><?php endif; ?>
+</div>
+<?php endforeach; ?></div>
+<div class="ops-backup-recent">
+<h3>Backups recentes <small>(armazenamento local)</small></h3>
+<?php if(!$recentBackups): ?><p class="muted-copy">Nenhum backup local registrado. Configure o cron e valide a primeira execução.</p>
+<?php else: ?>
+<div class="table-wrap"><table class="data-table"><thead><tr><th>Criado em (UTC)</th><th>Tamanho</th><th>Arquivos privados</th></tr></thead><tbody>
+<?php foreach($recentBackups as $backup): ?><tr><td><?= e($backup['date']) ?></td><td><?= e(bytes_human($backup['size'])) ?></td><td><?= (int)$backup['files'] ?></td></tr><?php endforeach; ?>
+</tbody></table></div>
+<?php endif; ?>
+<p class="muted-copy">A existência de um backup não comprova uma restauração: execute o teste de integridade e restauração isolada pelo terminal. Armazene também uma cópia criptografada fora da hospedagem.</p>
+</div>
+<?php endif; ?>
+</section>
 <section class="card recent smtp-maintenance-card">
 <div class="card-head"><div><p class="eyebrow">E-MAIL TRANSACIONAL</p><h2>Teste de envio SMTP</h2></div><span class="pill <?= trim((string)config('mail','host',''))!==''?'success':'warning' ?>"><?= trim((string)config('mail','host',''))!==''?'Servidor configurado':'Configuração pendente' ?></span></div>
 <p class="muted-copy">Envie uma mensagem de teste utilizando as configurações SMTP do Bemora. O teste verifica se o servidor aceita o envio, sem revelar usuário, senha ou detalhes de autenticação.</p>
