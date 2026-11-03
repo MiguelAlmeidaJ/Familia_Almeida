@@ -83,6 +83,19 @@ function require_auth(): array
             }
         }
     }
+    // Financial suspension is separate from family account activation and never deletes data.
+    // Keep the billing page, profile and logout available so the customer can regularize.
+    if(empty($user['system_admin']) && !empty($user['tenant_id'])){
+        require_once __DIR__.'/billing_access.php';
+        $access=bemora_billing_access(db(),(int)$user['tenant_id']);
+        if(($access['state']??'active')==='suspended'){
+            $script=str_replace('\\\\','/',(string)($_SERVER['SCRIPT_NAME']??''));
+            $permittedScripts=['/pages/minha_assinatura.php','/pages/meu_perfil.php','/pages/profile_action.php','/pages/profile_avatar.php','/logout.php','/payment.php'];
+            $path=rtrim((string)(parse_url((string)($_SERVER['REQUEST_URI']??'/'),PHP_URL_PATH)??'/'),'/')?:'/';
+            $permittedPaths=['/minha-assinatura','/meu-perfil','/meu-perfil/acao','/meu-perfil/foto','/sair','/pagamento'];
+            if(!in_array($script,$permittedScripts,true)&&!in_array($path,$permittedPaths,true))redirect_to('/minha-assinatura');
+        }
+    }
     return $user;
 }
 
