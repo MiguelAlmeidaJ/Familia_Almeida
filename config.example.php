@@ -18,6 +18,9 @@ return [
         'from' => 'seu-email@seudominio.com.br',
         'from_name' => 'Bemora',
     ],
+    'support' => [
+        'email' => 'suporte@seudominio.com.br', // Destinatário dos relatos de suporte
+    ],
     'asaas' => [
         'enabled' => '0', // Liberar depois de validar sandbox e webhooks
         'environment' => 'sandbox', // sandbox ou production
