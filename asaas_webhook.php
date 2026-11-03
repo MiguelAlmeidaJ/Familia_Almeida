@@ -80,6 +80,12 @@ try{
   // Do not automatically destroy tenant data or invert an already paid order.
   $pdo->prepare("UPDATE subscription_orders SET status='payment_attention' WHERE asaas_subscription_id=? AND status='awaiting_payment'")->execute([$sub]);
  }
+ // Prevent a canceled, not-yet-activated subscription from generating
+ // a new family invitation after payment confirmation.
+ if(in_array($event,['SUBSCRIPTION_DELETED','SUBSCRIPTION_INACTIVATED'],true) && $sub!=='' && $subscriptionEvent){
+  $pdo->prepare("UPDATE subscription_orders SET status='payment_attention' WHERE asaas_subscription_id=? AND asaas_customer_id=? AND activated_tenant_id IS NULL AND status IN ('paid','awaiting_payment')")
+   ->execute([$sub,(string)($subscriptionEvent['customer']??'')]);
+ }
  $pdo->commit();
  // Subscription events are distinct from payment events. On deletion the
  // subscription cannot be fetched again; the authenticated event is verified
