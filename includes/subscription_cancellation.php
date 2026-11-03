@@ -89,3 +89,21 @@ function bemora_cancellation_recover(PDO $pdo,array $row):bool {
  bemora_cancellation_confirm($pdo,(int)$row['id'],$until);
  return true;
 }
+
+/** Retries the confirmation email after a cron recovery or SMTP outage. */
+function bemora_cancellation_notice(PDO $pdo,int $tenantId):void {
+ $c=bemora_cancellation_for_family($pdo,$tenantId);
+ if(!$c||$c['status']!=='confirmed'||!empty($c['notice_sent_at']))return;
+ $q=$pdo->prepare("SELECT buyer_email FROM subscription_orders WHERE id=? AND activated_tenant_id=?");
+ $q->execute([(int)$c['order_id'],$tenantId]);
+ $recipient=(string)$q->fetchColumn();
+ if(!filter_var($recipient,FILTER_VALIDATE_EMAIL))throw new RuntimeException('E-mail do contratante inválido.');
+ require_once __DIR__.'/mailer.php';
+ require_once __DIR__.'/email_templates.php';
+ $limit=(string)($c['access_until']??'');
+ $until=$limit!==''?date('d/m/Y',strtotime($limit)):'encerrado';
+ $message="O Bemora confirmou o cancelamento da renovação automática da sua assinatura. Não serão geradas novas cobranças recorrentes. Seu acesso financeiro está disponível até: ".$until.". Os dados da família não foram excluídos. Faturas anteriores permanecem sujeitas às condições contratadas.";
+ $url=rtrim((string)config('app','base_url','https://bemora.anoar.com.br'),'/').'/minha-assinatura';
+ bemora_send_email($recipient,'Bemora · Renovação cancelada',$message,bemora_email_layout('Sua assinatura','Renovação cancelada',$message,'Consultar assinatura',$url));
+ $pdo->prepare('UPDATE subscription_cancellations SET notice_sent_at=NOW() WHERE id=? AND notice_sent_at IS NULL')->execute([(int)$c['id']]);
+}
