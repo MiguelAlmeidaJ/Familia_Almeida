@@ -20,7 +20,7 @@ try{
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/bemora-landing.css?v=3">
+<link rel="stylesheet" href="/assets/bemora-landing.css?v=4">
 </head><body id="inicio">
 <header class="site-header"><div class="site-container navigation">
 <a class="site-brand" href="/" aria-label="Bemora, início"><img src="/assets/brand/logo.png" alt="Bemora by Anoar"></a>
@@ -90,5 +90,44 @@ $initialCycle=array_key_first(array_filter($plansByCycle,static fn($offers)=>cou
 <section id="duvidas" class="section faq"><div class="site-container faq-grid"><div><span class="eyebrow">AINDA TEM DÚVIDAS?</span><h2>Estamos aqui<br><em>para simplificar.</em></h2><p>Algumas respostas para começar com tranquilidade.</p></div><div class="faq-list"><details><summary>O Bemora é para uma pessoa ou para famílias?<span>+</span></summary><p>Para os dois! Você pode organizar suas finanças pessoais, em casal ou com a família, conforme o ambiente configurado.</p></details><details><summary>Posso separar minhas finanças das outras pessoas?<span>+</span></summary><p>Sim. O Bemora oferece opções para informações financeiras compartilhadas e individuais, conforme a configuração da sua família.</p></details><details><summary>Preciso instalar algum programa?<span>+</span></summary><p>Não. O Bemora funciona pelo navegador, no computador ou no celular.</p></details><details><summary>Como posso conhecer os planos?<span>+</span></summary><p>Entre em contato com nossa equipe comercial pelo WhatsApp para conhecer as condições de contratação disponíveis.</p></details></div></div></section>
 <section id="contato" class="cta-section"><div class="site-container cta-box"><div class="cta-flower">✳</div><span class="eyebrow">COMECE UMA NOVA RELAÇÃO COM O SEU DINHEIRO</span><h2>Mais organização.<br><em>Mais leveza todos os dias.</em></h2><p>Converse com a nossa equipe e descubra como o Bemora pode fazer parte da sua rotina.</p><a class="button button-white" href="https://wa.me/5532984075039?text=Ol%C3%A1%21%20Quero%20conhecer%20o%20Bemora." target="_blank" rel="noopener noreferrer">Falar com o comercial <span>↗</span></a><small>Atendimento pelo WhatsApp · (32) 98407-5039</small></div></section>
 </main>
-<footer class="footer"><div class="site-container footer-main"><div><a href="/"><img src="/assets/brand/logo.png" alt="Bemora by Anoar"></a><p>Seu dinheiro em ordem.<br>Sua vida mais leve.</p></div><div><strong>Navegação</strong><a href="#recursos">Funcionalidades</a><a href="#para-quem">Para quem é</a><a href="#como-funciona">Como funciona</a><a href="#planos">Planos</a><a href="/login">Acessar conta</a><a href="/termos">Termos de uso</a><a href="/privacidade">Privacidade</a></div><div><strong>Fale com a gente</strong><a href="https://wa.me/5532984075039" target="_blank" rel="noopener noreferrer">WhatsApp: (32) 98407-5039</a><a href="mailto:bemora@anoar.com.br">bemora@anoar.com.br</a></div></div><div class="site-container footer-bottom"><span>© <?= date('Y') ?> Bemora. Todos os direitos reservados. · <a href="/termos">Termos</a> · <a href="/privacidade">Privacidade</a></span><span>Um produto <a href="https://anoar.com.br" target="_blank" rel="noopener noreferrer">Anoar</a> ♡</span></div></footer>
+<footer class="footer footer-premium" aria-label="Rodapé do Bemora">
+<div class="site-container">
+  <div class="footer-topline">
+    <div><span class="footer-topline-kicker">BEMORA BY ANOAR</span><h2>Mais clareza para cuidar<br>do que importa.</h2></div>
+    <a class="footer-contact-cta" href="https://wa.me/5532984075039?text=Ol%C3%A1%21%20Quero%20saber%20mais%20sobre%20o%20Bemora." target="_blank" rel="noopener noreferrer">Converse com nossa equipe <span aria-hidden="true">↗</span></a>
+  </div>
+  <div class="footer-main footer-premium-grid">
+    <div class="footer-about">
+      <a href="/" class="footer-brand" aria-label="Bemora, voltar ao início"><img src="/assets/brand/logo.png" alt="Bemora by Anoar"></a>
+      <p>Seu dinheiro em ordem.<br>Sua vida mais leve.</p>
+      <div class="footer-about-note"><span class="footer-online-dot" aria-hidden="true"></span> Para você, para dois ou para toda a família.</div>
+    </div>
+    <nav class="footer-column" aria-label="Conheça o Bemora">
+      <h3>Explore</h3>
+      <a href="/#recursos">Funcionalidades</a>
+      <a href="/#para-quem">Para quem é</a>
+      <a href="/#como-funciona">Como funciona</a>
+      <a href="/#planos">Planos e preços</a>
+      <a href="/#duvidas">Dúvidas frequentes</a>
+    </nav>
+    <nav class="footer-column" aria-label="Conta e informações legais">
+      <h3>Informações</h3>
+      <a href="/login">Acessar minha conta</a>
+      <a href="/termos">Termos de uso</a>
+      <a href="/privacidade">Política de privacidade</a>
+      <a href="/#contato">Atendimento</a>
+    </nav>
+    <div class="footer-column footer-contact">
+      <h3>Fale com a gente</h3>
+      <p>Tem dúvidas? Estamos aqui para ajudar.</p>
+      <a href="https://wa.me/5532984075039" target="_blank" rel="noopener noreferrer"><span class="footer-contact-icon" aria-hidden="true">↗</span><span>WhatsApp<small>(32) 98407-5039</small></span></a>
+      <a href="mailto:bemora@anoar.com.br"><span class="footer-contact-icon" aria-hidden="true">@</span><span>E-mail<small>bemora@anoar.com.br</small></span></a>
+    </div>
+  </div>
+  <div class="footer-bottom footer-premium-bottom">
+    <span>© <?= date('Y') ?> Bemora. Todos os direitos reservados.</span>
+    <span class="footer-made-by">Um produto <a href="https://anoar.com.br" target="_blank" rel="noopener noreferrer">Anoar</a><span class="footer-brand-heart" aria-hidden="true">✳</span></span>
+  </div>
+</div>
+</footer>
 <script src="/assets/bemora-landing.js?v=2" defer></script></body></html>
