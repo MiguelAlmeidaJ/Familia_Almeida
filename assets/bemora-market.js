@@ -81,7 +81,29 @@ async function getWorker(){
  try{return await loading;}finally{loading=null;}
 }
 // The visible guide and the actual cropped pixels use the same geometry.
-const GUIDE={left:.075,top:.30,width:.85,height:.40};
+const marketCamera=document.querySelector('.market-camera');
+const guideBox=document.querySelector('.market-guides > div');
+const shapes={
+ wide:{label:'horizontal',crop:{x:.04,y:.32,w:.92,h:.36}},
+ medium:{label:'padrão',crop:{x:.075,y:.30,w:.85,h:.40}},
+ square:{label:'quadrada',crop:{x:.19,y:.15,w:.62,h:.70}},
+ tall:{label:'vertical',crop:{x:.27,y:.08,w:.46,h:.84}}
+};
+let currentShape='wide';
+for(const button of document.querySelectorAll('[data-market-shape]')){
+ button.addEventListener('click',()=>{
+  const shape=button.dataset.marketShape;
+  if(!Object.prototype.hasOwnProperty.call(shapes,shape))return;
+  currentShape=shape;
+  marketCamera.dataset.shape=shape;
+  for(const other of document.querySelectorAll('[data-market-shape]')){
+   const selected=other===button;other.classList.toggle('active',selected);other.setAttribute('aria-pressed',String(selected));
+  }
+  const hint=$('market-shape-hint');
+  if(hint)hint.textContent='Enquadre a etiqueta '+shapes[shape].label+' dentro da marcação; o recorte seguirá exatamente essa área.';
+  if(uploadImage&&cropEditor&&!cropEditor.hidden){cropRect={...shapes[shape].crop};drawCropEditor();}
+ });
+}
 const cropEditor=$('market-crop-editor'),cropCanvas=$('market-crop-canvas'),cropApply=$('market-crop-apply');
 const priceOptions=$('market-price-options'),priceButtons=$('market-price-buttons');
 let uploadImage=null,cropRect={x:.08,y:.28,w:.84,h:.43},dragOrigin=null,recognizing=false;
@@ -166,15 +188,16 @@ function cropFrom(source,x,y,w,h){
 // Convert the guide from display coordinates to the real video pixels.
 function cropVisibleGuide(){
  const vw=video.videoWidth,vh=video.videoHeight;
- const rect=video.getBoundingClientRect();
- if(!vw||!vh||!rect.width||!rect.height)throw new Error('Câmera sem imagem disponível.');
- const scale=Math.max(rect.width/vw,rect.height/vh);
- const renderedW=vw*scale,renderedH=vh*scale;
- const offX=(renderedW-rect.width)/2,offY=(renderedH-rect.height)/2;
- const left=(rect.width*GUIDE.left+offX)/scale;
- const top=(rect.height*GUIDE.top+offY)/scale;
- const width=rect.width*GUIDE.width/scale;
- const height=rect.height*GUIDE.height/scale;
+ const display=video.getBoundingClientRect();
+ const guide=guideBox.getBoundingClientRect();
+ if(!vw||!vh||!display.width||!display.height||!guide.width||!guide.height)throw new Error('Câmera sem imagem disponível.');
+ // The displayed camera uses object-fit:cover. Match the exact visible guide,
+ // including all responsive layouts and selected aspect ratios.
+ const scale=Math.max(display.width/vw,display.height/vh);
+ const offsetX=(vw*scale-display.width)/2,offsetY=(vh*scale-display.height)/2;
+ const left=(guide.left-display.left+offsetX)/scale;
+ const top=(guide.top-display.top+offsetY)/scale;
+ const width=guide.width/scale,height=guide.height/scale;
  return cropFrom(video,left/vw,top/vh,width/vw,height/vh);
 }
 function drawCropEditor(){
@@ -203,9 +226,24 @@ cropCanvas.addEventListener('pointermove',e=>{
  cropRect={x:Math.min(dragOrigin.x,p.x),y:Math.min(dragOrigin.y,p.y),w:Math.abs(p.x-dragOrigin.x),h:Math.abs(p.y-dragOrigin.y)};
  drawCropEditor();
 });
-function finishCrop(){dragOrigin=null;if(cropRect.w<.08||cropRect.h<.05){cropRect={x:.08,y:.28,w:.84,h:.43};drawCropEditor();}}
+function finishCrop(){dragOrigin=null;if(cropRect.w<.08||cropRect.h<.05){cropRect={...shapes[currentShape].crop};drawCropEditor();}}
 cropCanvas.addEventListener('pointerup',finishCrop);
 cropCanvas.addEventListener('pointercancel',finishCrop);
+function productQuality(value){
+ if(!value)return -100;
+ const letters=(value.match(/[a-záàâãéêíóôõúç]/gi)||[]).length;
+ const digitCount=(value.match(/\\d/g)||[]).length;
+ const tokens=value.split(/\\s+/).filter(Boolean);
+ const coherent=tokens.filter(token=>/[a-záéíóúãõç]{3,}/i.test(token)).length;
+ const suspicious=tokens.filter(token=>/[^a-záàâãéêíóôõúç0-9-]/i.test(token)).length;
+ const packageHint=/\\b(?:\\d+\\s*(?:kg|g|ml|l|un|und|pct)|tipo\\s*\\d+)\\b/i.test(value);
+ return coherent*3+Math.min(letters,40)*.12+(packageHint?9:0)-digitCount*.12-suspicious*2;
+}
+function betterName(existing,candidate){
+ if(!candidate)return existing;
+ if(!existing)return candidate;
+ return productQuality(candidate)>productQuality(existing)?candidate:existing;
+}
 function enhance(source){
  const output=document.createElement('canvas');
  // Upscale small labels so printed characters remain readable.
@@ -235,11 +273,16 @@ async function recognize(cropped){
   setStatus('Lendo apenas o recorte da etiqueta. Aguarde…');
   const result=await reader.recognize(enhance(cropped));
   let parsed=parseLabel(result.data.text||'');
-  // Try original colors if enhanced recognition is incomplete.
+  // Large price digits can dominate OCR. Read the product-name band separately
+  // and prefer its result when the label header is clearer.
+  const topBand=cropFrom(cropped,0,0,1,.38);
+  const header=await reader.recognize(enhance(topBand));
+  const topParsed=parseLabel(header.data.text||'');
+  parsed.product=betterName(parsed.product,topParsed.product);
   if(!parsed.product||!parsed.options.length){
    const backup=await reader.recognize(cropped);
    const alternative=parseLabel(backup.data.text||'');
-   if(!parsed.product)parsed.product=alternative.product;
+   parsed.product=betterName(parsed.product,alternative.product);
    if(!parsed.options.length)parsed.options=alternative.options;
   }
   if(parsed.product)name.value=parsed.product;
@@ -273,7 +316,7 @@ photo.addEventListener('change',async()=>{
   bitmap.close();
   uploadImage=display;
   cropCanvas.width=display.width;cropCanvas.height=display.height;
-  cropRect={x:.08,y:.28,w:.84,h:.43};
+  cropRect={...shapes[currentShape].crop};
   cropEditor.hidden=false;preview.hidden=true;
   drawCropEditor();
   setStatus('Arraste o dedo para selecionar somente a etiqueta e toque em Ler área selecionada.');
