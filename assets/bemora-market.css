@@ -92,3 +92,9 @@
  .market-basket-total strong{font-size:18px}
  .market-scan-items{padding-bottom:20px}
 }
+
+.market-basket-shortcut{display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 0 5px;padding:12px 14px;border:1px solid #bcdcca;border-radius:10px;background:#edf8f0;color:#0b7559;font-size:12px;font-weight:800;text-decoration:none;min-height:43px}
+.market-basket-shortcut:hover{color:#075e48;background:#ddf2e4;text-decoration:none}
+.market-basket-shortcut span{margin-left:auto;font-size:17px}
+#market-shopping-items{scroll-margin-top:20px}
+@media(min-width:751px){.market-basket-shortcut{display:none}}
