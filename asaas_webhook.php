@@ -25,6 +25,25 @@ try{
   if(preg_match('/^[A-Za-z0-9_-]{3,100}$/D',$id))bemora_apply_paid_plan_change(db(),$id);
  }
 
+ // Reversed standalone upgrade charges require manual billing reconciliation.
+ // Do not silently revert a subscribed family's limits after a chargeback.
+ if($sub==='' && in_array($event,['PAYMENT_REFUNDED','PAYMENT_PARTIALLY_REFUNDED','PAYMENT_REFUND_IN_PROGRESS','PAYMENT_CHARGEBACK_REQUESTED','PAYMENT_CHARGEBACK_DISPUTE','PAYMENT_AWAITING_CHARGEBACK_REVERSAL'],true)){
+  $paymentId=(string)($payment['id']??'');
+  if(preg_match('/^[A-Za-z0-9_-]{3,100}$/D',$paymentId)){
+   $db=db();
+   $q=$db->prepare("SELECT c.id,c.status,c.activated_at,o.asaas_customer_id FROM subscription_change_requests c JOIN subscription_orders o ON o.id=c.order_id WHERE c.asaas_payment_id=? LIMIT 1");
+   $q->execute([$paymentId]);$change=$q->fetch(PDO::FETCH_ASSOC);
+   if($change && !empty($change['activated_at'])){
+    $verified=bemora_asaas_request('GET','/payments/'.rawurlencode($paymentId));
+    if((string)($verified['id']??'')===$paymentId
+       && (string)($verified['customer']??'')===(string)$change['asaas_customer_id']
+       && (string)($verified['externalReference']??'')==='bemora-change-'.(int)$change['id']
+       && in_array((string)($verified['status']??''),['REFUNDED','PARTIALLY_REFUNDED','REFUND_IN_PROGRESS','CHARGEBACK_REQUESTED','CHARGEBACK_DISPUTE','AWAITING_CHARGEBACK_REVERSAL'],true)){
+     $db->prepare("UPDATE subscription_change_requests SET status='reconciliation_required',failure_reason='upgrade_payment_reversed' WHERE id=? AND activated_at IS NOT NULL")->execute([(int)$change['id']]);
+    }
+   }
+  }
+ }
  $pdo=db();$pdo->beginTransaction();
  $ins=$pdo->prepare('INSERT IGNORE INTO asaas_webhook_events(event_id,event_type,subscription_id) VALUES (?,?,?)');
  $ins->execute([$eventId,$event,$sub?:null]);
