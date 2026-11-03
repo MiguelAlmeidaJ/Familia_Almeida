@@ -83,3 +83,25 @@ html.sidebar-collapsed .sidebar.ref-sidebar .bemora-account-links::after{left:-5
 /* Let collapsed account popup extend outside the sidebar, while nav keeps its own scroll. */
 .sidebar.ref-sidebar{overflow:visible!important}
 @media(max-width:760px){.sidebar.ref-sidebar{overflow:visible!important}}
+
+/* Avatar containment: uploaded profile pictures must never overflow the sidebar. */
+.sidebar.ref-sidebar .bemora-account-menu .ref-sidebar-user{min-width:0!important;overflow:hidden!important}
+.sidebar.ref-sidebar .bemora-account-menu .user-avatar{
+  display:grid!important;place-items:center!important;
+  flex:0 0 38px!important;width:38px!important;min-width:38px!important;
+  max-width:38px!important;height:38px!important;min-height:38px!important;
+  max-height:38px!important;padding:0!important;overflow:hidden!important;
+  border-radius:12px!important;isolation:isolate;
+}
+.sidebar.ref-sidebar .bemora-account-menu .user-avatar > img{
+  display:block!important;width:100%!important;min-width:0!important;
+  max-width:100%!important;height:100%!important;max-height:100%!important;
+  object-fit:cover!important;object-position:center!important;
+  border:0!important;border-radius:inherit!important;
+}
+.sidebar.ref-sidebar .bemora-account-menu .sidebar-user-copy{flex:1 1 auto!important;min-width:0!important;overflow:hidden!important}
+.sidebar.ref-sidebar .bemora-account-menu .sidebar-user-copy strong,
+.sidebar.ref-sidebar .bemora-account-menu .sidebar-user-copy span{
+  display:block!important;max-width:100%!important;overflow:hidden!important;
+  white-space:nowrap!important;text-overflow:ellipsis!important;
+}
