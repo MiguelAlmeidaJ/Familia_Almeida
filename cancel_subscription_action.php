@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/includes/auth.php';
 require_once __DIR__.'/includes/subscription_cancellation.php';
+require_once __DIR__.'/includes/billing_access.php';
 require_once __DIR__.'/includes/mailer.php';
 require_once __DIR__.'/includes/email_templates.php';
 $user=require_family_access();
@@ -47,6 +48,7 @@ try{
  if((string)($changed['id']??'')!==$sid||(string)($changed['status']??'')!=='INACTIVE')
   throw new RuntimeException('O Asaas ainda não confirmou a interrupção das renovações.');
  bemora_cancellation_confirm($pdo,$claimId,$accessUntil);
+ try{bemora_reconcile_billing_access($pdo,$tenantId);}catch(Throwable $accessError){error_log('Bemora: cancelamento confirmado, acesso será atualizado pela rotina de conciliação.');}
  try{bemora_cancellation_notice($pdo,$tenantId);}
  catch(Throwable $mailError){error_log('Bemora: cancelamento confirmado, e-mail será reenviado pela conciliação.');}
  flash('success',$accessUntil?'Cancelamento confirmado! Sua assinatura não será renovada. Seu acesso permanece até '.date('d/m/Y',strtotime($accessUntil)).'.':'Cancelamento confirmado! As próximas cobranças recorrentes foram interrompidas.');
