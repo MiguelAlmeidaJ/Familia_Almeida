@@ -9,6 +9,8 @@ require_once __DIR__.'/email_templates.php';
  * Failures are logged and retried, but never influence access suspension.
  */
 function bemora_send_billing_reminders(PDO $pdo,int $tenantId):int {
+ $access=bemora_billing_access($pdo,$tenantId);
+ if(in_array((string)($access['reason']??''),['subscription_deleted','subscription_inactive','payment_reversed','upgrade_payment_reversed'],true))return 0;
  $ready=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='billing_notification_log'")->fetchColumn();
  if(!$ready)throw new RuntimeException('Execute a migration 035.');
  $q=$pdo->prepare("SELECT o.asaas_subscription_id,o.asaas_customer_id,o.coupon_free_until,
