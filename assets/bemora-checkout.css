@@ -6,3 +6,8 @@
 .checkout-legal-accept{display:flex!important;flex-direction:row!important;align-items:flex-start;gap:11px;padding:13px 15px;background:#f1faf5;border:1px solid #cee9da;border-radius:11px;font-size:12px!important;line-height:1.6;color:#2b6653}
 .checkout-legal-accept input{width:17px!important;height:17px;flex:0 0 17px;margin:3px 0 0;accent-color:#09856a}
 .checkout-legal-accept a{color:#08765d;font-weight:750;text-decoration:underline}
+
+.checkout-legal-footer{display:flex;justify-content:center;align-items:center;gap:14px;flex-wrap:wrap;margin:25px 0 0;text-align:center;color:#789487;font-size:11px}
+.checkout-legal-footer p{flex-basis:100%;max-width:900px;margin:0;line-height:1.6}
+.checkout-legal-footer a{color:#0b7158;text-decoration:none}
+.checkout-legal-footer a:hover{text-decoration:underline}
