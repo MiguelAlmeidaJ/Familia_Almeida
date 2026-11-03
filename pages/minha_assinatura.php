@@ -6,7 +6,14 @@ require_once __DIR__.'/../includes/asaas.php';
 require_once __DIR__.'/../includes/billing_access.php';
 header('Cache-Control: private, no-store, max-age=0');
 header('Pragma: no-cache');
-$user=require_family_access();$pdo=db();$csrf=csrf_token();$tenantId=(int)$user['tenant_id'];$flash=pull_flash();
+$user=require_family_access();$pdo=db();$csrf=csrf_token();$tenantId=(int)$user['tenant_id'];
+if(($_GET['access_check']??'')==='1'){
+ header('Content-Type: application/json; charset=utf-8');
+ header('Cache-Control: private, no-store');
+ echo json_encode(['blocked'=>bemora_billing_is_blocked(bemora_billing_access($pdo,$tenantId))],JSON_THROW_ON_ERROR);
+ exit;
+}
+$flash=pull_flash();
 $q=$pdo->prepare("SELECT t.name,t.max_members,tu.role FROM tenants t JOIN tenant_users tu ON tu.tenant_id=t.id AND tu.user_id=? WHERE t.id=? AND t.active=1");
 $q->execute([(int)$user['id'],$tenantId]);$family=$q->fetch(PDO::FETCH_ASSOC);
 if(!$family){http_response_code(403);exit('Família indisponível.');}
