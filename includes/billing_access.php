@@ -137,10 +137,13 @@ function bemora_reconcile_billing_access(PDO $pdo,int $tenantId):array {
   if($ex->getCode()!==404)throw $ex;
   if($cancellation && $cancellation['status']==='confirmed'){
    $activeUntil=(string)($cancellation['access_until']??'');
-   $state=$activeUntil>=date('Y-m-d')?'active':'suspended';
+   $previous=bemora_billing_access($pdo,$tenantId);
+   $priorFinancialHold=($previous['state']??'active')==='suspended'
+     && in_array((string)($previous['reason']??''),['overdue','payment_reversed','upgrade_payment_reversed'],true);
+   $state=$activeUntil>=date('Y-m-d')&&!$priorFinancialHold?'active':'suspended';
    $pdo->prepare("INSERT INTO tenant_billing_access(tenant_id,state,checked_at) VALUES(?,?,NOW()) ON DUPLICATE KEY UPDATE state=VALUES(state),checked_at=NOW()")->execute([$tenantId,$state]);
    $hasReason=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='tenant_billing_access' AND column_name='reason'")->fetchColumn();
-   if($hasReason)$pdo->prepare('UPDATE tenant_billing_access SET reason=? WHERE tenant_id=?')->execute([$state==='active'?null:'subscription_canceled',$tenantId]);
+   if($hasReason&&!$priorFinancialHold)$pdo->prepare('UPDATE tenant_billing_access SET reason=? WHERE tenant_id=?')->execute([$state==='active'?null:'subscription_canceled',$tenantId]);
    return bemora_billing_access($pdo,$tenantId);
   }
   bemora_billing_subscription_missing($pdo,$tenantId);
