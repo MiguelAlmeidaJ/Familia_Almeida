@@ -24,3 +24,23 @@ Somente após registrar evidências de todos os itens acima, definir `BEMORA_MUL
 
 ## Checkout
 Campos CPF/CNPJ e celular possuem máscaras no navegador, mas os dados são normalizados e validados de novo em PHP, com dígitos verificadores de CPF/CNPJ e padrão de celular brasileiro. Testes unitários independentes ficam em `tests/checkout_validation_cli.php`.
+
+
+## Fase 1 — hardening (2026-11-03)
+- Atualização dos testes: painel autenticado em `/pages/painel.php` em lugar da landing page `index.php`; dados de teste com datas consistentes e mês selecionado explicitamente; sondagens de rota de acesso suspenso.
+- Login: migration `20261103_037_login_rate_limits`; tentativas por conta (5/15 minutos) e origem (20/15 minutos), com bloqueio temporário de 15 minutos. Não confiar em `X-Forwarded-For` diretamente. Nenhum identificador de origem ou e-mail é armazenado em texto na tabela.
+- Sessões: `session.use_strict_mode=1`, sessão com cookie, expiração por inatividade de 2 horas e idade máxima de 24 horas; troca do ID após login.
+- HTTP: pastas internas, testes, scripts, vendor, migrations e storage negadas no `.htaccess`, mantendo anexos acessíveis apenas pelos controllers autenticados.
+
+### Ordem segura de implantação
+1. Backup do banco e dos arquivos privados.
+2. `git pull --ff-only origin main` mantendo uma sessão de administrador ativa ou executando as migrations pelo PHP CLI.
+3. Antes de fazer logout, execute `20261103_037_login_rate_limits` pelo painel de Manutenção. Alternativamente:
+```bash
+/usr/local/php83/bin/php scripts/run_migrations.php
+/usr/local/php83/bin/php scripts/run_migrations.php --apply
+```
+4. Confirme os dois workflows do último commit na main. Abra duas famílias e dois membros, teste isolamento e suspensão manual.
+5. Se a migration 037 não estiver aplicada, o login exibirá indisponibilidade (fail-closed). Não ofereça acesso público antes de aplicar.
+6. Confirme que `/storage/receipts/`, `/storage/avatars/`, `/includes/`, `/vendor/` e `/database/` não permitem download HTTP direto.
+7. Faça um teste de bloqueio em conta exclusiva de teste; o administrador deverá aguardar 15 minutos após o limite.
