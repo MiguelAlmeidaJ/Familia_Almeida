@@ -109,6 +109,7 @@ function bemora_reconcile_billing_access(PDO $pdo,int $tenantId):array {
   if($hasMore&&count($items)===0)throw new RuntimeException('Paginação de cobrança inconsistente.');
   if($offset>10000)throw new RuntimeException('Limite de conciliação excedido.');
  }while($hasMore);
+ bemora_reconcile_upgrade_reversals($pdo,$tenantId);
  $decision=bemora_billing_decision((string)($sub['status']??''),$payments,(string)($order['coupon_free_until']??''),$today);
  $upgradeReview=false;
  $review=$pdo->prepare("SELECT COUNT(*) FROM subscription_change_requests WHERE tenant_id=? AND status='reconciliation_required' AND activated_at IS NOT NULL AND failure_reason='upgrade_payment_reversed'");
