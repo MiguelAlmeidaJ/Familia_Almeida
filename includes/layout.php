@@ -44,6 +44,9 @@ function render_sidebar(string $active, string $csrf): void
     ];
 
     $user = function_exists('current_user') ? current_user() : null;
+    require_once __DIR__.'/billing_access.php';
+    $suspended = $user && !empty($user['tenant_id']) && bemora_billing_is_blocked(bemora_billing_access(db(),(int)$user['tenant_id']));
+    if($suspended)$items=[];
     $memberLimit=2;
     if($user && !empty($user['tenant_id'])){
         $limitQuery=db()->prepare('SELECT max_members FROM tenants WHERE id=? AND active=1');
@@ -63,6 +66,7 @@ function render_sidebar(string $active, string $csrf): void
         </div>
 
         <nav class="side-nav ref-nav" aria-label="Menu principal">
+            <?php if($suspended): ?><a class="nav-item active" href="/minha-assinatura"><span class="nav-icon"><i class="bi bi-credit-card" aria-hidden="true"></i></span><span class="nav-item-label">Minha assinatura</span></a><?php endif; ?>
             <?php foreach ($items as $item): ?>
                 <a class="nav-item <?= $active === $item['key'] ? 'active' : '' ?>" href="<?= e($item['href']) ?>" title="<?= e($item['label']) ?>">
                     <span class="nav-icon"><?= nav_icon($item['key']) ?></span>
@@ -72,7 +76,7 @@ function render_sidebar(string $active, string $csrf): void
 
         </nav>
 
-        <details class="bemora-account-menu">
+        <?php if(!$suspended): ?><details class="bemora-account-menu">
           <summary class="sidebar-user ref-sidebar-user" title="Abrir opções da conta">
             <div class="user-avatar"><?php if($user && !empty($user['avatar_path'])): ?><img src="/meu-perfil/foto?v=<?= e(substr((string)$user['avatar_path'],0,12)) ?>" alt=""><?php else: ?><?= e($initial) ?><?php endif; ?></div>
             <div class="sidebar-user-copy"><strong><?= e($user['name']??'Usuário') ?></strong><span>Minha conta</span></div><i class="bi bi-chevron-up bemora-account-chevron" aria-hidden="true"></i>
@@ -82,7 +86,7 @@ function render_sidebar(string $active, string $csrf): void
             <a href="/minha-assinatura"><i class="bi bi-credit-card"></i> Minha assinatura</a>
             <a href="/minha-conta"><i class="bi bi-sliders2"></i> Configurações</a>
           </nav>
-        </details>
+        </details><?php endif; ?>
         <form method="post" action="/sair" class="sidebar-logout">
             <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
             <button class="logout modern-logout" type="submit" title="Sair da conta">
@@ -130,6 +134,10 @@ function render_topbar(array $user, string $context = 'Espaço privado'): void
         </div>
     </header>
     <?php
+    // Never render quick-entry dialogs or finance actions while billing access is suspended.
+    require_once __DIR__.'/billing_access.php';
+    $billingLocked=!empty($user['tenant_id'])&&bemora_billing_is_blocked(bemora_billing_access(db(),(int)$user['tenant_id']));
+    if($billingLocked)return;
     // A single quick-entry action shared by authenticated family pages.
     $quickCsrf=csrf_token();
     $quickMonth=selected_month();
