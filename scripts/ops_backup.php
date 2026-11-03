@@ -74,7 +74,11 @@ function bemora_ops_backup():array {
                     $entryCount++;
                 }
             }
-        }finally{$zip->close();}
+            if($entryCount===0 && !$zip->addFromString('storage/receipts/.empty',''))
+                throw new RuntimeException('Falha ao criar ZIP vazio.');
+        }finally{
+            if(!$zip->close())throw new RuntimeException('Falha ao finalizar arquivo ZIP.');
+        }
         chmod($archive,0600);
         $manifest=['format'=>'bemora-ops-v1','created_at'=>gmdate('c'),'database'=>$connection['database'],'archive_entries'=>$entryCount,
           'files'=>[
