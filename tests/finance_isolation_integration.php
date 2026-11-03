@@ -66,6 +66,7 @@ $notes=receipts_for_month($pdo,'2026-10');
 
 check(count($notes)===2,'member A cannot list private receipts of B');
 $_SERVER['REQUEST_METHOD']='GET';
+$_GET['month']='2026-10';
 $_SERVER['SCRIPT_NAME']='/pages/painel.php';
 $_SERVER['REQUEST_URI']='/painel';
 ob_start();require __DIR__.'/../pages/painel.php';$homeHtml=ob_get_clean();
