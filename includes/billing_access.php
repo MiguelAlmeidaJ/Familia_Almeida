@@ -85,6 +85,9 @@ function bemora_reconcile_billing_access(PDO $pdo,int $tenantId):array {
  $review=$pdo->prepare("SELECT COUNT(*) FROM subscription_change_requests WHERE tenant_id=? AND status='reconciliation_required' AND activated_at IS NOT NULL AND failure_reason='upgrade_payment_reversed'");
  $review->execute([$tenantId]);
  $upgradeReview=(int)$review->fetchColumn()>0;
+ if($upgradeReview){
+  $decision=['state'=>'suspended','reason'=>'upgrade_payment_reversed','payment_id'=>null,'overdue_since'=>null,'days_overdue'=>0];
+ }
  $state=$decision['state'];
  $oldest=$decision['payment_id']!==null?['id'=>$decision['payment_id'],'date'=>$decision['overdue_since']]:null;
  $daysOverdue=$decision['days_overdue'];
