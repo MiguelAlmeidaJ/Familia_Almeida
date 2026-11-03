@@ -66,10 +66,10 @@ $notes=receipts_for_month($pdo,'2026-10');
 
 check(count($notes)===2,'member A cannot list private receipts of B');
 $_SERVER['REQUEST_METHOD']='GET';
-$_SERVER['SCRIPT_NAME']='/index.php';
-$_SERVER['REQUEST_URI']='/';
-ob_start();require __DIR__.'/../index.php';$homeHtml=ob_get_clean();
-check(str_contains($homeHtml,'Privado A') && !str_contains($homeHtml,'Privado B'),'individual dashboard does not render other member private salary');
+$_SERVER['SCRIPT_NAME']='/pages/painel.php';
+$_SERVER['REQUEST_URI']='/painel';
+ob_start();require __DIR__.'/../pages/painel.php';$homeHtml=ob_get_clean();
+check(str_contains($homeHtml,'Privado A') && !str_contains($homeHtml,'Privado B') && !str_contains($homeHtml,'Outra familia'),'individual dashboard renders only authorized financial entries');
 $_SERVER['SCRIPT_NAME']='/pages/movimentacoes.php';
 $_SERVER['REQUEST_URI']='/movimentacoes';
 ob_start();require __DIR__.'/../pages/movimentacoes.php';$movHtml=ob_get_clean();
@@ -128,9 +128,9 @@ $probe=static function(int $member,int $tenant,string $release,string $route):st
  check($status===0,'tenant guard CLI exits cleanly');
  return implode("\n",$output);
 };
-$unreleased=$probe(3,$other,'0','/');
+$unreleased=$probe(3,$other,'0','/painel');
 check(str_contains($unreleased,'Família não autorizada'),'unreleased second family is denied by default');
-$released=$probe(3,$other,'1','/');
+$released=$probe(3,$other,'1','/painel');
 $external=json_decode($released,true);
 check(is_array($external) && (int)$external['tenant']===$other && abs((float)$external['income']-900)<0.001,
  'authorized second family sees own transactions only');
