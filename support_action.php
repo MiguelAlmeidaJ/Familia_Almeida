@@ -28,7 +28,11 @@ try{
  $q=$pdo->prepare("INSERT INTO support_tickets(tenant_id,user_id,description,contact_method,contact_value) VALUES(?,?,?,?,?)");
  $q->execute([$tenantId,$userId,$description,$method,$value]);$ticketId=(int)$pdo->lastInsertId();
  $recipient=trim((string)config('support','email',config('mail','from','')));
- if(!filter_var($recipient,FILTER_VALIDATE_EMAIL))throw new RuntimeException('Relato registrado, mas o e-mail de administração ainda não está configurado.');
+ if(!filter_var($recipient,FILTER_VALIDATE_EMAIL)){
+  $pdo->prepare("UPDATE support_tickets SET email_status='failed' WHERE id=?")->execute([$ticketId]);
+  flash('success','Relato #'.$ticketId.' registrado. Configure o e-mail de suporte para receber avisos; o atendimento já aparece no painel administrativo.');
+  redirect_to('/minha-assinatura');
+ }
  $family=$pdo->prepare('SELECT name FROM tenants WHERE id=?');$family->execute([$tenantId]);$name=(string)$family->fetchColumn();
  $subject='Bemora · Novo relato de suporte #'.$ticketId;
  $body="Novo relato de suporte #".$ticketId."\nFamília: ".$name."\nUsuário: ".$user['name']."\nContato preferencial: ".$method." — ".$value."\n\nDescrição:\n".$description."\n\nAcesse o painel administrativo para responder.";
