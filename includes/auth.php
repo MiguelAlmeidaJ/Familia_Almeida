@@ -88,7 +88,7 @@ function require_auth(): array
     if(empty($user['system_admin']) && !empty($user['tenant_id'])){
         require_once __DIR__.'/billing_access.php';
         $access=bemora_billing_access(db(),(int)$user['tenant_id']);
-        if(($access['state']??'active')==='suspended'){
+        if(bemora_billing_is_blocked($access)){
             $script=str_replace('\\\\','/',(string)($_SERVER['SCRIPT_NAME']??''));
             $permittedScripts=['/pages/minha_assinatura.php','/pages/meu_perfil.php','/pages/profile_action.php','/pages/profile_avatar.php','/logout.php','/payment.php'];
             $path=rtrim((string)(parse_url((string)($_SERVER['REQUEST_URI']??'/'),PHP_URL_PATH)??'/'),'/')?:'/';
