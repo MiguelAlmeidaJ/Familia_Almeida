@@ -18,6 +18,16 @@ return [
         'from' => 'seu-email@seudominio.com.br',
         'from_name' => 'Bemora',
     ],
+    'operations' => [
+        // CRIE esta pasta fora de public_html e execute chmod 700 nela.
+        // Exemplo: /home/USUARIO/bemora_private_operations
+        'private_dir' => '',
+        'alert_email' => '', // E-mail do administrador para falhas de cron e recuperação
+        'retention_days' => 14, // Arquivos locais; mantenha cópias externas criptografadas
+        'mysqldump_binary' => 'mysqldump', // ou /usr/bin/mariadb-dump
+        'mysql_binary' => 'mysql', // ou /usr/bin/mariadb
+        'restore_test_database' => '', // Banco de homologação vazio e DIFERENTE do banco principal
+    ],
     'support' => [
         'email' => 'suporte@seudominio.com.br', // Destinatário dos relatos de suporte
     ],
