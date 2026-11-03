@@ -37,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if($user && password_verify($password,(string)$user['password_hash'])){
                 bemora_login_succeeded($pdo,$email,$remoteIp);
                 session_regenerate_id(true);
+                unset($_SESSION['csrf_token']);
                 $_SESSION['user_id']=(int)$user['id'];
                 $_SESSION['auth_issued_at']=time();
                 $_SESSION['auth_last_seen']=time();
