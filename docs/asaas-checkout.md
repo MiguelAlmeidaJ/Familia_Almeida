@@ -109,3 +109,19 @@ O acesso financeiro por inadimplência é controlado separadamente em `tenant_bi
 ```
 - O cron anterior `scripts/process_scheduled_plan_changes.php` permanece desabilitado: não o confunda com a rotina de cobrança. Esse cron antigo pode ser removido do agendador.
 - Valide no Sandbox com fatura vencida, fatura dentro da tolerância, pagamento confirmado e plano interno; antes de operar em produção, ajuste a política de tolerância, comunicações e bloqueios à política comercial aprovada.
+
+
+## Notificações de cobrança e suspensão administrativa (migration 035)
+Execute `20261103_035_billing_notifications_manual_suspension` após a migration 034.
+A rotina diária existente `scripts/reconcile_billing_access.php` agora também envia emails SMTP ao administrador familiar (papel `family_admin`) associado à assinatura:
+- Na data de vencimento: aviso de fatura disponível para pagamento.
+- No segundo dia após o vencimento: aviso do período de tolerância de 3 dias completos.
+- No quarto dia após o vencimento: aviso de acesso financeiro suspenso (após a verificação diária).
+- Não envia avisos de atraso para cobrança já confirmada pelo Asaas, nem durante uma cortesia vigente.
+- Emails são enviados em HTML pelo template Bemora já utilizado pelo SMTP. A tabela `billing_notification_log` registra o par único (família, cobrança, tipo de aviso) e o status. Se o SMTP falhar, a notificação pode ser repetida na próxima execução.
+- O cron existente de 02h15 permanece o mesmo, não adicione um segundo cron para notificações. Requer SMTP já configurado e `composer install`.
+- A notificação contém link de fatura validado com o domínio do Asaas (ou `/minha-assinatura` como alternativa). Nunca inclui dados bancários ou identificadores confidenciais.
+
+Em Administração → Famílias → Ações, o botão de escudo permite `Suspender acesso para teste` ou `Remover suspensão manual`. A mesma opção aparece em Detalhes da família. Este estado é independente do `state` calculado pelo Asaas e do `tenants.active`; portanto, a conciliação não remove a suspensão manual, e a reativação manual não contorna bloqueio por inadimplência. O cliente ainda pode acessar `/minha-assinatura`, perfil e logout. Não altera o Asaas nem apaga registros.
+
+**Homologar no Sandbox**: caso de conta gratuita sem Asaas, família paga em dia, fatura vencida no segundo dia e quarto dia, duplicação do cron, SMTP indisponível e confirmação tardia de pagamento. Em produção, garantir fuso horário e política de notificações compatível com os termos de assinatura.
