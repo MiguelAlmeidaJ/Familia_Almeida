@@ -47,16 +47,8 @@ try{
  if((string)($changed['id']??'')!==$sid||(string)($changed['status']??'')!=='INACTIVE')
   throw new RuntimeException('O Asaas ainda não confirmou a interrupção das renovações.');
  bemora_cancellation_confirm($pdo,$claimId,$accessUntil);
- try {
-  $recipient=(string)$order['buyer_email'];
-  if(filter_var($recipient,FILTER_VALIDATE_EMAIL)){
-   $untilText=$accessUntil?date('d/m/Y',strtotime($accessUntil)):'a partir de agora';
-   $message='O cancelamento da renovação da sua assinatura Bemora foi confirmado. Não serão geradas novas cobranças recorrentes. Acesso financeiro até: '.$untilText.'. Seus dados não foram excluídos. As faturas existentes permanecem sob as condições já contratadas.';
-   $url=rtrim((string)config('app','base_url','https://bemora.anoar.com.br'),'/').'/minha-assinatura';
-   bemora_send_email($recipient,'Bemora · Renovação cancelada',$message,bemora_email_layout('Minha assinatura','Renovação cancelada',$message,'Consultar minha assinatura',$url));
-   $pdo->prepare('UPDATE subscription_cancellations SET notice_sent_at=NOW() WHERE id=?')->execute([$claimId]);
-  }
- }catch(Throwable $mailError){error_log('Bemora: cancelamento confirmado, e-mail ainda não entregue.');}
+ try{bemora_cancellation_notice($pdo,$tenantId);}
+ catch(Throwable $mailError){error_log('Bemora: cancelamento confirmado, e-mail será reenviado pela conciliação.');}
  flash('success',$accessUntil?'Cancelamento confirmado! Sua assinatura não será renovada. Seu acesso permanece até '.date('d/m/Y',strtotime($accessUntil)).'.':'Cancelamento confirmado! As próximas cobranças recorrentes foram interrompidas.');
 }catch(Throwable $error){
  if($pdo->inTransaction())$pdo->rollBack();
