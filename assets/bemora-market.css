@@ -98,3 +98,31 @@
 .market-basket-shortcut span{margin-left:auto;font-size:17px}
 #market-shopping-items{scroll-margin-top:20px}
 @media(min-width:751px){.market-basket-shortcut{display:none}}
+
+/* Product confirmation comes before the shopping list on every screen. */
+.market-confirm-panel>.market-scan-items{order:initial}
+@media(max-width:750px){
+ .market-confirm-panel{display:flex;flex-direction:column}
+ .market-confirm-panel>h2{order:1}
+ .market-confirm-panel>.market-muted{order:2}
+ .market-confirm-panel>form{order:3}
+ .market-confirm-panel>.market-scan-items{
+   order:4;
+   margin:22px 0 0;
+   padding:20px 0 0;
+   border-top:1px solid #e1ede3;
+   border-bottom:0;
+ }
+ /* No financial or support floating actions over camera and inputs. */
+ body.market-shopping-mode #bemora-support-fab,
+ body.market-shopping-mode #bemora-fab,
+ body.market-shopping-mode #bemora-global-bill-fab,
+ body.market-shopping-mode .bemora-support-fab,
+ body.market-shopping-mode .bemora-fab,
+ body.market-shopping-mode .bemora-global-bill-fab{display:none!important;visibility:hidden!important;pointer-events:none!important}
+}
+.market-load-more{display:grid;justify-items:center;gap:7px;margin:14px auto 0;padding:12px 0}
+.market-load-more[hidden]{display:none!important}
+.market-page .market-load-more button{width:100%;max-width:310px;min-height:44px;border:1px solid #b8dfc9;background:#eff9f3;color:#0a785a;border-radius:11px}
+.market-page .market-load-more button:hover{background:#dbf1e4}
+.market-load-more p{margin:0;color:#779486;font-size:11px}
