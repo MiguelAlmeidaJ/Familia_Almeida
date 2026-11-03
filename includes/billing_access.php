@@ -88,14 +88,19 @@ function bemora_reconcile_billing_access(PDO $pdo,int $tenantId):array {
  $pdo->beginTransaction();
  try {
   $q=$pdo->prepare('SELECT state FROM tenant_billing_access WHERE tenant_id=? FOR UPDATE');$q->execute([$tenantId]);$prior=$q->fetchColumn();
-  $pdo->prepare("INSERT INTO tenant_billing_access(tenant_id,state,overdue_payment_id,overdue_since,checked_at,suspended_at)
-   VALUES(?,?,?,?,NOW(),IF(?='suspended',NOW(),NULL))
+  $reasonReady=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='tenant_billing_access' AND column_name='reason'")->fetchColumn()===1;
+  $reasonColumn=$reasonReady?',reason':'';
+  $reasonValue=$reasonReady?',?':'';
+  $reasonUpdate=$reasonReady?',reason=VALUES(reason)':'';
+  $sql="INSERT INTO tenant_billing_access(tenant_id,state,overdue_payment_id,overdue_since,checked_at,suspended_at".$reasonColumn.")
+   VALUES(?,?,?,?,NOW(),IF(?='suspended',NOW(),NULL)".$reasonValue.")
    ON DUPLICATE KEY UPDATE
     resumed_at=IF(state='suspended' AND VALUES(state)<>'suspended',NOW(),resumed_at),
     suspended_at=IF(VALUES(state)='suspended',COALESCE(suspended_at,NOW()),NULL),
-    overdue_payment_id=VALUES(overdue_payment_id),overdue_since=VALUES(overdue_since),checked_at=NOW(),state=VALUES(state)")->execute([
-    $tenantId,$state,$oldest['id']??null,$oldest['date']??null,$state
-   ]);
+    overdue_payment_id=VALUES(overdue_payment_id),overdue_since=VALUES(overdue_since),checked_at=NOW(),state=VALUES(state)".$reasonUpdate;
+  $values=[$tenantId,$state,$oldest['id']??null,$oldest['date']??null,$state];
+  if($reasonReady)$values[]=$decision['reason'];
+  $pdo->prepare($sql)->execute($values);
   $pdo->commit();
  }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
  return ['state'=>$state,'reason'=>$decision['reason'],'overdue_since'=>$oldest['date']??null,'overdue_payment_id'=>$oldest['id']??null,'days_overdue'=>$daysOverdue];
