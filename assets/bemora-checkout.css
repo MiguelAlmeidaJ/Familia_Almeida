@@ -11,3 +11,43 @@
 .checkout-legal-footer p{flex-basis:100%;max-width:900px;margin:0;line-height:1.6}
 .checkout-legal-footer a{color:#0b7158;text-decoration:none}
 .checkout-legal-footer a:hover{text-decoration:underline}
+
+/* Keep the legal copy as a single wrapping text block beside the checkbox. */
+.checkout-panel label.checkout-legal-accept{
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:flex-start;
+  justify-content:flex-start;
+  gap:12px;
+  width:100%;
+  text-align:left;
+  padding:15px 16px;
+  line-height:1.65;
+}
+.checkout-panel .checkout-legal-accept > input[type="checkbox"]{
+  display:block;
+  width:18px!important;
+  min-width:18px;
+  max-width:18px;
+  height:18px!important;
+  min-height:18px;
+  flex:0 0 18px;
+  margin:2px 0 0;
+  padding:0;
+  border-radius:4px;
+  accent-color:#09856a;
+  box-shadow:none;
+}
+.checkout-panel .checkout-legal-accept > .checkout-legal-text{
+  display:block;
+  flex:1 1 auto;
+  min-width:0;
+  font-size:12px;
+  font-weight:600;
+  line-height:1.65;
+  overflow-wrap:break-word;
+}
+.checkout-panel .checkout-legal-accept a{display:inline;text-decoration:underline;text-underline-offset:2px}
+@media(max-width:760px){
+  .checkout-panel label.checkout-legal-accept{padding:14px 12px;gap:10px}
+}
