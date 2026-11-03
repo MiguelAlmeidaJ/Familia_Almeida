@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/bootstrap.php';
 require_once __DIR__ . '/includes/branding.php';
+require_once __DIR__ . '/includes/login_protection.php';
+header('Cache-Control: private, no-store, max-age=0');
 
 if (!empty($_SESSION['user_id'])) {
     require_once __DIR__ . '/includes/auth.php';
@@ -19,30 +21,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = strtolower(trim((string) ($_POST['email'] ?? '')));
     $password = (string) ($_POST['password'] ?? '');
 
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL) || $password === '') {
-        $error = 'Informe e-mail e senha.';
-    } else {
-        try {
-            $stmt = db()->prepare('SELECT id, name, email, password_hash FROM users WHERE email = ? LIMIT 1');
+    $remoteIp=(string)($_SERVER['REMOTE_ADDR']??'');
+    try {
+        $pdo=db();
+        if(!bemora_login_check($pdo,$email,$remoteIp)){
+            http_response_code(429);
+            header('Retry-After: 900');
+            $error='Muitas tentativas de acesso. Aguarde 15 minutos e tente novamente.';
+        } elseif(!filter_var($email,FILTER_VALIDATE_EMAIL) || $password===''){
+            $error='Informe e-mail e senha.';
+        } else {
+            $stmt=$pdo->prepare('SELECT id,name,email,password_hash FROM users WHERE email=? LIMIT 1');
             $stmt->execute([$email]);
-            $user = $stmt->fetch();
-
-            if ($user && password_verify($password, $user['password_hash'])) {
+            $user=$stmt->fetch();
+            if($user && password_verify($password,(string)$user['password_hash'])){
+                bemora_login_succeeded($pdo,$email,$remoteIp);
                 session_regenerate_id(true);
-                $_SESSION['user_id'] = (int) $user['id'];
-                $adminCheck = db()->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='users' AND column_name='system_role'");
-                if ((int)$adminCheck->fetchColumn() > 0) {
-                    $roleStmt = db()->prepare('SELECT system_role FROM users WHERE id=?');
+                $_SESSION['user_id']=(int)$user['id'];
+                unset($_SESSION['tenant_id'],$_SESSION['selected_month']);
+                $adminCheck=$pdo->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='users' AND column_name='system_role'");
+                if((int)$adminCheck->fetchColumn()>0){
+                    $roleStmt=$pdo->prepare('SELECT system_role FROM users WHERE id=?');
                     $roleStmt->execute([(int)$user['id']]);
-                    if ($roleStmt->fetchColumn() === 'system_admin') redirect_to('/system_admin.php');
+                    if($roleStmt->fetchColumn()==='system_admin')redirect_to('/system_admin.php');
                 }
                 redirect_to('/painel');
             }
-
-            $error = 'E-mail ou senha inválidos.';
-        } catch (Throwable) {
-            $error = 'O banco ainda não está configurado. Execute o instalador primeiro.';
+            bemora_login_failed($pdo,$email,$remoteIp);
+            $error='E-mail ou senha inválidos.';
         }
+    } catch(Throwable $exception){
+        error_log('Bemora login: authentication storage unavailable.');
+        http_response_code(503);
+        $error='Não foi possível processar o acesso neste momento. Tente novamente mais tarde.';
     }
 }
 
