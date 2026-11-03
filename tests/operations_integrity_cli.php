@@ -45,3 +45,6 @@ try{
  if(is_dir($opsTestDir.'/backups'))rmdir($opsTestDir.'/backups');
  if(is_dir($opsTestDir))rmdir($opsTestDir);
 }
+
+// Simulated alert templates are also validated by the existing operations CI job.
+require __DIR__.'/operations_alert_cli.php';
