@@ -84,12 +84,12 @@ function require_auth(): array
             $allowed=['/pages/painel.php','/action.php','/budget_action.php','/categories_action.php',
                 '/receipt.php','/pages/movimentacoes.php','/pages/contas.php',
                 '/pages/categorias.php','/pages/minha_conta.php',
-                '/pages/meu_perfil.php','/pages/minha_assinatura.php','/pages/evoluir_plano.php','/plan_change_action.php','/payment.php','/pages/profile_action.php','/pages/profile_avatar.php',
+                '/pages/meu_perfil.php','/pages/minha_assinatura.php','/pages/evoluir_plano.php','/plan_change_action.php','/cancel_subscription_action.php','/payment.php','/pages/profile_action.php','/pages/profile_avatar.php',
                 '/pages/relatorios.php','/pages/membros.php','/pages/membros_action.php','/pages/member_avatar.php',
                 '/pages/family_settings_action.php','/support_action.php','/logout.php','/convite-familia.php'];
             $path=(string)(parse_url((string)($_SERVER['REQUEST_URI']??'/'),PHP_URL_PATH)??'/');
             $allowedRoutes=['/painel','/acao','/movimentacoes','/contas','/categorias',
-                '/categorias/acao','/minha-conta','/relatorios','/membros','/membros/acao','/membros/foto','/meu-perfil','/minha-assinatura','/evoluir-plano','/evoluir-plano/solicitar','/pagamento','/meu-perfil/acao','/meu-perfil/foto','/comprovante','/suporte/relatar','/sair','/convite-familia'];
+                '/categorias/acao','/minha-conta','/relatorios','/membros','/membros/acao','/membros/foto','/meu-perfil','/minha-assinatura','/evoluir-plano','/evoluir-plano/solicitar','/minha-assinatura/cancelar','/pagamento','/meu-perfil/acao','/meu-perfil/foto','/comprovante','/suporte/relatar','/sair','/convite-familia'];
             if(!in_array($script,$allowed,true) && !in_array(rtrim($path,'/')?:'/',$allowedRoutes,true)){
                 http_response_code(403);
                 exit('Funcionalidade indisponível no modo de finanças individuais.');
@@ -103,9 +103,9 @@ function require_auth(): array
         $access=bemora_billing_access(db(),(int)$user['tenant_id']);
         if(bemora_billing_is_blocked($access)){
             $script=str_replace('\\\\','/',(string)($_SERVER['SCRIPT_NAME']??''));
-            $permittedScripts=['/pages/minha_assinatura.php','/support_action.php','/logout.php','/payment.php'];
+            $permittedScripts=['/pages/minha_assinatura.php','/cancel_subscription_action.php','/support_action.php','/logout.php','/payment.php'];
             $path=rtrim((string)(parse_url((string)($_SERVER['REQUEST_URI']??'/'),PHP_URL_PATH)??'/'),'/')?:'/';
-            $permittedPaths=['/minha-assinatura','/suporte/relatar','/sair','/pagamento'];
+            $permittedPaths=['/minha-assinatura','/minha-assinatura/cancelar','/suporte/relatar','/sair','/pagamento'];
             if(!in_array($script,$permittedScripts,true)&&!in_array($path,$permittedPaths,true))redirect_to('/minha-assinatura');
         }
     }
