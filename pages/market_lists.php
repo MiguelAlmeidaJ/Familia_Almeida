@@ -19,7 +19,7 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2">
 <link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3">
 <?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=6">
-<link rel="stylesheet" href="/assets/bemora-market.css?v=2"></head>
+<link rel="stylesheet" href="/assets/bemora-market.css?v=3"></head>
 <body class="bemora-finance"><div class="shell ref-shell"><?php render_sidebar('compras',$csrf); ?><main><?php render_topbar($user); ?>
 <div class="content market-page">
 <header class="market-heading"><div><p class="eyebrow">COMPRAS EM FAMÍLIA</p><h1>Lista de compras</h1><p>Planeje em casa, confira preços no mercado e acompanhe o total conforme compra.</p></div><span class="market-badge"><i class="bi bi-basket2"></i> Bemora Compras</span></header>
@@ -56,7 +56,17 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <?php else: ?>
 <div class="market-scanner-layout">
 <section class="market-panel"><h2>Escanear etiqueta de preço</h2><p class="market-muted">Centralize o nome e o preço na moldura e toque em capturar. Você poderá corrigir os dados antes de confirmar.</p>
-<div class="market-camera"><video id="market-video" playsinline muted autoplay></video><div class="market-guides"><div>Centralize a etiqueta aqui</div></div><div class="market-placeholder" id="market-placeholder"><i class="bi bi-camera"></i><strong>Câmera desligada</strong><span>Ative a câmera ou escolha uma imagem.</span></div><canvas id="market-canvas" hidden></canvas></div>
+<div class="market-shape-controls" role="group" aria-label="Formato da etiqueta">
+<span>Formato da etiqueta</span>
+<div class="market-shape-buttons">
+<button type="button" class="market-shape active" data-market-shape="wide" aria-pressed="true"><i class="bi bi-aspect-ratio"></i> Horizontal</button>
+<button type="button" class="market-shape" data-market-shape="medium" aria-pressed="false"><i class="bi bi-card-text"></i> Padrão</button>
+<button type="button" class="market-shape" data-market-shape="square" aria-pressed="false"><i class="bi bi-square"></i> Quadrada</button>
+<button type="button" class="market-shape" data-market-shape="tall" aria-pressed="false"><i class="bi bi-phone"></i> Vertical</button>
+</div>
+<small id="market-shape-hint">A moldura e o recorte se ajustam ao formato escolhido.</small>
+</div>
+<div class="market-camera" data-shape="wide"><video id="market-video" playsinline muted autoplay></video><div class="market-guides"><div>Centralize a etiqueta aqui</div></div><div class="market-placeholder" id="market-placeholder"><i class="bi bi-camera"></i><strong>Câmera desligada</strong><span>Ative a câmera ou escolha uma imagem.</span></div><canvas id="market-canvas" hidden></canvas></div>
 <div class="market-camera-actions"><button type="button" id="market-start">Ativar câmera</button><button type="button" id="market-capture" disabled>Capturar etiqueta</button><button type="button" id="market-stop" disabled>Desligar</button></div>
 <label class="market-file">Ou selecione uma foto da etiqueta<input type="file" id="market-photo" accept="image/*" capture="environment"></label>
 <div class="market-crop-editor" id="market-crop-editor" hidden>
@@ -65,7 +75,7 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <canvas id="market-crop-canvas" aria-label="Fotografia da etiqueta com seleção de recorte"></canvas>
 <button type="button" id="market-crop-apply"><i class="bi bi-scan"></i> Ler área selecionada</button>
 </div>
-<p class="market-muted" id="market-ocr-status" role="status" aria-live="polite">A imagem será analisada no navegador. Confira os valores antes de salvar.</p><img id="market-photo-preview" class="market-photo-preview" alt="Recorte analisado" hidden>
+<p class="market-muted" id="market-ocr-status" role="status" aria-live="polite">A imagem será analisada no navegador. Confira os valores antes de salvar.</p><img id="market-photo-preview" class="market-photo-preview" alt="Apenas a área recortada e analisada pelo OCR" hidden>
 </section>
 <section class="market-panel"><h2>Conferir produto</h2><p class="market-muted">A leitura da etiqueta é uma sugestão. Confirme ou corrija o produto, preço e quantidade.</p>
 <form id="market-scan-form">
@@ -82,5 +92,5 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <?php endif; ?>
 </div></main></div>
 <script>window.BEMORA_MARKET=<?= json_encode(['csrf'=>$csrf,'list'=>$current],JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR) ?>;</script>
-<script src="/assets/bemora-market.js?v=2" defer></script>
+<script src="/assets/bemora-market.js?v=3" defer></script>
 </body></html>
