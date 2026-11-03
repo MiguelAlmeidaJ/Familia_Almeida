@@ -36,4 +36,7 @@ $csrf=csrf_token();$checkoutError=(string)($_SESSION['checkout_error']??'');unse
 <div class="checkout-total"><span>Valor da assinatura</span><div><?php if($promo): ?><del><?= htmlspecialchars(bemora_plan_price((float)$plan['price']),ENT_QUOTES,'UTF-8') ?></del><?php endif; ?><strong id="checkout-final-price"><?= htmlspecialchars(bemora_plan_price($amount),ENT_QUOTES,'UTF-8') ?></strong></div></div>
 <p id="checkout-coupon-saving" class="checkout-coupon-saving" hidden></p><p class="checkout-small">Cobrança recorrente <?= htmlspecialchars(strtolower($cycle),ENT_QUOTES,'UTF-8') ?> pelo valor indicado. Preço promocional, quando aplicável, será usado como valor recorrente contratado até alteração comunicada das condições.</p></aside></div>
 <?php endif; ?>
-</main><script src="/assets/bemora-checkout.js?v=5" defer></script></body></html>
+<footer class="checkout-legal-footer">
+<?php if($legalApproved): ?><p>Contratação oferecida por <strong><?= bemora_legal_label('company_name') ?></strong> · <?= bemora_legal_label('company_tax_id') ?>. Para questões sobre o contrato ou proteção dos seus dados, consulte os canais informados nos documentos legais.</p><?php endif; ?>
+<a href="/termos" target="_blank" rel="noopener noreferrer">Termos de uso</a><a href="/privacidade" target="_blank" rel="noopener noreferrer">Privacidade</a><a href="/#contato">Atendimento</a>
+</footer></main><script src="/assets/bemora-checkout.js?v=5" defer></script></body></html>
