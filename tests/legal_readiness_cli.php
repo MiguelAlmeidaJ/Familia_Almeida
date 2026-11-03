@@ -8,7 +8,7 @@ function config(string $section,?string $key=null,mixed $default=null):mixed {
  if($section!=='legal')return $default;
  return $key===null?$GLOBALS['test_legal']:($GLOBALS['test_legal'][$key]??$default);
 }
-require __DIR__.'/../includes/legal.php';
+require __DIR__.'/../includes/legal_policy.php';
 function check_legal(bool $ok,string $message):void {
  if(!$ok)throw new RuntimeException($message);
  echo "[PASS] ".$message."\n";
