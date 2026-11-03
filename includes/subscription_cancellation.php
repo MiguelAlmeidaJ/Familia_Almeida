@@ -73,9 +73,19 @@ function bemora_cancellation_recover(PDO $pdo,array $row):bool {
  $sid=(string)$row['asaas_subscription_id'];
  $remote=bemora_asaas_request('GET','/subscriptions/'.rawurlencode($sid));
  if((string)($remote['id']??'')!==$sid||(string)($remote['customer']??'')!==(string)$o['asaas_customer_id'])throw new RuntimeException('Assinatura divergente na recuperação do cancelamento.');
- if((string)($remote['status']??'')!=='INACTIVE')return false;
+ $status=(string)($remote['status']??'');
+ if($status==='ACTIVE'){
+  $age=time()-strtotime((string)$row['requested_at']);
+  if($age<600)return false; // Do not race the original request.
+ }
+ if(!in_array($status,['ACTIVE','INACTIVE'],true))throw new RuntimeException('Assinatura não pode ser conciliada automaticamente.');
  $payments=bemora_cancellation_payment_list($sid,(string)$o['asaas_customer_id']);
  $until=bemora_cancellation_entitlement($remote,$payments,(string)$o['billing_cycle'],(string)($o['coupon_free_until']??''));
+ if($status==='ACTIVE'){
+  $updated=bemora_asaas_request('PUT','/subscriptions/'.rawurlencode($sid),['status'=>'INACTIVE']);
+  if((string)($updated['id']??'')!==$sid||(string)($updated['status']??'')!=='INACTIVE')
+   throw new RuntimeException('Cancelamento ainda não confirmado no Asaas.');
+ }
  bemora_cancellation_confirm($pdo,(int)$row['id'],$until);
  return true;
 }
