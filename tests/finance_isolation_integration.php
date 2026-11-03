@@ -150,6 +150,18 @@ check(is_array($external) && (int)$external['tenant']===$other && abs((float)$ex
 $legacy=$probe(3,$other,'1','/cartoes');
 check(str_contains($legacy,'Funcionalidade indisponível'),'additional family cannot enter removed legacy modules');
 
+$pdo->prepare("INSERT INTO tenant_billing_access(tenant_id,manual_suspended) VALUES (?,1) ON DUPLICATE KEY UPDATE manual_suspended=1")->execute([$family]);
+$blockedMutation=$probe(1,$family,'1','/acao');
+check($blockedMutation==='', 'suspended account cannot reach a direct finance action endpoint');
+$blockedProfile=$probe(1,$family,'1','/meu-perfil');
+check($blockedProfile==='', 'suspended account cannot access profile directly');
+$billingAllowed=json_decode($probe(1,$family,'1','/minha-assinatura'),true);
+check(is_array($billingAllowed) && (int)$billingAllowed['tenant']===$family,'suspended account retains billing route authorization');
+$pdo->prepare("UPDATE tenant_billing_access SET manual_suspended=0 WHERE tenant_id=?")->execute([$family]);
+$unblocked=json_decode($probe(1,$family,'1','/acao'),true);
+check(is_array($unblocked) && (int)$unblocked['tenant']===$family,'reactivation restores finance route authorization');
+
+
 $_SESSION['user_id']=1;$_SESSION['tenant_id']=$family;
 $pdo->prepare("UPDATE tenants SET finance_mode='shared' WHERE id=?")->execute([$family]);
 $all=dashboard_data($pdo,'2026-10');
