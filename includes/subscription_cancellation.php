@@ -80,7 +80,7 @@ function bemora_cancellation_recover(PDO $pdo,array $row):bool {
  }
  if(!in_array($status,['ACTIVE','INACTIVE'],true))throw new RuntimeException('Assinatura não pode ser conciliada automaticamente.');
  $payments=bemora_cancellation_payment_list($sid,(string)$o['asaas_customer_id']);
- $until=bemora_cancellation_entitlement($remote,$payments,(string)$o['billing_cycle'],(string)($o['coupon_free_until']??''));
+ $until=!empty($row['access_until'])?(string)$row['access_until']:bemora_cancellation_entitlement($remote,$payments,(string)$o['billing_cycle'],(string)($o['coupon_free_until']??''));
  if($status==='ACTIVE'){
   $updated=bemora_asaas_request('PUT','/subscriptions/'.rawurlencode($sid),['status'=>'INACTIVE']);
   if((string)($updated['id']??'')!==$sid||(string)($updated['status']??'')!=='INACTIVE')
