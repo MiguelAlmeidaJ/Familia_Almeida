@@ -19,6 +19,8 @@ try{
  if($legalApproved){
   $versions=bemora_legal_versions();
   if(($_POST['legal_accept']??'')!=='yes'
+    ||($_POST['terms_accepted']??'')!=='yes'
+    ||($_POST['privacy_acknowledged']??'')!=='yes'
     ||(string)($_POST['terms_version']??'')!==$versions['terms']
     ||(string)($_POST['privacy_version']??'')!==$versions['privacy'])
     throw new RuntimeException('Confira e aceite os documentos legais atualizados para continuar.');
