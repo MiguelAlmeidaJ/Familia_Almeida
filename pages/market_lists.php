@@ -19,7 +19,7 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2">
 <link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3">
 <?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=6">
-<link rel="stylesheet" href="/assets/bemora-market.css?v=3"></head>
+<link rel="stylesheet" href="/assets/bemora-market.css?v=4"></head>
 <body class="bemora-finance"><div class="shell ref-shell"><?php render_sidebar('compras',$csrf); ?><main><?php render_topbar($user); ?>
 <div class="content market-page">
 <header class="market-heading"><div><p class="eyebrow">COMPRAS EM FAMÍLIA</p><h1>Lista de compras</h1><p>Planeje em casa, confira preços no mercado e acompanhe o total conforme compra.</p></div><span class="market-badge"><i class="bi bi-basket2"></i> Bemora Compras</span></header>
@@ -77,7 +77,7 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 </div>
 <p class="market-muted" id="market-ocr-status" role="status" aria-live="polite">A imagem será analisada no navegador. Confira os valores antes de salvar.</p><img id="market-photo-preview" class="market-photo-preview" alt="Apenas a área recortada e analisada pelo OCR" hidden>
 </section>
-<section class="market-panel"><h2>Conferir produto</h2><p class="market-muted">A leitura da etiqueta é uma sugestão. Confirme ou corrija o produto, preço e quantidade.</p>
+<section class="market-panel market-confirm-panel"><h2>Conferir produto</h2><p class="market-muted">A leitura da etiqueta é uma sugestão. Confirme ou corrija o produto, preço e quantidade.</p>
 <form id="market-scan-form">
 <label>Produto<input id="market-name" maxlength="160" minlength="2" required placeholder="Ex.: Leite integral 1L"></label>
 <div class="market-inline"><label>Preço unitário (R$)<input id="market-price" type="number" step="0.01" min="0.01" required placeholder="0,00"></label><label>Quantidade<input id="market-qty" type="number" step="0.001" min="0.001" value="1" required></label></div>
@@ -85,12 +85,18 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <div class="market-price-options" id="market-price-options" hidden><strong>Encontramos mais de um preço</strong><p>Escolha o valor unitário da sua compra. Preços de atacado podem exigir uma quantidade mínima.</p><div id="market-price-buttons"></div></div>
 <label>Produto na lista<select id="market-match"><option value="">Adicionar como novo</option></select></label><small class="market-muted" id="market-match-tip">Se já estiver planejado, selecione-o para registrar a compra e o preço.</small>
 <button id="market-save" type="submit" <?= $current['status']==='completed'?'disabled':'' ?>>Confirmar produto e preço</button></form>
-<div class="market-scan-items"><h3>Progresso da compra</h3><div id="market-scan-items"></div></div>
+<section class="market-scan-items" id="market-shopping-items" aria-labelledby="market-shopping-heading">
+<div class="market-items-head"><div><span class="market-items-kicker">SEU CARRINHO</span><h3 id="market-shopping-heading">Itens da compra</h3><p>Desfaça uma compra ou retire um produto sem sair do modo mercado.</p></div><span class="market-items-count" id="market-items-count"><?= $current['purchased'] ?>/<?= $current['count'] ?></span></div>
+<div class="market-progress-track" role="progressbar" aria-label="Progresso da lista" aria-valuemin="0" aria-valuemax="<?= max(1,$current['count']) ?>" aria-valuenow="<?= $current['purchased'] ?>" id="market-progress-track"><span id="market-progress-fill" style="width:<?= $current['count']?round($current['purchased']/$current['count']*100):0 ?>%"></span></div>
+<div class="market-basket-total"><span>Total no carrinho</span><strong id="market-scan-total"><?= money($current['total']) ?></strong></div>
+<div id="market-scan-items" class="market-basket-list" aria-live="polite"></div>
+<p class="market-shopping-feedback" id="market-shopping-feedback" role="status" aria-live="polite"></p>
+</section>
 </section></div>
 <?php endif; ?>
 <?php else: ?><section class="market-panel market-empty"><i class="bi bi-basket2"></i><h2>Crie sua primeira lista</h2><p>Adicione produtos e quantidades para planejar a próxima compra.</p></section><?php endif; ?>
 <?php endif; ?>
 </div></main></div>
 <script>window.BEMORA_MARKET=<?= json_encode(['csrf'=>$csrf,'list'=>$current],JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR) ?>;</script>
-<script src="/assets/bemora-market.js?v=3" defer></script>
+<script src="/assets/bemora-market.js?v=4" defer></script>
 </body></html>
