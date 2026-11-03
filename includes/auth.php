@@ -40,6 +40,18 @@ function current_user(): ?array
 function require_auth(): array
 {
     header('Cache-Control: private, no-store, max-age=0');
+    if(!empty($_SESSION['user_id'])){
+        $now=time();
+        $last=(int)($_SESSION['auth_last_seen']??$now);
+        $issued=(int)($_SESSION['auth_issued_at']??$now);
+        if($now-$last>7200 || $now-$issued>86400){
+            $_SESSION=[];
+            session_regenerate_id(true);
+            redirect_to('/login');
+        }
+        $_SESSION['auth_last_seen']=$now;
+        $_SESSION['auth_issued_at']=$issued;
+    }
     $user = current_user();
     if (!$user) {
         redirect_to('/login');
