@@ -69,3 +69,31 @@ Os cartões de produtos são montados em lotes de **10** conforme a rolagem pelo
 - [ ] Com mais de 20 itens, observar os lotes de 10 surgindo ao rolar
 - [ ] Verificar botão de carregamento adicional se a observação automática não estiver disponível
 - [ ] Desfazer compra e remover item após abrir lotes adicionais, sem perder o restante da lista visível
+
+
+## Nova experiência de compra: pop-ups e lançamento financeiro (migration 042)
+
+Atualize o código e execute a migration **20261103_042_market_expense_link.php** em Administração → Configurações → Manutenção. Essa migration adiciona `transaction_id` à tabela `bemora_market_lists` e um índice único para vincular uma compra a um único lançamento financeiro.
+
+**Planejar lista:** um botão **Adicionar produto** abre um diálogo com ações Cancelar, Salvar e sair e Salvar e continuar adicionando. O salvamento é feito por requisição autenticada com CSRF; o modo continuar limpa o formulário após cada produto salvo. A tela de planejamento é atualizada ao fechar o pop-up.
+
+**Estou no mercado:** a interface principal mantém apenas o carrinho/progresso e dois botões próprios da página, **Escanear** e **Finalizar compra**. O scanner e a conferência do produto agora ficam no pop-up de câmera, que solicita permissão do navegador ao abrir e libera a câmera ao fechar. Os antigos atalhos para galeria e carrinho foram retirados dessa tela. O preenchimento manual dos campos continua possível no diálogo. Os botões globais de ações financeiras não aparecem durante o modo mercado.
+
+**Finalização financeira:** depois de uma confirmação explícita, o servidor bloqueia a lista `FOR UPDATE`, calcula o valor de itens marcados como comprados, rejeita valores nulos ou zero e, **na mesma transação de banco**, cria um lançamento `expense` em `transactions` (categoria `Supermercado`) e registra `transaction_id` / `status=completed` na lista. O registro é compartilhado pela família (`owner_user_id=NULL`) para corresponder à natureza familiar do carrinho, mesmo no modo individual. Esse gasto **não é criado** ao escanear itens ou apenas selecionar a situação do planejamento. Produtos não comprados não entram no total; a lista concluída é preservada apenas para consulta, sem edição.
+
+**Atenção:** este fluxo é uma despesa familiar e não um débito bancário real. Verifique antes de confirmar se a despesa ainda não foi lançada manualmente em Movimentações. A alteração de uma despesa já finalizada deve seguir os controles de Movimentações; o Bemora não reabre a lista concluída nem recria gastos.
+
+### Testes de homologação adicionais
+
+- [ ] Executar a migration 042 e abrir lista nova
+- [ ] Adicionar dois produtos seguidos por Salvar e continuar adicionando; fechar o pop-up e conferir ambos
+- [ ] Cancelar o pop-up sem salvar e verificar que nada mudou
+- [ ] No modo mercado, abrir a câmera pelo botão flutuante e confirmar desligamento ao fechar
+- [ ] Conferir que não há mais seleção de arquivos e atalho antigo na tela principal
+- [ ] Marcar apenas parte dos produtos, conferir o total e finalizar
+- [ ] Verificar que o gasto foi criado em Movimentações com categoria Supermercado e valor exato
+- [ ] Repetir a tentativa de finalização e confirmar que nenhum segundo gasto foi criado
+- [ ] Confirmar que a lista encerrada não pode ser alterada, nem por POST manual
+- [ ] Simular uma falha de banco durante a finalização em homologação e verificar rollback completo
+- [ ] Validar visibilidade da despesa em finanças compartilhadas e individuais
+- [ ] Garantir que uma família não possa finalizar ou alterar listas de outra
