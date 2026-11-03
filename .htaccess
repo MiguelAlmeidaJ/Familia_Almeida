@@ -64,6 +64,7 @@ DirectoryIndex index.php
     RewriteRule ^minha-assinatura/?$ pages/minha_assinatura.php [L,QSA]
     RewriteRule ^evoluir-plano/?$ pages/evoluir_plano.php [L,QSA]
     RewriteRule ^evoluir-plano/solicitar/?$ plan_change_action.php [L,QSA]
+    RewriteRule ^minha-assinatura/cancelar/?$ cancel_subscription_action.php [L,QSA]
     RewriteRule ^admin/cupons/?$ admin/cupons.php [L,QSA]
     RewriteRule ^admin/assinaturas/?$ admin/assinaturas.php [L,QSA]
     RewriteRule ^admin/suporte/?$ admin/suporte.php [L,QSA]
