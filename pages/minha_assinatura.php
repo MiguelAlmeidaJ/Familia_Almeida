@@ -74,7 +74,7 @@ $cycles=bemora_plan_cycles();
 <?php endif; ?>
 <?php if(($billingAccess['state']??'active')==='suspended'): ?>
 <section class="sub-card sub-billing-alert" role="alert"><span class="sub-kicker">ASSINATURA REQUER ATENÇÃO</span><h2>Acesso financeiro temporariamente suspenso</h2>
-<?php if(in_array((string)($billingAccess['reason']??''),['subscription_inactive','subscription_deleted'],true)): ?>
+<?php if(in_array((string)($billingAccess['reason']??''),['subscription_inactive','subscription_deleted','subscription_missing'],true)): ?>
 <p>Esta assinatura foi interrompida ou cancelada no Asaas. Seus dados permanecem preservados. Para reativar o serviço, entre em contato com o suporte e regularize a situação contratual.</p>
 <?php elseif(($billingAccess['reason']??'')==='upgrade_payment_reversed'): ?>
 <p>Uma cobrança relacionada à evolução do seu plano foi estornada ou contestada. A assinatura requer conciliação financeira. Seus dados continuam preservados. Entre em contato com o suporte.</p>
