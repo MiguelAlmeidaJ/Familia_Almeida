@@ -6,19 +6,22 @@ require_admin_access();
 $pdo=db();$flash=pull_flash();
 $ordersReady=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='subscription_orders'")->fetchColumn()===1;
 $tenants=$pdo->query("SELECT t.id,t.name,t.slug,t.status,t.active,t.max_members,t.finance_mode,COUNT(tu.user_id) members FROM tenants t LEFT JOIN tenant_users tu ON tu.tenant_id=t.id GROUP BY t.id,t.name,t.slug,t.status,t.active,t.max_members,t.finance_mode ORDER BY t.name")->fetchAll(PDO::FETCH_ASSOC);
+$internalPlans=[];
+$internalReady=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='tenant_internal_plans'")->fetchColumn()===1;
+if($internalReady){$rows=$pdo->query("SELECT x.tenant_id,p.name,p.billing_cycle,p.max_members FROM tenant_internal_plans x JOIN subscription_plans p ON p.id=x.plan_id")->fetchAll(PDO::FETCH_ASSOC);foreach($rows as $row)$internalPlans[(int)$row['tenant_id']]=$row;}
 $latestOrders=[];
 if($ordersReady){
  $rows=$pdo->query("SELECT o.activated_tenant_id,o.plan_name,o.billing_cycle,o.status,o.recurring_amount,o.amount,o.coupon_free_until,o.asaas_subscription_id,o.created_at FROM subscription_orders o INNER JOIN (SELECT activated_tenant_id,MAX(id) last_id FROM subscription_orders WHERE activated_tenant_id IS NOT NULL AND status IN ('completed','paid','payment_attention') GROUP BY activated_tenant_id) latest ON latest.last_id=o.id")->fetchAll(PDO::FETCH_ASSOC);
  foreach($rows as $row)$latestOrders[(int)$row['activated_tenant_id']]=$row;
 }
 $activeCount=count(array_filter($tenants,static fn($t)=>$t['status']==='active'&&(int)$t['active']===1));
-$linkedCount=count($latestOrders);
+$linkedCount=count($latestOrders)+count(array_diff_key($internalPlans,$latestOrders));
 $invitations=$pdo->query("SELECT id,max_members,expires_at,used_at,revoked_at FROM family_invitations ORDER BY id DESC LIMIT 20")->fetchAll();
 $pending=$pdo->query("SELECT r.family_name,r.member_count,r.submitted_at,r.id FROM family_registrations r WHERE state='pending' ORDER BY r.id DESC")->fetchAll();
 $token=$_SESSION['new_family_invite']??null;unset($_SESSION['new_family_invite']);
 $origin=(!empty($_SERVER['HTTPS'])&&$_SERVER['HTTPS']!=='off'?'https':'http').'://'.($_SERVER['HTTP_HOST']??'localhost');
 admin_shell_start('tenants','Famílias','Visão centralizada dos espaços, membros, planos e assinaturas do Bemora.');
-?><link rel="stylesheet" href="/assets/bemora-families-admin.css?v=1"><?php
+?><link rel="stylesheet" href="/assets/bemora-families-admin.css?v=2"><?php
 ?>
 <?php if($flash): ?><div class="notice" role="status"><?= e($flash['message']) ?></div><?php endif; ?>
 <div class="metrics family-metrics"><article class="metric"><span>Famílias cadastradas</span><strong><?= count($tenants) ?></strong><small>Todos os espaços</small></article><article class="metric"><span>Famílias ativas</span><strong><?= $activeCount ?></strong><small>Com acesso habilitado</small></article><article class="metric"><span>Assinaturas vinculadas</span><strong><?= $linkedCount ?></strong><small>Contratações identificadas</small></article><article class="metric"><span>Convites recentes</span><strong><?= count($invitations) ?></strong><small>Últimos registros exibidos</small></article></div>
@@ -33,15 +36,15 @@ admin_shell_start('tenants','Famílias','Visão centralizada dos espaços, membr
 <section class="panel family-overview"><div class="panel-head"><div><h2>Famílias existentes</h2><p class="sub">Plano vinculado, utilização e situação de cada espaço financeiro.</p></div><span class="member"><?= count($tenants) ?> registros</span></div>
 <div class="family-search"><label for="family-filter"><i class="bi bi-search" aria-hidden="true"></i><input id="family-filter" type="search" placeholder="Buscar por família, plano ou identificador…" autocomplete="off"></label></div>
 <div class="table-wrap"><table class="family-data-table"><thead><tr><th>Família</th><th>Plano atual</th><th>Membros</th><th>Assinatura</th><th>Estado</th><th>Ações</th></tr></thead><tbody>
-<?php foreach($tenants as $t): $o=$latestOrders[(int)$t['id']]??null;$activeFamily=$t['status']==='active'&&(int)$t['active']===1; ?>
-<tr class="family-record" data-filter="<?= e(mb_strtolower($t['name'].' '.$t['slug'].' '.($o['plan_name']??''))) ?>">
+<?php foreach($tenants as $t): $o=$latestOrders[(int)$t['id']]??null;$internal=$internalPlans[(int)$t['id']]??null;$activeFamily=$t['status']==='active'&&(int)$t['active']===1; ?>
+<tr class="family-record" data-filter="<?= e(mb_strtolower($t['name'].' '.$t['slug'].' '.($o['plan_name']??$internal['name']??''))) ?>">
 <td><div class="family-identity"><span class="family-initial"><i class="bi bi-people" aria-hidden="true"></i></span><div><strong><?= e($t['name']) ?></strong><small><?= e($t['slug']) ?></small></div></div></td>
-<td><?php if($o): ?><div class="family-plan"><strong><?= e($o['plan_name']) ?></strong><small><?= e(bemora_plan_cycles()[$o['billing_cycle']]??$o['billing_cycle']) ?><?php if($o['recurring_amount']!==null): ?> · <?= e(bemora_plan_price((float)$o['recurring_amount'])) ?><?php endif; ?></small></div><?php else: ?><span class="family-muted">Sem plano comercial vinculado</span><?php endif; ?></td>
+<td><?php if($o): ?><div class="family-plan"><strong><?= e($o['plan_name']) ?></strong><small><?= e(bemora_plan_cycles()[$o['billing_cycle']]??$o['billing_cycle']) ?><?php if($o['recurring_amount']!==null): ?> · <?= e(bemora_plan_price((float)$o['recurring_amount'])) ?><?php endif; ?></small></div><?php elseif($internal): ?><div class="family-plan"><strong><?= e($internal['name']) ?></strong><small>Interno · Gratuito</small></div><?php else: ?><span class="family-muted">Sem plano vinculado</span><?php endif; ?></td>
 <td><div class="family-members"><strong><?= (int)$t['members'] ?> <span>/ <?= (int)$t['max_members'] ?></span></strong><div class="family-meter"><span style="width:<?= (int)$t['max_members']>0?min(100,round(100*(int)$t['members']/(int)$t['max_members'])):0 ?>%"></span></div></div></td>
-<td><?php if($o): ?><span class="family-tag <?= $o['status']==='completed'?'is-good':'is-neutral' ?>"><?= e(['completed'=>'Cadastrada','paid'=>'Pagamento confirmado','payment_attention'=>'Atenção ao pagamento'][$o['status']]??$o['status']) ?></span><?php if(!empty($o['coupon_free_until']) && $o['coupon_free_until']>date('Y-m-d')): ?><small class="family-trial">Cortesia até <?= e(date('d/m/Y',strtotime($o['coupon_free_until']))) ?></small><?php endif; ?><?php else: ?><span class="family-tag is-neutral">Sem vínculo Asaas</span><?php endif; ?></td>
+<td><?php if($o): ?><span class="family-tag <?= $o['status']==='completed'?'is-good':'is-neutral' ?>"><?= e(['completed'=>'Cadastrada','paid'=>'Pagamento confirmado','payment_attention'=>'Atenção ao pagamento'][$o['status']]??$o['status']) ?></span><?php if(!empty($o['coupon_free_until']) && $o['coupon_free_until']>date('Y-m-d')): ?><small class="family-trial">Cortesia até <?= e(date('d/m/Y',strtotime($o['coupon_free_until']))) ?></small><?php endif; ?><?php elseif($internal): ?><span class="family-tag is-good">Acesso interno</span><?php else: ?><span class="family-tag is-neutral">Sem assinatura</span><?php endif; ?></td>
 <td><span class="family-tag <?= $activeFamily?'is-good':'is-neutral' ?>"><?= e(['active'=>'Ativa','archived'=>'Arquivada','maintenance'=>'Manutenção','pending'=>'Pendente'][$t['status']]??$t['status']) ?></span></td>
 <td><div class="family-row-actions"><a class="family-manage" href="/admin/familia?id=<?= (int)$t['id'] ?>"><i class="bi bi-arrow-up-right-square" aria-hidden="true"></i> Detalhes</a>
-<?php foreach(['archive'=>['Arquivar','bi-archive'],'maintenance'=>['Manutenção','bi-tools'],'activate'=>['Ativar','bi-check-circle']] as $action=>$config): ?>
+<?php $availableActions=$activeFamily?['archive'=>['Arquivar','bi-archive'],'maintenance'=>['Manutenção','bi-tools']]:['activate'=>['Ativar','bi-check-circle']];foreach($availableActions as $action=>$config): ?>
 <form method="post" action="/admin/family_action.php" onsubmit="return confirm('<?= e($config[0]) ?> esta família?')"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="<?= e($action) ?>"><input type="hidden" name="id" value="<?= (int)$t['id'] ?>"><button class="family-icon-button <?= e($action) ?>" type="submit" title="<?= e($config[0]) ?>" aria-label="<?= e($config[0]) ?>"><i class="bi <?= e($config[1]) ?>" aria-hidden="true"></i></button></form>
 <?php endforeach; ?></div></td></tr>
 <?php endforeach; ?>
