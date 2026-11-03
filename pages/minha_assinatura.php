@@ -11,6 +11,14 @@ $q->execute([(int)$user['id'],$tenantId]);$family=$q->fetch(PDO::FETCH_ASSOC);
 if(!$family){http_response_code(403);exit('Família indisponível.');}
 $q=$pdo->prepare("SELECT o.* FROM subscription_orders o WHERE o.activated_tenant_id=? AND o.status IN ('completed','paid','payment_attention') ORDER BY o.id DESC LIMIT 1");
 $q->execute([$tenantId]);$order=$q->fetch(PDO::FETCH_ASSOC);
+$internalPlan=null;
+if(!$order){
+ $internalReady=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='tenant_internal_plans'")->fetchColumn()===1;
+ if($internalReady){
+  $q=$pdo->prepare("SELECT p.name,p.billing_cycle,p.max_members FROM tenant_internal_plans x JOIN subscription_plans p ON p.id=x.plan_id WHERE x.tenant_id=?");
+  $q->execute([$tenantId]);$internalPlan=$q->fetch(PDO::FETCH_ASSOC)?:null;
+ }
+}
 $invoices=[];$billingWarning='';$nextDue=null;$subscriptionState='';
 if($order && !empty($order['asaas_subscription_id'])){
  try{
@@ -36,7 +44,9 @@ $cycles=bemora_plan_cycles();
 <link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2"><link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3"><?php brand_head_tags(); ?>
 <link rel="stylesheet" href="/assets/bemora-sidebar.css?v=5"><link rel="stylesheet" href="/assets/bemora-subscription.css?v=1"></head>
 <body class="bemora-finance"><div class="shell ref-shell"><?php render_sidebar('minha-assinatura',$csrf); ?><main><?php render_topbar($user); ?><div class="content bemora-subscription"><?php page_header('MINHA CONTA','Minha assinatura','Acompanhe seu plano, próximas cobranças e faturas em um só lugar.'); ?>
-<?php if(!$order): ?>
+<?php if(!$order && $internalPlan): ?>
+<div class="sub-grid"><section class="sub-card sub-main"><span class="sub-kicker">SEU ACESSO ATUAL</span><div class="sub-heading"><h2><?= e($internalPlan['name']) ?></h2><span class="sub-pill">Acesso interno gratuito</span></div><p>Até <?= (int)$internalPlan['max_members'] ?> membros · <?= e(bemora_plan_cycles()[$internalPlan['billing_cycle']]??$internalPlan['billing_cycle']) ?></p><div class="sub-metrics"><div><small>Mensalidade</small><strong>R$ 0,00</strong></div><div><small>Tipo de acesso</small><strong>Administrativo</strong></div><div><small>Cobrança</small><strong>Não aplicável</strong></div></div><p class="sub-note">Plano disponibilizado pela administração do Bemora, sem assinatura financeira no Asaas.</p></section><section class="sub-card"><span class="sub-kicker">SEU PLANO</span><h2>Gerenciado pela administração</h2><p>Este plano é atribuído diretamente pelo administrador da plataforma. Para alterações, entre em contato com o suporte.</p></section></div>
+<?php elseif(!$order): ?>
 <section class="sub-card"><h2>Assinatura não vinculada</h2><p>Não encontramos uma contratação comercial vinculada a esta família. Isso pode ocorrer em contas anteriores ao lançamento dos planos.</p><a class="sub-btn" href="/#planos">Conhecer planos</a></section>
 <?php else: ?>
 <div class="sub-grid"><section class="sub-card sub-main"><span class="sub-kicker">SEU PLANO ATUAL</span><div class="sub-heading"><h2><?= e($order['plan_name']) ?></h2><span class="sub-pill"><?= $freeUntil && $freeUntil>new DateTimeImmutable('today')?'Período gratuito':($subscriptionState==='ACTIVE'?'Assinatura ativa':'Situação: '.e($subscriptionState?:$order['status'])) ?></span></div>
