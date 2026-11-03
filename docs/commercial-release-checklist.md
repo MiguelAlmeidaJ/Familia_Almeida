@@ -44,3 +44,31 @@ Campos CPF/CNPJ e celular possuem máscaras no navegador, mas os dados são norm
 5. Se a migration 037 não estiver aplicada, o login exibirá indisponibilidade (fail-closed). Não ofereça acesso público antes de aplicar.
 6. Confirme que `/storage/receipts/`, `/storage/avatars/`, `/includes/`, `/vendor/` e `/database/` não permitem download HTTP direto.
 7. Faça um teste de bloqueio em conta exclusiva de teste; o administrador deverá aguardar 15 minutos após o limite.
+
+
+## Fase 2 — conciliação financeira (Sandbox, 2026-11-03)
+A migration `20261103_038_billing_reason` registra o motivo do bloqueio financeiro em `tenant_billing_access.reason`.
+Sem ela, a suspensão básica permanece funcional, mas as mensagens específicas de estorno ou cancelamento dependem de atualizar a estrutura.
+
+- Assinaturas `INACTIVE` ou `EXPIRED`: não concedem acesso mesmo durante cortesia.
+- Evento autenticado `SUBSCRIPTION_DELETED`: bloqueia imediatamente a família vinculada; pedidos ainda sem família ativada são marcados para análise. Nenhuma transação financeira é apagada.
+- Sem webhook: duas verificações de ausência da assinatura (HTTP 404) com intervalo mínimo de 20 horas suspendem o acesso. Falhas de rede, 401, 429 e 5xx não disparam suspensão por ausência.
+- Cobranças recorrentes `REFUNDED`, `PARTIALLY_REFUNDED`, `REFUND_IN_PROGRESS`, `CHARGEBACK_REQUESTED`, `CHARGEBACK_DISPUTE`, `AWAITING_CHARGEBACK_REVERSAL`: impedem acesso até confirmação de pagamento posterior. A janela da cortesia não prevalece sobre esses eventos.
+- Após novo pagamento confirmado e sem atrasos ou pendências financeiras, a conciliação retorna o estado a `active`. Suspensão administrativa permanece independente.
+- Estorno/chargeback de upgrade já ativado: marca o pedido `reconciliation_required` e suspende o acesso financeiro sem reduzir automaticamente o plano ou reescrever as transações. O cron revisita cobranças de upgrades recentes e pendentes; confirmação posterior válida remove o bloqueio.
+- Em caso de erro na API do Asaas, o estado anterior é preservado. A rotina diária registra falhas e retorna código diferente de zero.
+- **Configuração importante:** no Asaas, habilitar eventos de assinatura `SUBSCRIPTION_UPDATED`, `SUBSCRIPTION_INACTIVATED`, `SUBSCRIPTION_DELETED` além de eventos de pagamento. O token secreto existente deve permanecer válido.
+
+### Matriz manual de homologação obrigatória
+1. No Sandbox, criar família com cobrança recorrente e confirmar acesso.
+2. Simular vencimento D+3 (tolerância), D+4 (bloqueio), pagamento confirmado (retorno), inclusive com repetição do webhook.
+3. Inativar assinatura no Asaas e confirmar bloqueio, mesmo com cortesia.
+4. Remover assinatura no Asaas e confirmar que o webhook bloqueia a família. Verificar também o fallback de 404 repetido.
+5. Solicitar reembolso/chargeback de cobrança recorrente e confirmar bloqueio, sem perda de dados.
+6. Confirmar cobrança posterior para verificar retorno do acesso; reembolso não deve permitir reativação prematura.
+7. Fazer upgrade pago e estornar a cobrança avulsa; verificar status `reconciliation_required`, acesso bloqueado e nenhuma reversão silenciosa de limites. Verificar recuperação após conciliação.
+8. Manter suspensão administrativa enquanto um pagamento é confirmado; a reativação automática não pode superar o bloqueio manual.
+9. Simular indisponibilidade da API e validar que a rotina não altera contas com base em dados incompletos.
+10. Confirmar os workflows PHP e isolamento do commit implantado, atualizar o banco por migration e testar o retorno em Meu plano, Admin → Famílias e Suporte.
+
+Não liberar faturamento comercial antes desses testes em ambiente de homologação. A implementação não substitui auditoria contábil nem tratamento jurídico de reembolso.
