@@ -133,10 +133,10 @@ $_SESSION['user_id']=3;$_SESSION['tenant_id']=$other;
 $c=monthly_budget_data($pdo,'2026-10');
 check(abs($c['recurringIncomeTotal']-1000)<0.001,'second family sees only its income');
 check(count($c['bills'])===1,'second family sees only its bills');
-$probe=static function(int $member,int $tenant,string $release,string $route):string {
+$probe=static function(int $member,int $tenant,string $release,string $route,int $idleAge=0,int $sessionAge=0):string {
  $cmd=escapeshellarg(PHP_BINARY).' '.escapeshellarg(__DIR__.'/tenant_access_cli.php')
   .' '.escapeshellarg((string)$member).' '.escapeshellarg((string)$tenant)
-  .' '.escapeshellarg($release).' '.escapeshellarg($route);
+  .' '.escapeshellarg($release).' '.escapeshellarg($route).' '.escapeshellarg((string)$idleAge).' '.escapeshellarg((string)$sessionAge);
  $output=[];$status=0;exec($cmd.' 2>&1',$output,$status);
  check($status===0,'tenant guard CLI exits cleanly');
  return implode("\n",$output);
@@ -160,6 +160,12 @@ check(is_array($billingAllowed) && (int)$billingAllowed['tenant']===$family,'sus
 $pdo->prepare("UPDATE tenant_billing_access SET manual_suspended=0 WHERE tenant_id=?")->execute([$family]);
 $unblocked=json_decode($probe(1,$family,'1','/acao'),true);
 check(is_array($unblocked) && (int)$unblocked['tenant']===$family,'reactivation restores finance route authorization');
+
+$expiredIdle=$probe(1,$family,'1','/painel',7201);
+check($expiredIdle==='', 'inactive session cannot enter the financial dashboard');
+$expiredAbsolute=$probe(1,$family,'1','/painel',0,86401);
+check($expiredAbsolute==='', 'session beyond absolute maximum lifetime cannot access finances');
+
 
 
 $_SESSION['user_id']=1;$_SESSION['tenant_id']=$family;
