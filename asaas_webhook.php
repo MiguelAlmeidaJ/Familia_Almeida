@@ -4,6 +4,7 @@ require_once __DIR__.'/includes/asaas.php';
 require_once __DIR__.'/includes/mailer.php';
 require_once __DIR__.'/includes/email_templates.php';
 require_once __DIR__.'/includes/paid_plan_changes.php';
+require_once __DIR__.'/includes/billing_access.php';
 if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);exit;}
 $secret=(string)config('asaas','webhook_token','');
 $given=(string)($_SERVER['HTTP_ASAAS_ACCESS_TOKEN']??'');
@@ -60,6 +61,14 @@ try{
   $pdo->prepare("UPDATE subscription_orders SET status='payment_attention' WHERE asaas_subscription_id=? AND status='awaiting_payment'")->execute([$sub]);
  }
  $pdo->commit();
+ // Always reconcile against Asaas, not the untrusted event body. Cron is fallback.
+ if($sub!=='' && in_array($event,['PAYMENT_OVERDUE','PAYMENT_CONFIRMED','PAYMENT_RECEIVED','PAYMENT_REFUNDED','PAYMENT_DELETED','PAYMENT_RESTORED'],true) && bemora_billing_access_ready($pdo)){
+  try{
+   $q=$pdo->prepare("SELECT activated_tenant_id FROM subscription_orders WHERE asaas_subscription_id=? AND activated_tenant_id IS NOT NULL LIMIT 1");
+   $q->execute([$sub]);$tenantId=(int)$q->fetchColumn();
+   if($tenantId>0)bemora_reconcile_billing_access($pdo,$tenantId);
+  }catch(Throwable $billingError){error_log('Bemora: webhook billing access reconciliation deferred to cron.');}
+ }
  if($notify){
   $url=rtrim((string)config('app','base_url','https://bemora.anoar.com.br'),'/').'/convite-familia.php?token='.$notify['token'];
   try{bemora_send_email($notify['email'],'Bemora — pagamento confirmado e convite disponível',"Pagamento confirmado!\n\nFinalize o cadastro da sua família: ".$url."\n\nO convite expira em 72 horas.",bemora_invitation_email($url,$notify['members']));}
