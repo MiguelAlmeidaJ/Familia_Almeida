@@ -140,7 +140,7 @@ function render_topbar(array $user, string $context = 'Espaço privado'): void
     $billingLocked=!empty($user['tenant_id'])&&bemora_billing_is_blocked(bemora_billing_access(db(),(int)$user['tenant_id']));
     ?>
     <!-- Support is always available, including while a family is suspended. -->
-    <link rel="stylesheet" href="/assets/bemora-support.css?v=2">
+    <link rel="stylesheet" href="/assets/bemora-support.css?v=3">
     <button type="button" class="bemora-support-fab <?= $billingLocked?'is-suspended':'' ?>" id="bemora-support-fab" aria-label="Relatar problema" title="Relatar problema" aria-haspopup="dialog" aria-controls="bemora-support-dialog"><i class="bi bi-chat-dots" aria-hidden="true"></i></button>
     <dialog class="bemora-support-dialog" id="bemora-support-dialog" aria-labelledby="bemora-support-title">
 <div class="support-dialog-head"><div><span class="support-eyebrow">SUPORTE BEMORA</span><h2 id="bemora-support-title">Relatar problema</h2><p>Preencha os detalhes para receber ajuda da nossa equipe.</p></div><button type="button" id="bemora-report-close" aria-label="Fechar formulário"><i class="bi bi-x-lg"></i></button></div>
