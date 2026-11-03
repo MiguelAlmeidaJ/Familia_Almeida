@@ -90,3 +90,22 @@ A rota `/pagamento` exibe, sem sair do domínio Bemora, os códigos de Pix e bol
 - A página não concede acesso por conta própria: a ativação continua dependente de webhook confirmado.
 - A rota funciona para cobranças já geradas. No checkout público, a primeira fatura da assinatura precisa existir antes de acessar Pix e boleto.
 - Não confundir a conclusão visual da tela com pagamento confirmado. Validar no Sandbox os fluxos Pix, boleto, crédito hospedado, débito hospedado, expiração dos códigos e login de famílias diferentes.
+
+
+## Suspensão financeira automática (migration 034)
+O acesso financeiro por inadimplência é controlado separadamente em `tenant_billing_access`. Não altere `tenants.active` nem `tenants.status` para suspender cobrança: isso impediria o cliente de chegar à página de regularização.
+
+- Regra inicial: 3 dias completos de tolerância após o vencimento de uma cobrança RECORRENTE da assinatura. O quarto dia de atraso resulta em `suspended`.
+- Usa o endpoint Asaas `GET /subscriptions/{id}/payments`, percorrendo as páginas e conferindo o cliente/assinatura. Só faturas com status `PENDING` ou `OVERDUE` e vencidas são consideradas; cobranças avulsas de upgrades não entram.
+- Estado `grace`: fatura vencida, mas acesso normal dentro da tolerância.
+- Estado `suspended`: a autenticação permite somente Minha assinatura, perfil e saída, preservando os dados da família. O usuário pode visualizar as cobranças recorrentes no Asaas a partir da tela de faturas.
+- A reativação ocorre quando o Asaas confirma o pagamento e não há outras faturas vencidas além do prazo. O webhook solicita conciliação; o cron diário corrige webhooks atrasados. A tela Minha assinatura tenta atualizar cobranças suspensas ao ser visitada, respeitando janela de dois minutos.
+- Planos internos sem assinatura Asaas e pedidos sem vínculo de família não recebem suspensão automática. Durante cortesia ainda vigente, a suspensão é ignorada.
+- Se a consulta externa falhar, nenhuma nova suspensão ou reativação é aplicada com dados incompletos. Investigue os logs; a próxima execução tenta novamente.
+- **Obrigatório:** executar a migration `20261103_034_billing_access` no admin antes de habilitar a rotina diária.
+- Cron recomendado para o DirectAdmin PHP 8.3, ajustado ao caminho usado nesta hospedagem:
+```
+15 2 * * * /usr/local/php83/bin/php /home/anoa0880/domains/bemora.anoar.com.br/public_html/scripts/reconcile_billing_access.php
+```
+- O cron anterior `scripts/process_scheduled_plan_changes.php` permanece desabilitado: não o confunda com a rotina de cobrança. Esse cron antigo pode ser removido do agendador.
+- Valide no Sandbox com fatura vencida, fatura dentro da tolerância, pagamento confirmado e plano interno; antes de operar em produção, ajuste a política de tolerância, comunicações e bloqueios à política comercial aprovada.
