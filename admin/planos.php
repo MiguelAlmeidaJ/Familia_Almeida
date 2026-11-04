@@ -3,15 +3,19 @@ declare(strict_types=1);
 require_once __DIR__.'/../includes/admin_layout.php';
 require_once __DIR__.'/../includes/plans.php';
 require_once __DIR__.'/../includes/plan_modules.php';
+require_once __DIR__.'/../includes/plan_benefits.php';
 require_admin_access();
 $pdo=db();$ready=bemora_plans_table_exists($pdo);$moduleReady=$ready&&bemora_modules_ready($pdo);
 $plans=$ready?$pdo->query('SELECT * FROM subscription_plans ORDER BY active DESC,id DESC')->fetchAll(PDO::FETCH_ASSOC):[];
-foreach($plans as &$plan){$plan['modules']=bemora_plan_modules($pdo,(int)$plan['id']);}unset($plan);
+$benefitReady=$ready&&bemora_benefits_ready($pdo);
+$benefits=bemora_benefits_catalog($pdo,true);
+$benefitIdsByPlan=bemora_plan_benefit_ids($pdo,array_column($plans,'id'));
+foreach($plans as &$plan){$plan['modules']=bemora_plan_modules($pdo,(int)$plan['id']);$plan['benefits']=$benefitIdsByPlan[(int)$plan['id']]??[];}unset($plan);
 $publicActiveCount=0;$archivedCount=0;foreach($plans as $plan){if((int)$plan['active']===1&&(int)$plan['public_sale']===1)$publicActiveCount++;if((int)$plan['active']===0)$archivedCount++;}
 $flash=pull_flash();$csrf=csrf_token();
 admin_shell_start('plans','Planos','Administre planos públicos e planos internos sem venda no site.');
 ?>
-<link rel="stylesheet" href="/assets/bemora-plans-admin.css?v=5">
+<link rel="stylesheet" href="/assets/bemora-plans-admin.css?v=6">
 <div class="plans-admin">
 <?php if($flash): ?><div class="notice" role="status"><?= e($flash['message']) ?></div><?php endif; ?>
 <?php if($ready&&!$moduleReady): ?><div class="notice">Execute a migration <strong>20261104_043_subscription_plan_modules</strong> em Configurações → Manutenção para editar módulos por plano.</div><?php endif; ?>
@@ -50,7 +54,7 @@ admin_shell_start('plans','Planos','Administre planos públicos e planos interno
 <div class="plans-admin-grid">
 <?php if(!$plans): ?><div class="plans-empty"><i class="bi bi-tags"></i><strong>Nenhum plano cadastrado</strong><p>Crie o primeiro plano para começar a apresentar as ofertas no site público.</p></div><?php endif; ?>
 </div>
-<div class="plans-admin-note"><i class="bi bi-info-circle"></i> Alterar módulos pode modificar o acesso de famílias já vinculadas. O limite de pessoas continua configurado por oferta; valores adicionais por integrante ainda não são cobrados separadamente. Planos internos não aparecem no site, checkout nem catálogo de upgrade. Para conceder acesso sem pagamento, utilize os convites administrativos em Famílias; cadastrar o plano não ativa uma assinatura automaticamente.</div>
+<div class="plans-admin-note"><i class="bi bi-info-circle"></i> Cadastre os textos comerciais em <a href="/admin/beneficios">Benefícios</a> e selecione-os em cada oferta. A lista não muda as permissões de módulos.  Alterar módulos pode modificar o acesso de famílias já vinculadas. O limite de pessoas continua configurado por oferta; valores adicionais por integrante ainda não são cobrados separadamente. Planos internos não aparecem no site, checkout nem catálogo de upgrade. Para conceder acesso sem pagamento, utilize os convites administrativos em Famílias; cadastrar o plano não ativa uma assinatura automaticamente.</div>
 </div>
 <dialog id="plan-dialog" class="plans-dialog" aria-labelledby="plan-dialog-title">
 <form method="post" action="/admin/plans_action.php" id="plan-form">
@@ -62,7 +66,11 @@ admin_shell_start('plans','Planos','Administre planos públicos e planos interno
 <label>Máximo de membros<input type="number" name="max_members" min="1" max="30" value="2" required></label>
 <label class="wide">Disponibilidade<select name="public_sale"><option value="1">Venda pública — aparece no site</option><option value="0">Plano interno — não aparece no site nem no checkout</option></select></label>
 <fieldset class="plans-modules-fieldset wide" <?= !$moduleReady?'disabled':'' ?>><legend>Módulos incluídos</legend><p>Receitas, despesas, contas e painel financeiro permanecem disponíveis em todos os planos. Escolha os recursos adicionais:</p><div class="plans-modules-grid"><?php foreach(bemora_module_catalog() as $key=>$module): ?><label class="plans-module-option"><input type="checkbox" name="modules[]" value="<?= e($key) ?>" checked><span><strong><?= e($module['label']) ?></strong><small><?= e($module['description']) ?></small></span></label><?php endforeach; ?></div></fieldset>
-<label class="wide">Detalhes do plano<textarea name="details" rows="4" maxlength="3000" required placeholder="Descreva os benefícios do plano. Separe cada benefício em uma linha."></textarea></label>
+<label class="wide">Descrição interna do plano<textarea name="details" rows="4" maxlength="3000" required placeholder="Observações sobre a oferta (não exibidas no card público)."></textarea></label>
+<fieldset class="plans-benefit-fieldset wide" <?= !$benefitReady?'disabled':'' ?>><legend>Benefícios exibidos no site</legend><p>Escolha os itens visíveis no card desta oferta. <a href="/admin/beneficios">Gerenciar catálogo</a></p><div class="plans-benefit-checks">
+<?php foreach($benefits as $benefit): ?><label><input type="checkbox" name="benefits[]" value="<?= (int)$benefit['id'] ?>"><span><?= e($benefit['title']) ?></span></label><?php endforeach; ?>
+<?php if(!$benefits): ?><p class="plans-benefits-empty">Nenhum benefício ativo cadastrado.</p><?php endif; ?>
+</div></fieldset>
 <label>Preço normal (R$)<input name="price" inputmode="decimal" placeholder="49,90" required><small>Para plano interno gratuito, informe 0,00.</small></label>
 <label>Preço promocional (R$) <small>Opcional</small><input name="promo_price" inputmode="decimal" placeholder="39,90"></label>
 <label class="wide">Duração da promoção<select name="promo_duration"><option value="">Sem promoção</option><option value="24h">24 horas</option><option value="1w">1 semana</option><option value="1m">1 mês</option><option value="3m">3 meses</option></select></label>
@@ -70,5 +78,5 @@ admin_shell_start('plans','Planos','Administre planos públicos e planos interno
 <p class="plans-form-hint">Planos internos podem ter preço zero. Neles, promoções ficam desabilitadas quando o valor é gratuito.</p>
 <div class="plans-dialog-actions"><button type="button" class="plan-dialog-cancel">Cancelar</button><button type="submit" class="plans-add">Salvar plano</button></div>
 </form></dialog>
-<script src="/assets/bemora-plans-admin.js?v=6" defer></script>
+<script src="/assets/bemora-plans-admin.js?v=7" defer></script>
 <?php admin_shell_end(); ?>
