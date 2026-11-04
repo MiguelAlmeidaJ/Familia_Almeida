@@ -1,14 +1,16 @@
 <?php
 declare(strict_types=1);
 // Public landing page: no authentication required. Pricing is loaded read-only.
-$publicPlans=[];$publicBenefits=[];
+$publicPlans=[];$publicBenefits=[];$singleOffer=null;
 try{
  require_once __DIR__.'/includes/bootstrap.php';
  require_once __DIR__.'/includes/plans.php';
  require_once __DIR__.'/includes/plan_modules.php';
+ require_once __DIR__.'/includes/single_offer.php';
  require_once __DIR__.'/includes/plan_benefits.php';
  $pdo=db();
- if(bemora_plans_table_exists($pdo)){
+ $singleOffer=bemora_single_offer_enabled($pdo)?bemora_single_offer($pdo):null;
+ if(!$singleOffer && bemora_plans_table_exists($pdo)){
   $publicPlans=$pdo->query('SELECT id,name,billing_cycle,details,max_members,price,promo_price,promo_starts_at,promo_ends_at FROM subscription_plans WHERE active=1 AND public_sale=1 ORDER BY FIELD(billing_cycle,\'monthly\',\'semiannual\',\'annual\'),price,id')->fetchAll(PDO::FETCH_ASSOC);
   $publicBenefits=bemora_plan_benefits($pdo,array_column($publicPlans,'id'));
  }
@@ -23,7 +25,7 @@ try{
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/bemora-landing.css?v=7">
+<link rel="stylesheet" href="/assets/bemora-landing.css?v=8">
 </head><body id="inicio">
 <header class="site-header"><div class="site-container navigation">
 <a class="site-brand" href="/" aria-label="Bemora, início"><img src="/assets/brand/logo.png" alt="Bemora by Anoar"></a>
@@ -52,7 +54,27 @@ try{
 <section id="para-quem" class="section audience"><div class="site-container"><div class="section-heading"><span class="eyebrow">FEITO PARA A VIDA REAL</span><h2>Cada família é única.<br><em>O Bemora acompanha.</em></h2></div><div class="audience-grid"><article><span>01</span><div class="audience-icon">◡</div><h3>Para você</h3><p>Organize suas receitas, despesas e compromissos do jeito que funciona na sua rotina.</p></article><article><span>02</span><div class="audience-icon">♡</div><h3>Para o casal</h3><p>Conversem sobre dinheiro com mais clareza e acompanhem as decisões da vida a dois.</p></article><article><span>03</span><div class="audience-icon">♧</div><h3>Para a família</h3><p>Um lugar para organizar as finanças familiares e acompanhar as responsabilidades de cada pessoa.</p></article></div></div></section>
 <section id="como-funciona" class="section steps"><div class="site-container steps-grid"><div><span class="eyebrow">SIMPLES DESDE O PRIMEIRO DIA</span><h2>Comece com o que você tem.<br><em>Construa com tranquilidade.</em></h2><p>Nada de sistemas complicados. O Bemora ajuda você a enxergar o presente e se preparar para o futuro.</p><a href="#contato" class="text-link">Quero começar <span>↗</span></a></div><div class="steps-list"><div><span>01</span><article><h3>Entre no seu espaço</h3><p>Acesse seu ambiente pessoal ou familiar com segurança.</p></article></div><div><span>02</span><article><h3>Organize sua rotina financeira</h3><p>Cadastre fontes de renda, contas previstas e movimentações.</p></article></div><div><span>03</span><article><h3>Acompanhe sua evolução</h3><p>Veja indicadores e relatórios para tomar decisões com mais confiança.</p></article></div></div></div></section>
 <section class="section statement"><div class="site-container statement-inner"><span>✳</span><p>Organizar o dinheiro não precisa ser complicado. <em>Precisa fazer sentido para a sua vida.</em></p><small>BEMORA · BY ANOAR</small></div></section>
-<?php if($publicPlans): ?>
+<?php if($singleOffer): ?>
+<section id="planos" class="section landing-pricing single-public-pricing"><div class="site-container">
+ <div class="landing-pricing-heading"><div class="section-heading"><span class="eyebrow">ASSINATURA BEMORA</span><h2>Um plano para você.<br><em>Do seu jeito.</em></h2><p>Comece com seu controle financeiro. Inclua pessoas e o módulo de Compras apenas quando precisar.</p></div></div>
+ <div class="single-public-layout">
+  <article class="single-public-card"><span class="landing-plan-cycle">Acesso financeiro</span><h3><?= e($singleOffer['name']) ?></h3><p>Seu espaço financeiro começa com uma pessoa e pode crescer junto com você.</p>
+  <ul class="landing-plan-features"><li>Organizar receitas e despesas</li><li>Acompanhar contas e relatórios financeiros</li><li>Adicionar pessoas e Compras quando precisar</li></ul></article>
+  <form class="single-public-builder" method="get" action="/checkout" id="single-public-builder"
+   data-base="<?= e((string)$singleOffer['base_monthly']) ?>" data-seat="<?= e((string)$singleOffer['extra_member_monthly']) ?>"
+   data-shop="<?= e((string)$singleOffer['shopping_monthly']) ?>" data-semi="<?= e((string)$singleOffer['semi_discount']) ?>"
+   data-annual="<?= e((string)$singleOffer['annual_discount']) ?>">
+   <h3>Monte sua assinatura</h3>
+   <label>Periodicidade<select name="ciclo"><option value="monthly">Mensal</option><option value="semiannual">Semestral</option><option value="annual">Anual</option></select></label>
+   <label>Quantidade de pessoas<select name="integrantes"><?php for($n=1;$n<=(int)$singleOffer['max_members'];$n++): ?><option value="<?= $n ?>"><?= $n ?> <?= $n===1?'pessoa':'pessoas' ?></option><?php endfor; ?></select></label>
+   <label class="single-public-option"><input type="checkbox" name="compras" value="1"><span><strong>Adicionar Compras + scanner</strong><small>Lista de compras, modo mercado e leitura de etiquetas</small></span></label>
+   <div class="single-public-total"><span>Total recorrente por período</span><strong id="single-public-amount"><?= e(bemora_plan_price((float)$singleOffer['base_monthly'])) ?></strong><small id="single-public-frequency">Cobrança mensal</small></div>
+   <button type="submit" class="button button-dark landing-plan-cta">Continuar para assinatura <span aria-hidden="true">↗</span></button>
+  </form>
+ </div>
+ <p class="landing-plan-legal">Adicionais e periodicidade compõem o valor recorrente exibido. O preço final será confirmado no checkout. Pagamento intermediado pelo Asaas.</p>
+</div></section>
+<?php elseif($publicPlans): ?>
 <?php
 $plansByCycle=['monthly'=>[],'semiannual'=>[],'annual'=>[]];
 foreach($publicPlans as $offer){
@@ -152,4 +174,4 @@ $initialCycle=array_key_first(array_filter($plansByCycle,static fn($offers)=>cou
   </div>
 </div>
 </footer>
-<script src="/assets/bemora-landing.js?v=2" defer></script></body></html>
+<script src="/assets/bemora-single-public.js?v=1" defer></script><script src="/assets/bemora-landing.js?v=2" defer></script></body></html>
