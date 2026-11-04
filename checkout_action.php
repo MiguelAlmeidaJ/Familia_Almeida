@@ -83,11 +83,14 @@ try{
   $pdo->prepare('UPDATE subscription_coupons SET redeemed_count=redeemed_count+1 WHERE id=?')->execute([$couponId]);
  }
  $pdo->commit();
+ $asaasStep='customer';
  $customer=bemora_asaas_request('POST','/customers',['name'=>$name,'email'=>$email,'cpfCnpj'=>$doc,'mobilePhone'=>$phone,'externalReference'=>'bemora-order-'.$orderId]);
  $customerId=(string)($customer['id']??'');if($customerId==='')throw new RuntimeException('Cliente não confirmado pelo Asaas.');
  $pdo->prepare('UPDATE subscription_orders SET asaas_customer_id=?,status=? WHERE id=?')->execute([$customerId,'customer_created',$orderId]);
+ $asaasStep='subscription';
  $subscription=bemora_asaas_request('POST','/subscriptions',['customer'=>$customerId,'billingType'=>'UNDEFINED','value'=>$recurringAmount,'nextDueDate'=>$freeUntil??date('Y-m-d'),'cycle'=>bemora_asaas_cycle($plan['billing_cycle']),'description'=>'Bemora - '.$plan['name'],'externalReference'=>'bemora-order-'.$orderId]);
  $subId=(string)($subscription['id']??'');if($subId==='')throw new RuntimeException('Assinatura não confirmada pelo Asaas.');
+ $asaasStep=null;
  $pdo->prepare('UPDATE subscription_orders SET asaas_subscription_id=?,status=? WHERE id=?')->execute([$subId,$freeMonths>0?'complimentary':'awaiting_payment',$orderId]);
  if($freeMonths>0){
   require_once __DIR__.'/includes/complimentary_checkout.php';
@@ -119,7 +122,12 @@ try{
    }
   }catch(Throwable $ignored){if($pdo->inTransaction())$pdo->rollBack();error_log('Bemora: voucher release requires reconciliation.');}
  }
- $_SESSION['checkout_error']=$e instanceof PDOException?'Não foi possível criar o pedido. Tente novamente.':$e->getMessage();
+ $message=$e instanceof PDOException?'Não foi possível criar o pedido. Tente novamente.':$e->getMessage();
+ if(isset($asaasStep)&&$asaasStep!==null && $e->getCode()>=400 && $e->getCode()<=599){
+  $stage=$asaasStep==='customer'?'cadastrar o responsável':'criar a assinatura';
+  $message='Não foi possível '.$stage.' no Asaas. '.$message;
+ }
+ $_SESSION['checkout_error']=$message;
  $returnUrl='/checkout?plano='.(int)($_POST['plan_id']??0);
  if(($single??null) && isset($_POST['cycle'],$_POST['members'])){
   $returnUrl='/checkout?ciclo='.rawurlencode((string)$_POST['cycle']).'&integrantes='.(int)$_POST['members'].'&compras='.(($_POST['shopping_addon']??'')==='1'?'1':'0');
