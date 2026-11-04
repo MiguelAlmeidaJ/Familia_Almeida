@@ -225,3 +225,110 @@
 .single-builder-heading>.landing-icon{width:36px;height:36px;padding:9px;background:#eaf5ee;color:#137a5a;border-radius:10px}
 .landing-button-arrow{font-size:18px;line-height:1}
 @media(max-width:650px){.feature-card .feature-icon{width:44px;height:44px}.audience-grid .audience-icon{width:46px;height:46px;margin:16px 0}}
+
+/* Focused hierarchy for the features heading and a more welcoming audience section. */
+.features{padding-top:clamp(65px,7vw,100px)}
+.features>.site-container>.section-heading{
+ max-width:780px;
+ margin:0 auto 42px;
+ text-align:center;
+}
+.features>.site-container>.section-heading .eyebrow{
+ display:inline-block;
+ margin-bottom:3px;
+}
+.features>.site-container>.section-heading h2{
+ max-width:740px;
+ margin:15px auto 13px;
+ font-size:clamp(29px,3.15vw,43px);
+ line-height:1.2;
+ letter-spacing:-.052em;
+}
+.features>.site-container>.section-heading>p{
+ max-width:570px;
+ margin:0 auto;
+ font-size:clamp(13px,1.15vw,15px);
+ line-height:1.7;
+}
+.audience{
+ padding:clamp(64px,7.5vw,98px) 0;
+ background:linear-gradient(180deg,#f2f9f4,#edf7f1);
+}
+.audience>.site-container>.section-heading{
+ max-width:760px;
+ margin:0 auto 39px;
+ text-align:center;
+}
+.audience>.site-container>.section-heading h2{
+ margin:15px auto 12px;
+ font-size:clamp(30px,3.5vw,46px);
+ line-height:1.23;
+ letter-spacing:-.055em;
+}
+.audience>.site-container>.section-heading>p{
+ max-width:530px;
+ margin:0 auto;
+ color:#6b8576;
+ font-size:14px;
+ line-height:1.7;
+}
+.audience-grid{gap:16px;align-items:stretch}
+.audience-grid article{
+ min-width:0;
+ min-height:0;
+ padding:27px 27px 30px;
+ background:#fff;
+ border:1px solid #daeade;
+ border-radius:17px;
+ box-shadow:0 9px 26px rgba(7,71,49,.035);
+ transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
+}
+.audience-grid article:hover{
+ transform:translateY(-3px);
+ border-color:#b5dbca;
+ box-shadow:0 16px 32px rgba(7,71,49,.08);
+}
+.audience-grid .audience-icon{
+ display:grid;
+ place-items:center;
+ width:47px;
+ height:47px;
+ margin:0 0 21px;
+ border:1px solid #d8ebe0;
+ border-radius:13px;
+ background:#edf8f1;
+ color:#0b8767;
+}
+.audience-grid .audience-icon .landing-icon{width:23px;height:23px}
+.audience-grid h3{
+ margin:0 0 10px;
+ font-size:clamp(18px,1.65vw,21px);
+ line-height:1.28;
+ letter-spacing:-.025em;
+}
+.audience-grid p{
+ max-width:335px;
+ margin:0;
+ font-size:13px;
+ line-height:1.75;
+ color:#71897c;
+}
+@media(max-width:800px){
+ .features>.site-container>.section-heading{margin-bottom:31px}
+ .audience>.site-container>.section-heading{margin-bottom:30px}
+ .audience-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+ .audience-grid article{padding:21px 18px}
+}
+@media(max-width:650px){
+ .features{padding-top:60px}
+ .features>.site-container>.section-heading h2{font-size:clamp(27px,7vw,36px)}
+ .features>.site-container>.section-heading>p{font-size:13px}
+ .audience{padding:63px 0}
+ .audience>.site-container>.section-heading h2{font-size:clamp(29px,7.5vw,37px)}
+ .audience>.site-container>.section-heading>p{font-size:13px}
+ .audience-grid{grid-template-columns:1fr;gap:12px}
+ .audience-grid article{padding:22px 23px}
+ .audience-grid .audience-icon{margin-bottom:15px}
+ .audience-grid p{max-width:none}
+}
+@media(prefers-reduced-motion:reduce){.audience-grid article{transition:none}.audience-grid article:hover{transform:none}}
