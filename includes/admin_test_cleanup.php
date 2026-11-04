@@ -82,6 +82,15 @@ function bemora_cleanup_delete_order(PDO $pdo,int $orderId,int $adminId):void {
   $pdo->prepare('DELETE FROM subscription_orders WHERE id=?')->execute([$orderId]);
   if(!empty($o['invite_id']) && bemora_cleanup_has_table($pdo,'family_invitations')){
    $pdo->prepare('UPDATE family_invitations SET revoked_at=COALESCE(revoked_at,NOW()) WHERE id=? AND used_at IS NULL')->execute([(int)$o['invite_id']]);
+   // A never-used invite with no registration or other order can be fully
+   // purged; otherwise only revoke it to avoid dangling references.
+   $q=$pdo->prepare('SELECT COUNT(*) FROM family_registrations WHERE invitation_id=?');
+   $q->execute([(int)$o['invite_id']]);$hasRegistration=(int)$q->fetchColumn()>0;
+   $q=$pdo->prepare('SELECT COUNT(*) FROM subscription_orders WHERE invite_id=?');
+   $q->execute([(int)$o['invite_id']]);$hasOrder=(int)$q->fetchColumn()>0;
+   if(!$hasRegistration&&!$hasOrder){
+    $pdo->prepare('DELETE FROM family_invitations WHERE id=? AND used_at IS NULL')->execute([(int)$o['invite_id']]);
+   }
   }
   // Never erase Asaas customers or charges already paid. Invitations associated
   // with a registered workspace are kept until that workspace is removed.
