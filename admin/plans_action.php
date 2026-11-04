@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/../includes/admin_layout.php';
 require_once __DIR__.'/../includes/plans.php';
+require_once __DIR__.'/../includes/plan_modules.php';
 require_admin_access();
 if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);exit('Método não permitido.');}
 verify_csrf();
@@ -17,6 +18,13 @@ try{
   if(!$stmt->rowCount())throw new RuntimeException('Plano não encontrado.');
   flash('success','Visibilidade do plano atualizada.');
  }elseif($action==='save'){
+  if(!bemora_modules_ready($pdo))throw new RuntimeException('Execute a migration 043 em Manutenção para configurar módulos.');
+  $selectedModules=$_POST['modules']??[];
+  if(!is_array($selectedModules))throw new RuntimeException('Seleção de módulos inválida.');
+  $validModules=bemora_module_catalog();
+  foreach($selectedModules as $key){if(!is_string($key)||!array_key_exists($key,$validModules))throw new RuntimeException('Módulo inválido.');}
+  $selectedModules=array_values(array_unique($selectedModules));
+  if(in_array('scanner',$selectedModules,true)&&!in_array('shopping',$selectedModules,true))throw new RuntimeException('O leitor de etiquetas exige o módulo de compras.');
   $name=trim((string)($_POST['name']??''));
   $cycle=(string)($_POST['billing_cycle']??'');
   $details=trim((string)($_POST['details']??''));
@@ -45,6 +53,7 @@ try{
    if(!is_finite($promo)||$promo<=0||$promo>=$price)throw new RuntimeException('A promoção deve ser maior que zero e menor que o preço normal.');
    if(!isset(bemora_promo_durations()[$duration]))throw new RuntimeException('Selecione a duração da promoção.');
   }elseif($duration!=='')throw new RuntimeException('Informe o preço promocional ou deixe a duração vazia.');
+  $pdo->beginTransaction();
   if($id && $id>0){
    $old=$pdo->prepare('SELECT promo_price,promo_duration,promo_starts_at,promo_ends_at,price FROM subscription_plans WHERE id=?');
    $old->execute([$id]);$existing=$old->fetch(PDO::FETCH_ASSOC);
@@ -58,13 +67,18 @@ try{
    }
    $stmt=$pdo->prepare('UPDATE subscription_plans SET name=?,billing_cycle=?,details=?,max_members=?,price=?,promo_price=?,promo_duration=?,promo_starts_at=?,promo_ends_at=?,public_sale=? WHERE id=?');
    $stmt->execute([$name,$cycle,$details,$members,$price,$promo,$promo===null?null:$duration,$start,$end,$publicSale,$id]);
+   $savedPlanId=(int)$id;
    flash('success','Plano atualizado com sucesso.');
   }else{
    if($promo!==null){$start=date('Y-m-d H:i:s');$end=bemora_plan_ends_at($duration);}
    $stmt=$pdo->prepare('INSERT INTO subscription_plans(name,billing_cycle,details,max_members,price,promo_price,promo_duration,promo_starts_at,promo_ends_at,public_sale) VALUES (?,?,?,?,?,?,?,?,?,?)');
    $stmt->execute([$name,$cycle,$details,$members,$price,$promo,$promo===null?null:$duration,$start,$end,$publicSale]);
+   $savedPlanId=(int)$pdo->lastInsertId();
    flash('success','Plano cadastrado com a visibilidade escolhida.');
   }
+  $moduleStmt=$pdo->prepare('INSERT INTO subscription_plan_modules(plan_id,module_key,enabled) VALUES(?,?,?) ON DUPLICATE KEY UPDATE enabled=VALUES(enabled)');
+  foreach(array_keys($validModules) as $key)$moduleStmt->execute([$savedPlanId,$key,in_array($key,$selectedModules,true)?1:0]);
+  $pdo->commit();
  }else{throw new RuntimeException('Ação inválida.');}
-}catch(Throwable $e){flash('error',$e instanceof PDOException?'Erro ao gravar o plano no banco de dados.':$e->getMessage());}
+}catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();flash('error',$e instanceof PDOException?'Erro ao gravar o plano no banco de dados.':$e->getMessage());}
 redirect_to('/admin/planos');
