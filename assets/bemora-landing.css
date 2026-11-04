@@ -81,3 +81,60 @@
 .footer-premium .footer-bottom a{color:#0a755b}
 .footer-premium .footer-brand-heart{color:#0d956d}
 .footer-premium a:focus-visible{outline-color:#087b60}
+
+/* Pricing refresh: concise decision-first cards, all monetary values server-rendered. */
+.landing-pricing{background:linear-gradient(155deg,#f3faf5 0%,#eff7f2 100%)}
+.landing-pricing .site-container{max-width:1250px}
+.landing-pricing-heading{align-items:center;gap:42px;margin-bottom:22px}
+.landing-pricing-heading .section-heading{margin:0}
+.landing-pricing-heading .section-heading h2{max-width:840px;font-size:clamp(32px,4.35vw,55px);line-height:1.14}
+.landing-pricing-heading .section-heading>p{max-width:590px;line-height:1.7}
+.landing-pricing-benefit{padding:0;max-width:270px}
+.landing-billing-switch{margin:14px auto 27px;padding:5px;border-radius:16px}
+.landing-billing-switch button{min-width:112px;min-height:43px}
+.landing-pricing-grid{max-width:1160px;gap:15px}
+.landing-plan-card{min-width:0;min-height:0;padding:24px 20px 19px;border:1px solid #d8e9df;border-radius:21px;box-shadow:0 12px 30px rgba(5,65,47,.045)}
+.landing-plan-card:hover{border-color:#95cbb6;box-shadow:0 18px 38px rgba(4,65,49,.09)}
+.landing-plan-card.landing-plan-featured{border:2px solid #159779;background:linear-gradient(180deg,#f7fefa 0%,#fff 35%);box-shadow:0 19px 45px rgba(7,92,64,.13)}
+.landing-plan-card .landing-plan-upper{min-height:27px;gap:5px}
+.landing-plan-card .landing-plan-cycle{font-size:10px;padding:6px 10px}
+.landing-plan-recommended{color:#096b50;font-size:10px;font-weight:750}
+.landing-plan-card h3{margin:18px 0 7px;font-size:22px;line-height:1.25}
+.landing-plan-tagline{min-height:39px;margin:0 0 18px;font-size:12px;line-height:1.6;color:#739184}
+.landing-plan-pricing{padding:15px 0;border-top:1px solid #e6eee9;border-bottom:1px solid #e6eee9}
+.landing-plan-price-label{font-size:10px;font-weight:750;color:#678779;text-transform:uppercase;letter-spacing:.09em}
+.landing-plan-card .landing-plan-price{margin:8px 0 4px;gap:5px;row-gap:3px}
+.landing-plan-card .landing-plan-price strong{font-size:clamp(25px,2.5vw,33px);white-space:nowrap}
+.landing-plan-card .landing-plan-price>span{font-size:11px;white-space:nowrap}
+.landing-plan-equivalent{margin:9px 0 0;color:#648275;font-size:11px;line-height:1.5}
+.landing-plan-equivalent strong{color:#0a644d}
+.landing-plan-card .landing-plan-members{padding:0;margin:17px 0 18px;border:0;font-size:12px}
+.landing-plan-feature-title{font-size:12px;color:#315c4c;font-weight:800;margin-bottom:12px}
+.landing-plan-features{list-style:none;padding:0;margin:0 0 18px;display:grid;gap:12px}
+.landing-plan-features li{position:relative;padding-left:22px;color:#60796e;font-size:12px;line-height:1.5}
+.landing-plan-features li::before{content:"✓";position:absolute;top:0;left:0;font-weight:900;color:#12916e}
+.landing-plan-more{margin:0 0 10px;color:#628073}
+.landing-plan-more summary{cursor:pointer;color:#087359;font-size:11px;font-weight:800;line-height:1.6;outline-offset:5px}
+.landing-plan-more summary:focus-visible{outline:2px solid #138b6d}
+.landing-plan-more p{margin:10px 0 0;padding:12px;background:#f5faf6;border:1px solid #e2eee6;border-radius:10px;font-size:11px;line-height:1.75;overflow-wrap:anywhere}
+.landing-plan-card .landing-plan-expires{margin:8px 0 0;font-size:11px}
+.landing-plan-card .landing-plan-cta{margin-top:auto;min-height:48px;padding:13px 9px;font-size:12px;gap:6px;justify-content:center;white-space:normal;text-align:center}
+.landing-plan-card.landing-plan-featured .landing-plan-cta{background:#087d62}
+.landing-plan-card .landing-plan-cta span{font-size:15px}
+.landing-plan-legal{max-width:770px;margin-top:25px;line-height:1.7}
+@media(max-width:1100px){.landing-pricing-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.landing-plan-card .landing-plan-price strong{font-size:32px}}
+@media(max-width:700px){
+ .landing-pricing-heading{display:block;margin-bottom:24px}
+ .landing-pricing-heading .section-heading h2{font-size:clamp(30px,8vw,42px)}
+ .landing-pricing-benefit{display:none}
+ .landing-billing-switch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;gap:4px;margin-bottom:21px}
+ .landing-billing-switch button{min-width:0;padding:11px 5px;font-size:12px}
+ .landing-billing-caption{align-items:center;line-height:1.5}
+ .landing-pricing-grid{grid-template-columns:1fr;gap:13px}
+ .landing-plan-card{padding:21px;min-height:0}
+ .landing-plan-card h3{margin-top:15px}
+ .landing-plan-tagline{min-height:0}
+ .landing-plan-card .landing-plan-price strong{font-size:34px}
+}
+@media(min-width:701px) and (max-width:800px){.landing-pricing-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(prefers-reduced-motion:reduce){.landing-plan-card{transition:none}}
