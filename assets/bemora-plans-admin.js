@@ -15,5 +15,7 @@ if(bundle&&preview){
  shop?.addEventListener('change',()=>{if(!shop.checked&&scan)scan.checked=false;});
  scan?.addEventListener('change',()=>{if(scan.checked&&shop)shop.checked=true;});
 }
+const archivedToggle=document.getElementById('plans-show-archived'),archivedPanel=document.getElementById('plans-archived');
+archivedToggle?.addEventListener('click',()=>{const expanded=archivedToggle.getAttribute('aria-expanded')==='true';archivedToggle.setAttribute('aria-expanded',String(!expanded));archivedPanel.hidden=expanded;archivedToggle.textContent=expanded?'Mostrar ofertas arquivadas':'Ocultar ofertas arquivadas';});
 document.getElementById('plans-archive-form')?.addEventListener('submit',e=>{const value=e.currentTarget.elements.confirmation.value;if(value!=='ARQUIVAR PLANOS'||!confirm('Arquivar todas as ofertas públicas ativas? Os assinantes existentes manterão seus vínculos e o catálogo será retirado do site até você criar novos planos.'))e.preventDefault();});
 })();
