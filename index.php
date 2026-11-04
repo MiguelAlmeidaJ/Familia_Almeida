@@ -26,7 +26,7 @@ try{
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/bemora-landing.css?v=8">
+<link rel="stylesheet" href="/assets/bemora-landing.css?v=9">
 </head><body id="inicio">
 <header class="site-header"><div class="site-container navigation">
 <a class="site-brand" href="/" aria-label="Bemora, início"><img src="/assets/brand/logo.png" alt="Bemora by Anoar"></a>
@@ -57,23 +57,31 @@ try{
 <section class="section statement"><div class="site-container statement-inner"><span>✳</span><p>Organizar o dinheiro não precisa ser complicado. <em>Precisa fazer sentido para a sua vida.</em></p><small>BEMORA · BY ANOAR</small></div></section>
 <?php if($singleOffer): ?>
 <section id="planos" class="section landing-pricing single-public-pricing"><div class="site-container">
- <div class="landing-pricing-heading"><div class="section-heading"><span class="eyebrow">ASSINATURA BEMORA</span><h2>Um plano para você.<br><em>Do seu jeito.</em></h2><p>Comece com seu controle financeiro. Inclua pessoas e o módulo de Compras apenas quando precisar.</p></div></div>
+ <div class="single-pricing-heading"><div><span class="eyebrow">ASSINATURA BEMORA</span><h2>Seu dinheiro, <em>do seu jeito.</em></h2><p>Um acesso completo para começar. Personalize com mais pessoas e o módulo de Compras quando precisar.</p></div></div>
  <div class="single-public-layout">
-  <article class="single-public-card"><span class="landing-plan-cycle">Acesso financeiro</span><h3><?= e($singleOffer['name']) ?></h3><p>Seu espaço financeiro começa com uma pessoa e pode crescer junto com você.</p>
-  <?php if(!empty($singleBenefitList)): ?><ul class="landing-plan-features"><?php foreach($singleBenefitList as $benefit): ?><li><?= e($benefit['title']) ?></li><?php endforeach; ?></ul><?php endif; ?></article>
+  <article class="single-public-card">
+   <div class="single-plan-identity"><span class="single-plan-symbol" aria-hidden="true"><i class="bi bi-wallet2"></i></span><div><span class="single-plan-eyebrow">SEU PLANO</span><h3><?= e($singleOffer['name']) ?></h3></div><span class="single-plan-tag">1 pessoa inclusa</span></div>
+   <p class="single-plan-description">Organização financeira simples para você e para quem compartilha a vida com você.</p>
+   <?php if(!empty($singleBenefitList)): ?><ul class="landing-plan-features" aria-label="Benefícios incluídos"><?php foreach($singleBenefitList as $benefit): ?><li><?= e($benefit['title']) ?></li><?php endforeach; ?></ul><?php endif; ?>
+   <div class="single-plan-footnote"><i class="bi bi-plus-circle" aria-hidden="true"></i> Acrescente integrantes e Compras quando quiser.</div>
+  </article>
   <form class="single-public-builder" method="get" action="/checkout" id="single-public-builder"
    data-base="<?= e((string)$singleOffer['base_monthly']) ?>" data-seat="<?= e((string)$singleOffer['extra_member_monthly']) ?>"
    data-shop="<?= e((string)$singleOffer['shopping_monthly']) ?>" data-semi="<?= e((string)$singleOffer['semi_discount']) ?>"
    data-annual="<?= e((string)$singleOffer['annual_discount']) ?>">
-   <h3>Monte sua assinatura</h3>
-   <label>Periodicidade<select name="ciclo"><option value="monthly">Mensal</option><option value="semiannual">Semestral</option><option value="annual">Anual</option></select></label>
-   <label>Quantidade de pessoas<select name="integrantes"><?php for($n=1;$n<=(int)$singleOffer['max_members'];$n++): ?><option value="<?= $n ?>"><?= $n ?> <?= $n===1?'pessoa':'pessoas' ?></option><?php endfor; ?></select></label>
-   <label class="single-public-option"><input type="checkbox" name="compras" value="1"><span><strong>Adicionar Compras + scanner</strong><small>Lista de compras, modo mercado e leitura de etiquetas</small></span></label>
-   <div class="single-public-total"><span>Total recorrente por período</span><strong id="single-public-amount"><?= e(bemora_plan_price((float)$singleOffer['base_monthly'])) ?></strong><small id="single-public-frequency">Cobrança mensal</small></div>
-   <button type="submit" class="button button-dark landing-plan-cta">Continuar para assinatura <span aria-hidden="true">↗</span></button>
+   <div class="single-builder-heading"><div><span class="single-builder-kicker">PERSONALIZE SUA EXPERIÊNCIA</span><h3>Monte sua assinatura</h3></div><i class="bi bi-sliders2" aria-hidden="true"></i></div>
+   <div class="single-builder-fields">
+    <label><span>Periodicidade</span><select name="ciclo"><option value="monthly">Mensal</option><option value="semiannual">Semestral</option><option value="annual">Anual</option></select></label>
+    <label><span>Quantidade de pessoas</span><select name="integrantes"><?php for($n=1;$n<=(int)$singleOffer['max_members'];$n++): ?><option value="<?= $n ?>"><?= $n ?> <?= $n===1?'pessoa':'pessoas' ?></option><?php endfor; ?></select></label>
+   </div>
+   <label class="single-public-option"><input type="checkbox" name="compras" value="1"><span><strong>Compras + scanner</strong><small>Listas, modo mercado e leitura de etiquetas</small></span><span class="single-option-extra" aria-hidden="true">Adicional</span></label>
+   <div class="single-public-bottom">
+    <div class="single-public-total"><div><span>Total por período</span><strong id="single-public-amount"><?= e(bemora_plan_price((float)$singleOffer['base_monthly'])) ?></strong></div><small id="single-public-frequency">Cobrança mensal</small></div>
+    <button type="submit" class="button button-dark landing-plan-cta">Continuar para assinatura <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+   </div>
   </form>
  </div>
- <p class="landing-plan-legal">Adicionais e periodicidade compõem o valor recorrente exibido. O preço final será confirmado no checkout. Pagamento intermediado pelo Asaas.</p>
+ <p class="landing-plan-legal">Cobrança recorrente conforme a periodicidade escolhida. Valor final confirmado no checkout, com pagamento via Asaas.</p>
 </div></section>
 <?php elseif($publicPlans): ?>
 <?php
