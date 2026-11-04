@@ -32,3 +32,18 @@ A validação do servidor verifica CEP, logradouro, UF e cidade. A busca externa
 ## Melhorias futuras possíveis
 
 Número do imóvel, complemento e bairro como campos opcionais; edição do endereço no perfil; localização para personalizar oportunidades regionais. Evite exigir dados adicionais até haver uma necessidade clara.
+
+## Vagas não preenchidas e modo financeiro
+
+Quando o convite incluir mais de um integrante, cada aba do cadastro permite **Deixar esta vaga vazia**. Nesse caso, os campos são desativados e os dados anteriores daquele slot são descartados no navegador; o servidor também rejeita qualquer payload inconsistente. Pelo menos uma pessoa real deve ser cadastrada no primeiro acesso.
+
+Na etapa **Administrador**, só é possível escolher uma das pessoas efetivamente cadastradas. Nessa mesma etapa o cliente define:
+
+- **Compartilhado** (`shared`): todos os integrantes acessam o mesmo espaço de finanças.
+- **Separado** (`separate`): cada integrante organiza os próprios registros financeiros respeitando a autorização por titularidade.
+
+O servidor persiste essa escolha em `tenants.finance_mode`. O máximo de acessos continua sendo o valor comprado e informado pelo convite, mesmo que o primeiro cadastro tenha menos pessoas. As vagas restantes aparecem como disponíveis em **Membros**, onde o administrador poderá cadastrar os demais usuários posteriormente.
+
+Para contratos de uma única pessoa, não há vaga vazia nem seleção de modo: o usuário é administrador e o modo inicial é `shared`.
+
+Não existe migration adicional para essas duas opções: elas reutilizam o limite de integrantes, a tabela de membros e o modo financeiro já existentes.
