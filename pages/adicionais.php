@@ -5,6 +5,7 @@ require_once __DIR__.'/../includes/layout.php';
 require_once __DIR__.'/../includes/asaas.php';
 require_once __DIR__.'/../includes/single_offer.php';
 require_once __DIR__.'/../includes/subscription_cancellation.php';
+require_once __DIR__.'/../includes/paid_addon_changes.php';
 $user=require_family_access();$pdo=db();$tid=(int)$user['tenant_id'];
 $csrf=csrf_token();$flash=pull_flash();
 $offer=bemora_single_offer_enabled($pdo)?bemora_single_offer($pdo):null;
@@ -14,10 +15,20 @@ if(!$offer||!$order){flash('error','Esta configuração de adicionais está disp
 $q=$pdo->prepare('SELECT role FROM tenant_users WHERE tenant_id=? AND user_id=?');$q->execute([$tid,(int)$user['id']]);$admin=$q->fetchColumn()==='family_admin';
 $ready=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='bemora_addon_changes'")->fetchColumn()===1;
 $changes=[];
-if($ready){$q=$pdo->prepare('SELECT * FROM bemora_addon_changes WHERE tenant_id=? ORDER BY id DESC LIMIT 8');$q->execute([$tid]);$changes=$q->fetchAll(PDO::FETCH_ASSOC);}
+if($ready){
+ $pendingQuery=$pdo->prepare("SELECT asaas_payment_id FROM bemora_addon_changes WHERE tenant_id=? AND status IN ('awaiting_payment','payment_confirmed') AND asaas_payment_id IS NOT NULL ORDER BY id DESC LIMIT 3");
+ $pendingQuery->execute([$tid]);
+ foreach($pendingQuery->fetchAll(PDO::FETCH_COLUMN) as $paymentId){
+  try{bemora_apply_paid_addon_change($pdo,(string)$paymentId);}
+  catch(Throwable $error){error_log('Bemora addon display reconciliation deferred to scheduled job.');}
+ }
+ $q=$pdo->prepare('SELECT * FROM bemora_addon_changes WHERE tenant_id=? ORDER BY id DESC LIMIT 8');$q->execute([$tid]);$changes=$q->fetchAll(PDO::FETCH_ASSOC);}
 $pending=false;foreach($changes as $c)if(in_array($c['status'],['processing','awaiting_payment','payment_confirmed','reconciliation_required'],true))$pending=true;
 $canUse=$admin&&$ready&&!$pending&&!bemora_cancellation_for_family($pdo,$tid)
  &&(bemora_asaas_mode()!=='production'||(string)config('asaas','addon_upgrades_production_enabled','0')==='1');
+// Reload after reconciliation; newly confirmed upgrades must be displayed immediately.
+$q=$pdo->prepare("SELECT * FROM subscription_orders WHERE id=? AND activated_tenant_id=?");
+$q->execute([(int)$order['id'],$tid]);$order=$q->fetch(PDO::FETCH_ASSOC);
 $oldMembers=(int)$order['max_members'];$oldShopping=(int)$order['shopping_addon']===1;
 $oldQuote=bemora_single_quote($offer,(string)$order['billing_cycle'],$oldMembers,$oldShopping);
 $baseRecurring=(float)$order['recurring_amount'];
