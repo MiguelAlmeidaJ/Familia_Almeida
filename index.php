@@ -5,6 +5,7 @@ $publicPlans=[];
 try{
  require_once __DIR__.'/includes/bootstrap.php';
  require_once __DIR__.'/includes/plans.php';
+ require_once __DIR__.'/includes/plan_modules.php';
  $pdo=db();
  if(bemora_plans_table_exists($pdo)){
   $publicPlans=$pdo->query('SELECT id,name,billing_cycle,details,max_members,price,promo_price,promo_starts_at,promo_ends_at FROM subscription_plans WHERE active=1 AND public_sale=1 ORDER BY FIELD(billing_cycle,\'monthly\',\'semiannual\',\'annual\'),price,id')->fetchAll(PDO::FETCH_ASSOC);
@@ -76,6 +77,7 @@ $initialCycle=array_key_first(array_filter($plansByCycle,static fn($offers)=>cou
 <?php foreach($plansByCycle[$cycleKey] as $plan):
  $promoted=bemora_plan_promo_active($plan);
  $finalPrice=$promoted?(float)$plan['promo_price']:(float)$plan['price'];
+ $planModules=bemora_plan_modules($pdo,(int)$plan['id']);
  $months=['monthly'=>1,'semiannual'=>6,'annual'=>12][$cycleKey];
  $highlight=(int)$plan['max_members']===4;
  $details=trim((string)$plan['details']);
@@ -95,7 +97,9 @@ $initialCycle=array_key_first(array_filter($plansByCycle,static fn($offers)=>cou
  <ul class="landing-plan-features">
   <li>Organizar receitas e despesas</li>
   <li>Acompanhar contas previstas</li>
-  <li>Visualizar relatórios financeiros</li>
+  <?php if($planModules['reports']): ?><li>Visualizar relatórios financeiros</li><?php endif; ?>
+  <?php if($planModules['shopping']): ?><li>Organizar listas de compras</li><?php endif; ?>
+  <?php if($planModules['scanner']): ?><li>Escanear etiquetas de preços</li><?php endif; ?>
  </ul>
  <?php if($details!==''): ?><details class="landing-plan-more"><summary>Ver descrição completa</summary><p><?= nl2br(htmlspecialchars($details,ENT_QUOTES,'UTF-8')) ?></p></details><?php endif; ?>
  <?php if($promoted && !empty($plan['promo_ends_at'])): ?><p class="landing-plan-expires">Oferta válida até <?= htmlspecialchars(date('d/m/Y H:i',strtotime((string)$plan['promo_ends_at'])),ENT_QUOTES,'UTF-8') ?></p><?php endif; ?>
