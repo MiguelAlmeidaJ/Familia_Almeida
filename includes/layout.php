@@ -34,6 +34,7 @@ function nav_icon(string $name): string
 
 function render_sidebar(string $active, string $csrf): void
 {
+    require_once __DIR__.'/plan_modules.php';
     $items = [
         ['key' => 'dashboard', 'href' => '/painel', 'label' => 'Painel'],
         ['key' => 'relatorios', 'href' => '/relatorios', 'label' => 'Relatórios'],
@@ -55,6 +56,12 @@ function render_sidebar(string $active, string $csrf): void
         $memberLimit=(int)$limitQuery->fetchColumn();
     }
     if($memberLimit<=1)$items=array_values(array_filter($items,static fn(array $item):bool=>$item['key']!=='membros'));
+    if($user && !empty($user['tenant_id'])){
+        $modules=bemora_tenant_modules(db(),(int)$user['tenant_id']);
+        $items=array_values(array_filter($items,static fn(array $item):bool=>
+          ($item['key']!=='relatorios'||$modules['reports'])&&($item['key']!=='compras'||$modules['shopping'])
+        ));
+    }
     $initial = $user && !empty($user['name']) ? strtoupper(substr((string) $user['name'], 0, 1)) : 'F';
     ?>
     <aside class="sidebar ref-sidebar" id="sidebar">
