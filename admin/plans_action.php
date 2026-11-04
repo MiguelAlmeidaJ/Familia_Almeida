@@ -50,6 +50,9 @@ try{
   };
   $semi=$discountCents($_POST['bundle_semi_discount']??'');
   $annual=$discountCents($_POST['bundle_annual_discount']??'');
+  $visibility=(string)($_POST['bundle_visibility']??'draft');
+  if(!in_array($visibility,['draft','publish'],true))throw new RuntimeException('Visibilidade inválida.');
+  $active=$visibility==='publish'?1:0;
   $modules=$_POST['bundle_modules']??[];
   if(!is_array($modules))throw new RuntimeException('Lista de módulos inválida.');
   $catalog=bemora_module_catalog();
@@ -65,17 +68,17 @@ try{
   foreach($amounts as $amount)if($amount<100||$amount>9999999900)throw new RuntimeException('Valor de um dos períodos fora dos limites.');
   $pdo->beginTransaction();
   $check=$pdo->prepare('SELECT id FROM subscription_plans WHERE name=? AND max_members=? AND billing_cycle=? AND active=1 LIMIT 1');
-  $insert=$pdo->prepare('INSERT INTO subscription_plans(name,billing_cycle,details,max_members,price,public_sale,active) VALUES(?,?,?,?,?,1,1)');
+  $insert=$pdo->prepare('INSERT INTO subscription_plans(name,billing_cycle,details,max_members,price,public_sale,active) VALUES(?,?,?,?,?,1,?)');
   $moduleInsert=$pdo->prepare('INSERT INTO subscription_plan_modules(plan_id,module_key,enabled) VALUES(?,?,?)');
   foreach($amounts as $cycle=>$amount){
    $check->execute([$name,$members,$cycle]);
    if($check->fetchColumn())throw new RuntimeException('Já existe uma oferta ativa com esse nome, integrantes e período: '.bemora_plan_cycles()[$cycle].'.');
-   $insert->execute([$name,$cycle,$details,$members,$amount/100]);
+   $insert->execute([$name,$cycle,$details,$members,$amount/100,$active]);
    $planId=(int)$pdo->lastInsertId();
    foreach(array_keys($catalog) as $key)$moduleInsert->execute([$planId,$key,in_array($key,$modules,true)?1:0]);
   }
   $pdo->commit();
-  flash('success','Pacote '. $name .' criado: três ofertas públicas com os módulos selecionados e preços totais por período.');
+  flash('success','Pacote '. $name .' criado com três ofertas '.($active?'publicadas':'em rascunho').'. Confira os valores por período antes de publicar.');
  }elseif($action==='toggle'){
 
   if(!$id || $id<1)throw new RuntimeException('Plano inválido.');
