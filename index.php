@@ -10,6 +10,7 @@ try{
  require_once __DIR__.'/includes/plan_benefits.php';
  $pdo=db();
  $singleOffer=bemora_single_offer_enabled($pdo)?bemora_single_offer($pdo):null;
+ if($singleOffer){$singleBenefits=bemora_plan_benefits($pdo,[bemora_single_offer_plan_id($singleOffer,'monthly')]);$singleBenefitList=$singleBenefits[bemora_single_offer_plan_id($singleOffer,'monthly')]??[];}
  if(!$singleOffer && bemora_plans_table_exists($pdo)){
   $publicPlans=$pdo->query('SELECT id,name,billing_cycle,details,max_members,price,promo_price,promo_starts_at,promo_ends_at FROM subscription_plans WHERE active=1 AND public_sale=1 ORDER BY FIELD(billing_cycle,\'monthly\',\'semiannual\',\'annual\'),price,id')->fetchAll(PDO::FETCH_ASSOC);
   $publicBenefits=bemora_plan_benefits($pdo,array_column($publicPlans,'id'));
@@ -59,7 +60,7 @@ try{
  <div class="landing-pricing-heading"><div class="section-heading"><span class="eyebrow">ASSINATURA BEMORA</span><h2>Um plano para você.<br><em>Do seu jeito.</em></h2><p>Comece com seu controle financeiro. Inclua pessoas e o módulo de Compras apenas quando precisar.</p></div></div>
  <div class="single-public-layout">
   <article class="single-public-card"><span class="landing-plan-cycle">Acesso financeiro</span><h3><?= e($singleOffer['name']) ?></h3><p>Seu espaço financeiro começa com uma pessoa e pode crescer junto com você.</p>
-  <ul class="landing-plan-features"><li>Organizar receitas e despesas</li><li>Acompanhar contas e relatórios financeiros</li><li>Adicionar pessoas e Compras quando precisar</li></ul></article>
+  <?php if(!empty($singleBenefitList)): ?><ul class="landing-plan-features"><?php foreach($singleBenefitList as $benefit): ?><li><?= e($benefit['title']) ?></li><?php endforeach; ?></ul><?php endif; ?></article>
   <form class="single-public-builder" method="get" action="/checkout" id="single-public-builder"
    data-base="<?= e((string)$singleOffer['base_monthly']) ?>" data-seat="<?= e((string)$singleOffer['extra_member_monthly']) ?>"
    data-shop="<?= e((string)$singleOffer['shopping_monthly']) ?>" data-semi="<?= e((string)$singleOffer['semi_discount']) ?>"
