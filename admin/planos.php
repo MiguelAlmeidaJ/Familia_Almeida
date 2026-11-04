@@ -51,16 +51,16 @@ admin_shell_start('plans','Planos','Administre planos públicos e planos interno
 <div class="plans-card-actions"><button class="plan-edit" type="button" data-plan="<?= e(json_encode($p,JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP)) ?>"><i class="bi bi-pencil"></i> Editar</button><form method="post" action="/admin/plans_action.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="<?= (int)$p['id'] ?>"><button type="submit"><?= $p['active']?'Ocultar':'Publicar' ?></button></form></div>
 </article>
 <?php endforeach; ?>
-<?php if($archivedCount): ?><div class="plans-archived-toggle"><button type="button" id="plans-show-archived" aria-expanded="false" aria-controls="plans-archived">Mostrar <?= $archivedCount ?> ofertas arquivadas</button></div><?php endif; ?>
+<?php if($archivedCount): ?><div class="plans-archived-toggle"><button type="button" id="plans-show-archived" aria-expanded="false" aria-controls="plans-archived">Mostrar <?= $archivedCount ?> ofertas inativas ou rascunhos</button></div><?php endif; ?>
 </div>
-<?php if($archivedCount): ?><div class="plans-archived-section" id="plans-archived" hidden><h3>Ofertas arquivadas</h3><p>Estas ofertas não aparecem no site nem podem ser contratadas de novo. Registros antigos são preservados.</p><div class="plans-admin-grid">
+<?php if($archivedCount): ?><div class="plans-archived-section" id="plans-archived" hidden><h3>Ofertas inativas e rascunhos</h3><p>Estas ofertas não aparecem no site nem podem ser contratadas enquanto estiverem inativas. Os dados históricos são preservados.</p><div class="plans-admin-grid">
 <?php foreach($plans as $p): if((int)$p['active'])continue; $promo=bemora_plan_promo_active($p); ?>
 <article class="plans-admin-card is-hidden">
- <div class="plans-card-upper"><span class="plans-cycle"><?= e(bemora_plan_cycles()[$p['billing_cycle']]??$p['billing_cycle']) ?></span><span class="plans-state">Arquivado</span></div>
+ <div class="plans-card-upper"><span class="plans-cycle"><?= e(bemora_plan_cycles()[$p['billing_cycle']]??$p['billing_cycle']) ?></span><span class="plans-state">Inativo / rascunho</span></div>
  <h3><?= e($p['name']) ?></h3><p class="plans-description"><?= e($p['details']) ?></p>
  <div class="plans-price"><strong><?= e(bemora_plan_price((float)$p['price'])) ?></strong></div>
  <div class="plans-members"><i class="bi bi-people"></i> Até <?= (int)$p['max_members'] ?> integrantes</div>
- <div class="plans-card-actions"><form method="post" action="/admin/plans_action.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="<?= (int)$p['id'] ?>"><button type="submit">Reativar oferta</button></form></div>
+ <div class="plans-card-actions"><form method="post" action="/admin/plans_action.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="<?= (int)$p['id'] ?>"><button type="submit">Ativar oferta</button></form></div>
 </article>
 <?php endforeach; ?></div></div><?php endif; ?>
 <div class="plans-admin-grid">
