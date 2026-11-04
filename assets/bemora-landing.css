@@ -138,3 +138,7 @@
 }
 @media(min-width:701px) and (max-width:800px){.landing-pricing-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){.landing-plan-card{transition:none}}
+
+/* Benefits now come from the independent admin catalog. No section label or collapsible description. */
+.landing-plan-card .landing-plan-features{margin:4px 0 22px;padding:0;display:grid;gap:12px}
+.landing-plan-card .landing-plan-features li{font-size:12px;line-height:1.55}
