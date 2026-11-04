@@ -101,7 +101,10 @@ function require_auth(): array
         require_once __DIR__.'/plan_modules.php';
         $script=str_replace('\\\\','/',(string)($_SERVER['SCRIPT_NAME']??''));
         $moduleRoutes=['/pages/relatorios.php'=>'reports','/pages/market_lists.php'=>'shopping','/market_action.php'=>'shopping'];
-        if(isset($moduleRoutes[$script]))bemora_require_module(db(),(int)$user['tenant_id'],$moduleRoutes[$script]);
+        $path=rtrim((string)(parse_url((string)($_SERVER['REQUEST_URI']??'/'),PHP_URL_PATH)??'/'),'/')?:'/';
+        $modulePaths=['/relatorios'=>'reports','/compras'=>'shopping','/compras/mercado'=>'shopping','/compras/acao'=>'shopping'];
+        $required=$moduleRoutes[$script]??$modulePaths[$path]??null;
+        if($required!==null)bemora_require_module(db(),(int)$user['tenant_id'],$required);
     }
     // Financial suspension is separate from family account activation and never deletes data.
     // Keep the billing page, profile and logout available so the customer can regularize.
