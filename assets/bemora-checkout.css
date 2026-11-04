@@ -105,3 +105,68 @@
 @keyframes checkout-change-in{from{opacity:.6;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.checkout-summary .checkout-single-options{animation:none}}
 @media(max-width:760px){.checkout-summary .checkout-single-options{padding:13px}.checkout-summary .checkout-total{margin-top:18px}}
+
+/* Checkout mobile polish: contain every form and legal control at viewport width. */
+.checkout-main,.checkout-columns,.checkout-panel,.checkout-panel form,
+.checkout-row,.checkout-row label,.checkout-coupon,.checkout-coupon-entry,
+.checkout-legal-consents,.checkout-legal-items,.checkout-legal-item,
+.checkout-legal-item-copy,.checkout-summary{min-width:0}
+.checkout-main{width:100%}
+.checkout-panel input,.checkout-panel select{max-width:100%}
+.checkout-legal-item-copy{overflow-wrap:anywhere}
+.checkout-legal-open{box-sizing:border-box;min-height:42px}
+
+@media(max-width:760px){
+ .checkout-header{height:65px;padding:0 17px;gap:12px}
+ .checkout-header img{width:139px;max-width:45vw;max-height:52px}
+ .checkout-header .checkout-secure-label{font-size:10px;white-space:nowrap}
+ .checkout-main{padding:22px 14px 52px}
+ .checkout-head h1{font-size:clamp(25px,6vw,31px);letter-spacing:-.035em;line-height:1.17;margin:13px 0 9px}
+ .checkout-head>p{font-size:13px;line-height:1.55;margin:0}
+ .checkout-columns{grid-template-columns:minmax(0,1fr);gap:13px;margin-top:21px}
+ .checkout-panel{min-width:0;padding:20px 18px;border-radius:16px}
+ .checkout-panel form{gap:16px}
+ .checkout-panel input{font-size:16px;min-height:46px}
+ .checkout-row{grid-template-columns:minmax(0,1fr);gap:13px}
+ .checkout-intro{margin-bottom:18px}
+ .checkout-section-label{font-size:9px;letter-spacing:.14em}
+ .checkout-coupon{padding:13px}
+ .checkout-coupon-entry{gap:7px}
+ .checkout-coupon-entry input{min-width:0;width:0;flex:1 1 auto}
+ .checkout-coupon-entry button{flex:0 0 auto;padding:0 13px;min-height:46px}
+ .checkout-note{padding:12px 13px;font-size:11px}
+ .checkout-legal-consents{padding:13px;border-radius:12px}
+ .checkout-legal-heading h3{font-size:16px}
+ .checkout-legal-item{display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;padding:12px;border-radius:11px;align-items:start}
+ .checkout-legal-item-icon{width:32px;height:32px;min-width:0;flex:none}
+ .checkout-legal-item-copy{width:100%}
+ .checkout-legal-item-copy strong{font-size:12px}
+ .checkout-legal-item-copy small{margin:4px 0;font-size:10px}
+ .checkout-legal-open{grid-column:2;display:block;justify-self:stretch;width:100%;min-width:0;max-width:100%;margin:0;padding:11px 9px;text-align:center;white-space:normal;overflow-wrap:anywhere}
+ .checkout-legal-message{font-size:11px}
+ .checkout-primary{width:100%;font-size:13px;line-height:1.4;padding:14px 12px;white-space:normal}
+ .checkout-summary{position:static}
+ .checkout-total{gap:12px;margin:16px 0}
+ .checkout-total strong{font-size:clamp(23px,6vw,29px);white-space:nowrap}
+ .checkout-legal-footer{gap:9px 15px;margin-top:20px;padding:0 5px;font-size:10px;line-height:1.55}
+ .checkout-legal-footer p{overflow-wrap:anywhere}
+}
+@media(max-width:430px){
+ .checkout-main{padding-left:12px;padding-right:12px}
+ .checkout-panel{padding:18px 15px}
+ .checkout-coupon-entry button{padding:0 11px;font-size:12px}
+ .checkout-summary-heading{gap:8px}
+ .checkout-change-plan{font-size:11px}
+ .checkout-legal-consents{padding:11px}
+ .checkout-legal-item{padding:10px;gap:9px}
+}
+@media(max-width:360px){
+ .checkout-header{padding:0 12px}
+ .checkout-header img{width:123px}
+ .checkout-secure-label{font-size:9px!important}
+ .checkout-panel{padding:16px 12px}
+ .checkout-coupon{padding:10px}
+ .checkout-coupon-entry{flex-wrap:wrap}
+ .checkout-coupon-entry input{flex-basis:100%;width:100%}
+ .checkout-coupon-entry button{width:100%}
+}
