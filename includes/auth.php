@@ -58,7 +58,7 @@ function require_auth(): array
     }
     if (!empty($user['system_admin']) && empty($user['tenant_id'])) {
         $script = str_replace('\\\\','/',(string)($_SERVER['SCRIPT_NAME'] ?? ''));
-        $allowed = ['/system_admin.php','/admin/tenants.php','/admin/planos.php','/admin/plano_novo.php','/admin/beneficios.php','/admin/beneficios_action.php','/admin/assinaturas.php','/admin/cupons.php','/admin/coupons_action.php','/admin/plans_action.php','/admin/familia.php','/admin/configuracoes.php','/admin/branding_upload.php','/admin/family_action.php','/admin/registration_action.php','/admin/suporte.php','/admin/support_action.php','/admin/privacidade.php','/admin/privacy_action.php','/pages/configuracoes.php','/pages/manutencao.php'];
+        $allowed = ['/system_admin.php','/admin/tenants.php','/admin/planos.php','/admin/plano_novo.php','/admin/assinatura.php','/admin/assinatura_action.php','/admin/beneficios.php','/admin/beneficios_action.php','/admin/assinaturas.php','/admin/cupons.php','/admin/coupons_action.php','/admin/plans_action.php','/admin/familia.php','/admin/configuracoes.php','/admin/branding_upload.php','/admin/family_action.php','/admin/registration_action.php','/admin/suporte.php','/admin/support_action.php','/admin/privacidade.php','/admin/privacy_action.php','/pages/configuracoes.php','/pages/manutencao.php'];
         if (!in_array($script,$allowed,true)) redirect_to('/system_admin.php');
     }
     // Fail closed while the remaining legacy financial modules still lack
