@@ -29,7 +29,7 @@ admin_shell_start('plans','Planos','Administre planos públicos e planos interno
 <?php endforeach; ?>
 <?php if(!$plans): ?><div class="plans-empty"><i class="bi bi-tags"></i><strong>Nenhum plano cadastrado</strong><p>Crie o primeiro plano para começar a apresentar as ofertas no site público.</p></div><?php endif; ?>
 </div>
-<div class="plans-admin-note"><i class="bi bi-info-circle"></i> Planos internos não aparecem no site, checkout nem catálogo de upgrade. Para conceder acesso sem pagamento, utilize os convites administrativos em Famílias; cadastrar o plano não ativa uma assinatura automaticamente.</div>
+<div class="plans-admin-note"><i class="bi bi-info-circle"></i> Alterar módulos pode modificar o acesso de famílias já vinculadas. O limite de pessoas continua configurado por oferta; valores adicionais por integrante ainda não são cobrados separadamente. Planos internos não aparecem no site, checkout nem catálogo de upgrade. Para conceder acesso sem pagamento, utilize os convites administrativos em Famílias; cadastrar o plano não ativa uma assinatura automaticamente.</div>
 </div>
 <dialog id="plan-dialog" class="plans-dialog" aria-labelledby="plan-dialog-title">
 <form method="post" action="/admin/plans_action.php" id="plan-form">
