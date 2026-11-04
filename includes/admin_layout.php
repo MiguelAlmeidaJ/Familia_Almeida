@@ -9,6 +9,7 @@ function admin_shell_start(string $active,string $title,string $description): vo
  <span class="admin-side-label">WORKSPACE</span><nav class="admin-nav" aria-label="Menu administrativo">
  <a href="/system_admin.php" class="<?= $active==='panel'?'active':'' ?>" <?= $active==='panel'?'aria-current="page"':'' ?>><i class="bi bi-grid-1x2" aria-hidden="true"></i>Painel</a>
  <a href="/admin/planos" class="<?= $active==='plans'?'active':'' ?>" <?= $active==='plans'?'aria-current="page"':'' ?>><i class="bi bi-tags" aria-hidden="true"></i>Planos</a>
+ <a href="/admin/beneficios" class="<?= $active==='benefits'?'active':'' ?>" <?= $active==='benefits'?'aria-current="page"':'' ?>><i class="bi bi-patch-check" aria-hidden="true"></i>Benefícios</a>
  <a href="/admin/cupons" class="<?= $active==='coupons'?'active':'' ?>" <?= $active==='coupons'?'aria-current="page"':'' ?>><i class="bi bi-ticket-perforated" aria-hidden="true"></i>Cupons</a>
  <a href="/admin/assinaturas" class="<?= $active==='subscriptions'?'active':'' ?>" <?= $active==='subscriptions'?'aria-current="page"':'' ?>><i class="bi bi-credit-card" aria-hidden="true"></i>Assinaturas</a>
  <a href="/admin/privacidade" class="<?= $active==='privacy'?'active':'' ?>" <?= $active==='privacy'?'aria-current="page"':'' ?>><i class="bi bi-shield-lock" aria-hidden="true"></i>Privacidade e LGPD</a>
