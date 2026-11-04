@@ -370,3 +370,43 @@
   .market-scan-dialog .market-dialog-body{padding-inline:12px}
   .market-scan-dialog .market-scan-progress span{font-size:10px}
 }
+
+/* Mobile market actions: vertically stacked icon-only circular buttons. */
+@media(max-width:900px){
+  body.market-shopping-mode .market-special-actions{
+    position:fixed;
+    right:14px;
+    bottom:calc(14px + env(safe-area-inset-bottom,0px));
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:10px;
+    z-index:88;
+  }
+  body.market-shopping-mode .market-page .market-special-actions .market-page-fab{
+    width:52px!important;
+    height:52px!important;
+    min-width:52px!important;
+    min-height:52px!important;
+    padding:0!important;
+    border-radius:50%!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:0!important;
+  }
+  body.market-shopping-mode .market-page .market-special-actions .market-page-fab span{
+    display:none!important;
+  }
+  body.market-shopping-mode .market-page .market-special-actions .market-page-fab i{
+    font-size:22px;
+    line-height:1;
+    margin:0!important;
+  }
+  body.market-shopping-mode .market-page{padding-bottom:170px}
+  html.sidebar-mobile-open body.market-shopping-mode .market-special-actions{
+    display:none!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+  }
+}
