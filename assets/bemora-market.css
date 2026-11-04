@@ -420,3 +420,6 @@
 .market-page .market-basket-set-price:hover{background:#d6f0e0;color:#064b39}
 .market-scan-dialog .market-scan-progress[hidden],.market-scan-dialog #market-review-back[hidden]{display:none!important}
 @media(max-width:650px){.market-manual-shortcut{display:grid;gap:6px;padding:12px}.market-page .market-manual-button{width:100%}.market-manual-shortcut>span{text-align:center}}
+
+/* Hidden camera controls are not overridden by generic floating-button styles. */
+.market-page .market-page-fab[hidden]{display:none!important}
