@@ -3,7 +3,7 @@ declare(strict_types=1);
 require_once __DIR__.'/../includes/auth.php';
 require_once __DIR__.'/../includes/layout.php';
 require_once __DIR__.'/../includes/market_lists.php';
-$user=require_family_access();$pdo=db();$csrf=csrf_token();$flash=pull_flash();$tenant=(int)$user['tenant_id'];
+$user=require_family_access();$pdo=db();require_once __DIR__.'/../includes/plan_modules.php';$canScan=bemora_has_module($pdo,(int)$user['tenant_id'],'scanner');$csrf=csrf_token();$flash=pull_flash();$tenant=(int)$user['tenant_id'];
 $ready=bemora_market_ready($pdo);$lists=[];$current=null;
 if($ready){
  $q=$pdo->prepare('SELECT id,name,status,updated_at FROM bemora_market_lists WHERE tenant_id=? ORDER BY FIELD(status,"shopping","planned","completed"),updated_at DESC LIMIT 80');
@@ -19,7 +19,7 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2">
 <link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3">
 <?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=6">
-<link rel="stylesheet" href="/assets/bemora-market.css?v=13"></head>
+<link rel="stylesheet" href="/assets/bemora-market.css?v=14"></head>
 <body class="bemora-finance <?= $mode==='mercado'?'market-shopping-mode':'' ?>"><div class="shell ref-shell"><?php render_sidebar('compras',$csrf); ?><main><?php render_topbar($user); ?>
 <div class="content market-page">
 <header class="market-heading"><div><p class="eyebrow">COMPRAS EM FAMÍLIA</p><h1>Lista de compras</h1><p>Planeje em casa, confira preços no mercado e acompanhe o total conforme compra.</p></div><span class="market-badge"><i class="bi bi-basket2"></i> Bemora Compras</span></header>
@@ -100,7 +100,7 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 </div></div>
 </dialog>
 <div class="market-special-actions" id="market-special-actions">
-<button type="button" class="market-page-fab market-camera-fab" id="market-open-camera" aria-label="Abrir câmera e escanear etiqueta" title="Escanear etiqueta" <?= $current['status']==='completed'?'disabled':'' ?>><i class="bi bi-camera"></i><span>Escanear</span></button>
+<button type="button" class="market-page-fab market-camera-fab" id="market-open-camera" <?= !$canScan?'hidden disabled':'' ?> aria-label="Abrir câmera e escanear etiqueta" title="Escanear etiqueta" <?= $current['status']==='completed'?'disabled':'' ?>><i class="bi bi-camera"></i><span>Escanear</span></button>
 <button type="button" class="market-page-fab market-finish-fab" id="market-open-finish" aria-label="Finalizar compra" title="Finalizar compra" <?= $current['status']==='completed'?'disabled':'' ?>><i class="bi bi-check2-circle"></i><span>Finalizar compra</span></button>
 </div>
 <dialog id="market-finish-dialog" class="market-dialog market-finish-dialog" aria-labelledby="market-finish-heading">
