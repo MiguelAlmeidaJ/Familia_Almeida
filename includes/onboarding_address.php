@@ -24,7 +24,7 @@ function bemora_validate_onboarding_address(array $input):array {
  $cep=preg_replace('/\\D/','',(string)($input['postal_code']??''))??'';
  $street=trim(preg_replace('/\\s+/u',' ',(string)($input['street']??''))??'');
  $state=strtoupper(trim((string)($input['state']??'')));
- $city=trim(preg_replace('/\\s+/u',' ',(string)($input['city']??''))??'');
+ $city=trim(preg_replace('/\\s+/u',' ',(string)(($input['city']??'')!==''?$input['city']:($input['city_manual']??'')))??'');
  if(!preg_match('/^\\d{8}$/D',$cep))throw new RuntimeException('Informe um CEP brasileiro válido com 8 dígitos.');
  if(mb_strlen($street)<3||mb_strlen($street)>180)throw new RuntimeException('Informe um endereço entre 3 e 180 caracteres.');
  if(!isset(bemora_brazil_states()[$state]))throw new RuntimeException('Selecione um estado brasileiro válido.');
