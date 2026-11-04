@@ -4,6 +4,7 @@ require_once __DIR__.'/includes/asaas.php';
 require_once __DIR__.'/includes/mailer.php';
 require_once __DIR__.'/includes/email_templates.php';
 require_once __DIR__.'/includes/paid_plan_changes.php';
+require_once __DIR__.'/includes/paid_addon_changes.php';
 require_once __DIR__.'/includes/billing_access.php';
 if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);exit;}
 $secret=(string)config('asaas','webhook_token','');
@@ -22,9 +23,28 @@ try{
  // Standalone upgrade payments have no subscription field. Confirm through Asaas before activation.
  if($sub==='' && in_array($event,['PAYMENT_CONFIRMED','PAYMENT_RECEIVED'],true)){
   $id=(string)($payment['id']??'');
-  if(preg_match('/^[A-Za-z0-9_-]{3,100}$/D',$id))bemora_apply_paid_plan_change(db(),$id);
+  if(preg_match('/^[A-Za-z0-9_-]{3,100}$/D',$id)){bemora_apply_paid_plan_change(db(),$id);bemora_apply_paid_addon_change(db(),$id);}
  }
 
+ // Reversed add-on charges require reconciliation; access is not silently removed
+ // because the existing Asaas subscription may have renewed already.
+ if($sub==='' && in_array($event,['PAYMENT_REFUNDED','PAYMENT_PARTIALLY_REFUNDED','PAYMENT_REFUND_IN_PROGRESS','PAYMENT_CHARGEBACK_REQUESTED','PAYMENT_CHARGEBACK_DISPUTE','PAYMENT_AWAITING_CHARGEBACK_REVERSAL'],true)){
+  $paymentId=(string)($payment['id']??'');
+  if(preg_match('/^[A-Za-z0-9_-]{3,100}$/D',$paymentId)){
+   $db=db();
+   $exists=$db->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='bemora_addon_changes'");
+   if((int)$exists->fetchColumn()===1){
+    $q=$db->prepare('SELECT c.id,c.activated_at,o.asaas_customer_id FROM bemora_addon_changes c JOIN subscription_orders o ON o.id=c.order_id WHERE c.asaas_payment_id=? LIMIT 1');
+    $q->execute([$paymentId]);$change=$q->fetch(PDO::FETCH_ASSOC);
+    if($change && !empty($change['activated_at'])){
+     $verified=bemora_asaas_request('GET','/payments/'.rawurlencode($paymentId));
+     if((string)($verified['customer']??'')===(string)$change['asaas_customer_id'] && (string)($verified['externalReference']??'')==='bemora-addon-'.(int)$change['id']
+        && in_array((string)($verified['status']??''),['REFUNDED','PARTIALLY_REFUNDED','REFUND_IN_PROGRESS','CHARGEBACK_REQUESTED','CHARGEBACK_DISPUTE','AWAITING_CHARGEBACK_REVERSAL'],true))
+      $db->prepare("UPDATE bemora_addon_changes SET status='reconciliation_required' WHERE id=?")->execute([(int)$change['id']]);
+    }
+   }
+  }
+ }
  // Reversed standalone upgrade charges require manual billing reconciliation.
  // Do not silently revert a subscribed family's limits after a chargeback.
  if($sub==='' && in_array($event,['PAYMENT_REFUNDED','PAYMENT_PARTIALLY_REFUNDED','PAYMENT_REFUND_IN_PROGRESS','PAYMENT_CHARGEBACK_REQUESTED','PAYMENT_CHARGEBACK_DISPUTE','PAYMENT_AWAITING_CHARGEBACK_REVERSAL'],true)){
