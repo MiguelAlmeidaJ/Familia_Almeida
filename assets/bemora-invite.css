@@ -91,3 +91,30 @@
  .member-tab{flex:0 0 auto;padding:10px 13px}
  .member-fields{padding:15px}
 }
+
+/* Final onboarding stage: Brazilian address and assisted CEP lookup. */
+.invite-steps{grid-template-columns:repeat(3,minmax(0,1fr));max-width:none}
+.invite-steps:has(.invite-step:nth-child(2):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}
+.invite-address-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:23px}
+.invite-address-cep,.invite-address-wide{grid-column:1/-1}
+.invite-postal-entry{display:flex;gap:10px;max-width:500px}
+.invite-postal-entry input{flex:1;min-width:0;font-variant-numeric:tabular-nums}
+.invite-postal-entry button{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:1px solid #c1dfcf;color:#0a7155;background:#eaf7ef;border-radius:11px;padding:10px 16px;font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer}
+.invite-postal-entry button:hover{background:#d9f2e4}
+.invite-postal-entry button:disabled{cursor:wait;opacity:.65}
+.invite-address-grid small{color:#658578;line-height:1.5;font-size:11px}
+.invite-address-grid small.is-error{color:#ab5348}
+.invite-address-grid input[hidden]{display:none!important}
+.invite-address-grid .invite-field{gap:8px}
+.invite-address-grid select:disabled{color:#81938a;background:#f7faf7}
+.invite-address-grid #address-city-manual:not([hidden]){margin-top:8px}
+@media(max-width:620px){
+ .invite-address-grid{grid-template-columns:1fr;gap:15px;margin-top:19px}
+ .invite-address-cep,.invite-address-wide{grid-column:auto}
+ .invite-postal-entry{max-width:none;gap:7px}
+ .invite-postal-entry button{padding:10px 11px;font-size:11px}
+ .invite-steps{gap:6px}
+ .invite-steps .invite-step{padding:9px 7px;gap:6px;font-size:10px}
+ .invite-steps .invite-step-number{width:26px;height:26px}
+}
+@media(max-width:370px){.invite-postal-entry{flex-direction:column}.invite-postal-entry button{min-height:42px}}
