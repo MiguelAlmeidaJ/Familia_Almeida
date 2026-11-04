@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/asaas.php';
 require_once __DIR__.'/subscription_cancellation.php';
+require_once __DIR__.'/admin_cleanup_policy.php';
 
 function bemora_cleanup_ready(PDO $pdo):bool {
  $q=$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='admin_cleanup_audit'");
@@ -49,12 +50,6 @@ function bemora_cleanup_cancel_subscription(PDO $pdo,int $orderId,int $adminId):
   bemora_cleanup_audit($pdo,$adminId,'cancel_asaas',$orderId,'subscription_order');
   $pdo->commit();
  }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();error_log('Bemora: assinatura removida no Asaas, mas marcação local falhou. Pedido #'.$orderId);throw new RuntimeException('Asaas confirmou a exclusão, mas a atualização local falhou. NÃO repita a exclusão; concilie este pedido com o suporte.');}
-}
-function bemora_cleanup_order_deletable(array $order):bool {
- if(!empty($order['paid_at'])||(int)($order['admin_subscription_had_settled_payments']??0)===1)return false;
- if(in_array((string)($order['status']??''),['paid','completed','payment_attention'],true))return false;
- if(!empty($order['asaas_subscription_id'])&&empty($order['admin_subscription_removed_at']))return false;
- return true;
 }
 function bemora_cleanup_delete_order(PDO $pdo,int $orderId,int $adminId):void {
  if(!bemora_cleanup_ready($pdo))throw new RuntimeException('Execute a migration 048.');
