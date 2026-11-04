@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__.'/../includes/admin_layout.php';
 require_once __DIR__.'/../includes/plans.php';
 require_once __DIR__.'/../includes/plan_modules.php';
+require_once __DIR__.'/../includes/plan_benefits.php';
 require_admin_access();
 if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);exit('Método não permitido.');}
 verify_csrf();
@@ -20,6 +21,7 @@ try{
   flash('success','Catálogo público arquivado: '.(int)$changed.' ofertas retiradas da venda. Pedidos, famílias e assinaturas Asaas preservados.');
  }elseif($action==='create_bundle'){
   if(!bemora_modules_ready($pdo))throw new RuntimeException('Execute primeiro a migration 043 em Manutenção.');
+  $selectedBenefits=bemora_validate_selected_benefits($pdo,$_POST['bundle_benefits']??[]);
   $name=trim((string)($_POST['bundle_name']??''));
   $details=trim((string)($_POST['bundle_details']??''));
   $members=filter_var($_POST['bundle_members']??null,FILTER_VALIDATE_INT);
@@ -76,6 +78,7 @@ try{
    $insert->execute([$name,$cycle,$details,$members,$amount/100,$active]);
    $planId=(int)$pdo->lastInsertId();
    foreach(array_keys($catalog) as $key)$moduleInsert->execute([$planId,$key,in_array($key,$modules,true)?1:0]);
+   bemora_sync_plan_benefits($pdo,$planId,$selectedBenefits);
   }
   $pdo->commit();
   flash('success','Pacote '. $name .' criado com três ofertas '.($active?'publicadas':'em rascunho').'. Confira os valores por período antes de publicar.');
@@ -90,6 +93,7 @@ try{
  }elseif($action==='save'){
   if(!bemora_modules_ready($pdo))throw new RuntimeException('Execute a migration 043 em Manutenção para configurar módulos.');
   $selectedModules=$_POST['modules']??[];
+  $selectedBenefits=bemora_validate_selected_benefits($pdo,$_POST['benefits']??[]);
   if(!is_array($selectedModules))throw new RuntimeException('Seleção de módulos inválida.');
   $validModules=bemora_module_catalog();
   foreach($selectedModules as $key){if(!is_string($key)||!array_key_exists($key,$validModules))throw new RuntimeException('Módulo inválido.');}
@@ -148,6 +152,7 @@ try{
   }
   $moduleStmt=$pdo->prepare('INSERT INTO subscription_plan_modules(plan_id,module_key,enabled) VALUES(?,?,?) ON DUPLICATE KEY UPDATE enabled=VALUES(enabled)');
   foreach(array_keys($validModules) as $key)$moduleStmt->execute([$savedPlanId,$key,in_array($key,$selectedModules,true)?1:0]);
+  bemora_sync_plan_benefits($pdo,$savedPlanId,$selectedBenefits);
   $pdo->commit();
  }else{throw new RuntimeException('Ação inválida.');}
 }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();flash('error',$e instanceof PDOException?'Erro ao gravar o plano no banco de dados.':$e->getMessage());}
