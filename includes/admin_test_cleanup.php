@@ -1,0 +1,126 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__.'/asaas.php';
+require_once __DIR__.'/subscription_cancellation.php';
+
+function bemora_cleanup_ready(PDO $pdo):bool {
+ $q=$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='admin_cleanup_audit'");
+ if((int)$q->fetchColumn()!==1)return false;
+ $q=$pdo->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='subscription_orders' AND column_name='admin_subscription_removed_at'");
+ return (int)$q->fetchColumn()===1;
+}
+function bemora_cleanup_has_table(PDO $pdo,string $table):bool {
+ $q=$pdo->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=?");
+ $q->execute([$table]);return (int)$q->fetchColumn()===1;
+}
+function bemora_cleanup_audit(PDO $pdo,int $adminId,string $action,int $target,string $type):void {
+ $q=$pdo->prepare('INSERT INTO admin_cleanup_audit(admin_user_id,action,target_id,reference_type) VALUES(?,?,?,?)');
+ $q->execute([$adminId,$action,$target,$type]);
+}
+/**
+ * Cancels the Asaas subscription permanently; unpaid/open recurring invoices
+ * are removed by Asaas. Never removes a paid invoice or the Asaas customer.
+ */
+function bemora_cleanup_cancel_subscription(PDO $pdo,int $orderId,int $adminId):void {
+ if(!bemora_cleanup_ready($pdo))throw new RuntimeException('Execute a migration 048 antes desta operação.');
+ $q=$pdo->prepare('SELECT id,asaas_customer_id,asaas_subscription_id,admin_subscription_removed_at FROM subscription_orders WHERE id=?');
+ $q->execute([$orderId]);$o=$q->fetch(PDO::FETCH_ASSOC);
+ if(!$o)throw new RuntimeException('Pedido não encontrado.');
+ if(!empty($o['admin_subscription_removed_at']))throw new RuntimeException('A recorrência já foi removida do Asaas.');
+ $sid=(string)$o['asaas_subscription_id'];$cid=(string)$o['asaas_customer_id'];
+ if(!preg_match('/^[A-Za-z0-9_-]{4,100}$/D',$sid)||!preg_match('/^[A-Za-z0-9_-]{4,100}$/D',$cid))throw new RuntimeException('Este pedido não possui uma assinatura Asaas válida.');
+ $remote=bemora_asaas_request('GET','/subscriptions/'.rawurlencode($sid));
+ if((string)($remote['id']??'')!==$sid||(string)($remote['customer']??'')!==$cid)throw new RuntimeException('A assinatura consultada não corresponde ao cliente do pedido.');
+ $answer=bemora_asaas_request('DELETE','/subscriptions/'.rawurlencode($sid));
+ if(($answer['deleted']??false)!==true && (string)($answer['id']??'')!==$sid)throw new RuntimeException('O Asaas não confirmou a remoção. Consulte a assinatura antes de tentar novamente.');
+ // Remote cancellation has occurred, so do not roll back this fact with a failed audit.
+ $pdo->beginTransaction();
+ try{
+  $q=$pdo->prepare('UPDATE subscription_orders SET admin_subscription_removed_at=NOW() WHERE id=? AND admin_subscription_removed_at IS NULL');
+  $q->execute([$orderId]);
+  bemora_cleanup_audit($pdo,$adminId,'cancel_asaas',$orderId,'subscription_order');
+  $pdo->commit();
+ }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();error_log('Bemora: assinatura removida no Asaas, mas marcação local falhou. Pedido #'.$orderId);throw new RuntimeException('Asaas confirmou a exclusão, mas a atualização local falhou. NÃO repita a exclusão; concilie este pedido com o suporte.');}
+}
+function bemora_cleanup_delete_order(PDO $pdo,int $orderId,int $adminId):void {
+ if(!bemora_cleanup_ready($pdo))throw new RuntimeException('Execute a migration 048.');
+ $pdo->beginTransaction();
+ try {
+  $q=$pdo->prepare('SELECT * FROM subscription_orders WHERE id=? FOR UPDATE');
+  $q->execute([$orderId]);$o=$q->fetch(PDO::FETCH_ASSOC);
+  if(!$o)throw new RuntimeException('Pedido não encontrado.');
+  if(!empty($o['paid_at'])||in_array((string)$o['status'],['paid','completed','payment_attention'],true))
+   throw new RuntimeException('Pedidos com pagamento ou acesso ativado devem ser preservados. Use a política de retenção/LGPD, não a limpeza de testes.');
+  if(!empty($o['asaas_subscription_id'])&&empty($o['admin_subscription_removed_at']))
+   throw new RuntimeException('Remova primeiro a assinatura no Asaas, usando Cancelar no painel.');
+  // Other payment objects may represent paid upgrades or addon charges.
+  foreach(['subscription_change_requests','bemora_addon_changes'] as $table){
+   if(!bemora_cleanup_has_table($pdo,$table))continue;
+   $q=$pdo->prepare("SELECT COUNT(*) FROM `$table` WHERE order_id=? AND (asaas_payment_id IS NOT NULL OR activated_at IS NOT NULL)");
+   $q->execute([$orderId]);
+   if((int)$q->fetchColumn()>0)throw new RuntimeException('Este pedido possui cobranças de adicionais/evoluções e precisa de conciliação manual.');
+  }
+  foreach(['subscription_coupon_redemptions','subscription_change_requests','bemora_addon_changes','subscription_cancellations'] as $table){
+   if(!bemora_cleanup_has_table($pdo,$table))continue;
+   $pdo->prepare("DELETE FROM `$table` WHERE order_id=?")->execute([$orderId]);
+  }
+  $pdo->prepare('DELETE FROM subscription_orders WHERE id=?')->execute([$orderId]);
+  // Never erase Asaas customers or charges already paid. Invitations associated
+  // with a registered workspace are kept until that workspace is removed.
+  bemora_cleanup_audit($pdo,$adminId,'delete_unpaid_order',$orderId,'subscription_order');
+  $pdo->commit();
+ }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
+}
+/**
+ * Deletes only one tenant's scoped data in FK dependency order.
+ * A missing/unknown FK is not bypassed; the entire SQL transaction rolls back.
+ */
+function bemora_cleanup_tenant_tables(PDO $pdo):array {
+ $q=$pdo->query("SELECT DISTINCT table_name FROM information_schema.columns WHERE table_schema=DATABASE() AND column_name='tenant_id'");
+ $tables=array_fill_keys($q->fetchAll(PDO::FETCH_COLUMN),true);
+ unset($tables['subscription_orders']);
+ $q=$pdo->query("SELECT table_name,referenced_table_name FROM information_schema.key_column_usage WHERE table_schema=DATABASE() AND referenced_table_schema=DATABASE() AND referenced_table_name IS NOT NULL");
+ $children=[];
+ foreach($q->fetchAll(PDO::FETCH_ASSOC) as $fk){
+  $parent=$fk['referenced_table_name'];$child=$fk['table_name'];
+  if($parent!==$child && isset($tables[$parent],$tables[$child]))$children[$parent][$child]=true;
+ }
+ $ordered=[];$visiting=[];$visited=[];
+ $visit=static function(string $table)use(&$visit,&$ordered,&$visiting,&$visited,$children):void {
+  if(isset($visited[$table]))return;
+  if(isset($visiting[$table]))throw new RuntimeException('Dependência circular de tabelas: exclusão bloqueada por segurança.');
+  $visiting[$table]=true;
+  foreach(array_keys($children[$table]??[]) as $child)$visit($child);
+  unset($visiting[$table]);$visited[$table]=true;$ordered[]=$table;
+ };
+ foreach(array_keys($tables) as $table)$visit($table);
+ return $ordered;
+}
+function bemora_cleanup_delete_tenant(PDO $pdo,int $tenantId,int $adminId):void {
+ if(!bemora_cleanup_ready($pdo))throw new RuntimeException('Execute a migration 048.');
+ $pdo->beginTransaction();
+ try{
+  $q=$pdo->prepare('SELECT id,slug FROM tenants WHERE id=? FOR UPDATE');
+  $q->execute([$tenantId]);$tenant=$q->fetch(PDO::FETCH_ASSOC);
+  if(!$tenant)throw new RuntimeException('Espaço não encontrado.');
+  if($tenant['slug']==='familia-almeida')throw new RuntimeException('O espaço legado principal é protegido contra exclusão.');
+  $q=$pdo->prepare('SELECT COUNT(*) FROM subscription_orders WHERE activated_tenant_id=?');
+  $q->execute([$tenantId]);
+  if((int)$q->fetchColumn()>0)throw new RuntimeException('Exclua primeiro os pedidos de teste vinculados ao espaço. Pedidos pagos não podem ser excluídos por esta ferramenta.');
+  $q=$pdo->prepare("SELECT u.id FROM tenant_users tu JOIN users u ON u.id=tu.user_id WHERE tu.tenant_id=? AND u.system_role='user' AND NOT EXISTS (SELECT 1 FROM tenant_users other WHERE other.user_id=u.id AND other.tenant_id<>?)");
+  $q->execute([$tenantId,$tenantId]);$users=array_map('intval',$q->fetchAll(PDO::FETCH_COLUMN));
+  $q=$pdo->prepare("SELECT COUNT(*) FROM tenant_users tu JOIN users u ON u.id=tu.user_id WHERE tu.tenant_id=? AND u.system_role='system_admin'");
+  $q->execute([$tenantId]);if((int)$q->fetchColumn())throw new RuntimeException('Este espaço contém um administrador global e não pode ser removido.');
+  foreach(bemora_cleanup_tenant_tables($pdo) as $table){
+   if(!preg_match('/^[a-zA-Z0-9_]+$/D',$table))throw new RuntimeException('Nome de tabela inválido.');
+   $pdo->prepare("DELETE FROM `$table` WHERE tenant_id=?")->execute([$tenantId]);
+  }
+  $pdo->prepare('DELETE FROM tenants WHERE id=?')->execute([$tenantId]);
+  // Do not delete a user shared with a different tenant; never delete system admins.
+  foreach($users as $uid){
+   $pdo->prepare("DELETE FROM users WHERE id=? AND system_role='user' AND NOT EXISTS (SELECT 1 FROM tenant_users WHERE user_id=?)")->execute([$uid,$uid]);
+  }
+  bemora_cleanup_audit($pdo,$adminId,'delete_test_tenant',$tenantId,'tenant');
+  $pdo->commit();
+ }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
+}
