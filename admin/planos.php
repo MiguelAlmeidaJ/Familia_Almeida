@@ -15,7 +15,7 @@ admin_shell_start('plans','Planos','Administre planos públicos e planos interno
 <?php if($flash): ?><div class="notice" role="status"><?= e($flash['message']) ?></div><?php endif; ?>
 <?php if($ready&&!$moduleReady): ?><div class="notice">Execute a migration <strong>20261104_043_subscription_plan_modules</strong> em Configurações → Manutenção para editar módulos por plano.</div><?php endif; ?>
 <?php if(!$ready): ?><div class="notice">A estrutura dos planos ainda não foi criada. Execute a migration <strong>20261030_023_subscription_plans</strong> em Configurações → Manutenção.</div><?php endif; ?>
-<div class="plans-admin-header"><div><h2>Planos cadastrados</h2><p>Controle também quais planos podem ser contratados publicamente.</p></div><button class="plans-add" type="button" id="plan-new" <?= !$ready?'disabled':'' ?>><i class="bi bi-plus-lg"></i> Novo plano</button></div>
+<div class="plans-admin-header"><div><h2>Planos cadastrados</h2><p>Controle também quais planos podem ser contratados publicamente.</p></div><button class="plans-add" type="button" id="plan-new" <?= (!$ready||!$moduleReady)?'disabled':'' ?>><i class="bi bi-plus-lg"></i> Novo plano</button></div>
 <div class="plans-admin-grid">
 <?php foreach($plans as $p): $promo=bemora_plan_promo_active($p); ?>
 <article class="plans-admin-card <?= !$p['active']?'is-hidden':'' ?>">
