@@ -10,6 +10,8 @@ const video=$('market-video'),canvas=$('market-canvas'),start=$('market-start'),
 const placeholder=$('market-placeholder'),status=$('market-ocr-status'),preview=$('market-photo-preview');
  const cameraStep=$('market-camera-step'),reviewStep=$('market-review-step'),scanFeedback=$('market-scan-feedback');
 const name=$('market-name'),price=$('market-price'),qty=$('market-qty'),unit=$('market-unit'),match=$('market-match'),tip=$('market-match-tip'),save=$('market-save');
+const reviewTitle=$('market-review-title'),reviewDescription=$('market-review-description'),reviewBack=$('market-review-back'),scanProgress=$('market-scan-progress'),reviewPreview=$('market-review-preview');
+let entryMode='scan';
 const total=$('market-total'),progress=$('market-purchased'),count=$('market-count'),missing=$('market-missing'),rows=$('market-scan-items');
 let stream=null,worker=null,loading=null,list=app.list;
 const money=n=>Number(n).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -94,8 +96,12 @@ function buildBasketRow(item){
   check.addEventListener('click',()=>marketAction('toggle_item',item,{purchased:'1'}));
   actions.append(check);
  }else{
-  const label=document.createElement('span');label.className='market-basket-waiting';label.textContent='Aguardando preço';
-  actions.append(label);
+  const edit=document.createElement('button');edit.type='button';edit.className='market-basket-set-price';
+  edit.innerHTML='<i class="bi bi-pencil-square" aria-hidden="true"></i> Informar preço';
+  edit.setAttribute('aria-label','Informar preço manualmente para '+item.name);
+  edit.disabled=list.status==='completed';
+  edit.addEventListener('click',()=>openManual(item.id));
+  actions.append(edit);
  }
  const remove=document.createElement('button');remove.type='button';remove.className='market-basket-remove';
  remove.innerHTML='<i class="bi bi-trash3" aria-hidden="true"></i> Retirar da lista';
@@ -171,10 +177,43 @@ start.addEventListener('click',async()=>{
 });
 stop.addEventListener('click',stopCamera);
 const scanDialog=document.getElementById('market-scan-dialog');
-scanDialog?.addEventListener('close',()=>{stopCamera();setScanStep('camera');});
+function openManual(itemId=null){
+ if(!scanDialog||list.status==='completed'||basketBusy||recognizing)return;
+ const selected=itemId===null?null:list.items.find(item=>String(item.id)===String(itemId));
+ entryMode='manual';
+ form.reset();
+ name.value=selected?.name||'';
+ price.value=selected?.unit_price!==null&&selected?.unit_price!==undefined?Number(selected.unit_price).toFixed(2):'';
+ qty.value=String(selected?.quantity??1);
+ unit.value=selected?.unit||'un';
+ match.value=selected?String(selected.id):'';
+ setPriceChoices([]);
+ if(reviewPreview){reviewPreview.src='';reviewPreview.hidden=true;}
+ if(preview){preview.src='';preview.hidden=true;}
+ reviewTitle.textContent=selected?'Informar preço do produto':'Adicionar produto manualmente';
+ reviewDescription.textContent=selected?'Informe o preço para registrar este item como comprado.':'Preencha nome, preço e quantidade para registrar a compra sem usar a câmera.';
+ reviewBack.hidden=true;scanProgress.hidden=true;
+ tip.textContent=selected?'Produto já existente na lista. Confira o preço antes de confirmar.':'Se o produto já estiver na lista, escolha-o no campo Produto na lista.';
+ setStatus('');
+ scanDialog.showModal();
+ setScanStep('review');
+ (selected?price:name).focus();
+}
+$('market-open-manual')?.addEventListener('click',()=>openManual());
+scanDialog?.addEventListener('close',()=>{
+ stopCamera();setScanStep('camera');entryMode='scan';
+ scanProgress.hidden=false;reviewBack.hidden=false;
+ reviewTitle.textContent='Conferir produto';
+ reviewDescription.textContent='A leitura da etiqueta é uma sugestão. Confirme ou corrija o produto, preço e quantidade.';
+});
  $('market-review-back')?.addEventListener('click',()=>{setScanStep('camera');start.click();});
 document.getElementById('market-open-camera')?.addEventListener('click',()=>{
  if(!scanDialog||list.status==='completed')return;
+ entryMode='scan';form.reset();qty.value='1';setPriceChoices([]);
+ scanProgress.hidden=false;reviewBack.hidden=false;
+ reviewTitle.textContent='Conferir produto';
+ reviewDescription.textContent='A leitura da etiqueta é uma sugestão. Confirme ou corrija o produto, preço e quantidade.';
+ setStatus('');
  setScanStep('camera');scanDialog.showModal();
  start.click();
 });
@@ -429,7 +468,7 @@ form.addEventListener('submit',async e=>{
  const selected=list.items.find(x=>String(x.id)===match.value);
  const params=new URLSearchParams({ajax:'1',csrf_token:app.csrf,list_id:String(list.id),
  action:selected?'update_item':'add_item',name:name.value.trim(),quantity:qty.value,unit:unit.value,price:price.value,
- purchased:'1',price_source:'label'});
+ purchased:'1',price_source:entryMode==='manual'?'manual':'label'});
  if(selected)params.set('item_id',String(selected.id));
  save.disabled=true;setStatus('Salvando produto confirmado…');
  try{
@@ -438,7 +477,7 @@ form.addEventListener('submit',async e=>{
   if(!res.ok||!data.ok)throw new Error(data.message||'Não foi possível salvar.');
   list=data.list;render();
   name.value='';price.value='';qty.value='1';unit.value='un';match.value='';
-  setStatus('Produto e preço salvos. Você pode continuar escaneando a próxima etiqueta.');
+  setStatus('Produto registrado no carrinho.');
   if(scanDialog?.open)scanDialog.close();
   if(window.matchMedia('(max-width: 750px)').matches){$('market-shopping-items')?.scrollIntoView({behavior:'smooth',block:'start'});}
  }catch(error){setStatus(error.message||'Erro ao salvar produto.');}
