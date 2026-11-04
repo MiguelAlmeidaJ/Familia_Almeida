@@ -50,6 +50,12 @@ function bemora_cleanup_cancel_subscription(PDO $pdo,int $orderId,int $adminId):
   $pdo->commit();
  }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();error_log('Bemora: assinatura removida no Asaas, mas marcação local falhou. Pedido #'.$orderId);throw new RuntimeException('Asaas confirmou a exclusão, mas a atualização local falhou. NÃO repita a exclusão; concilie este pedido com o suporte.');}
 }
+function bemora_cleanup_order_deletable(array $order):bool {
+ if(!empty($order['paid_at'])||(int)($order['admin_subscription_had_settled_payments']??0)===1)return false;
+ if(in_array((string)($order['status']??''),['paid','completed','payment_attention'],true))return false;
+ if(!empty($order['asaas_subscription_id'])&&empty($order['admin_subscription_removed_at']))return false;
+ return true;
+}
 function bemora_cleanup_delete_order(PDO $pdo,int $orderId,int $adminId):void {
  if(!bemora_cleanup_ready($pdo))throw new RuntimeException('Execute a migration 048.');
  $pdo->beginTransaction();
@@ -57,10 +63,8 @@ function bemora_cleanup_delete_order(PDO $pdo,int $orderId,int $adminId):void {
   $q=$pdo->prepare('SELECT * FROM subscription_orders WHERE id=? FOR UPDATE');
   $q->execute([$orderId]);$o=$q->fetch(PDO::FETCH_ASSOC);
   if(!$o)throw new RuntimeException('Pedido não encontrado.');
-  if(!empty($o['paid_at'])||(int)$o['admin_subscription_had_settled_payments']===1||in_array((string)$o['status'],['paid','completed','payment_attention'],true))
-   throw new RuntimeException('Pedidos com pagamento ou acesso ativado devem ser preservados. Use a política de retenção/LGPD, não a limpeza de testes.');
-  if(!empty($o['asaas_subscription_id'])&&empty($o['admin_subscription_removed_at']))
-   throw new RuntimeException('Remova primeiro a assinatura no Asaas, usando Cancelar no painel.');
+  if(!bemora_cleanup_order_deletable($o))
+   throw new RuntimeException('Pedido não elegível: remova primeiro a recorrência no Asaas. Pedidos pagos ou com acesso ativado devem ser preservados, conforme a política de retenção/LGPD.');
   if(!empty($o['asaas_payment_id']) && empty($o['asaas_subscription_id'])){
    $paymentId=(string)$o['asaas_payment_id'];
    if(!preg_match('/^[a-zA-Z0-9_-]{4,100}$/D',$paymentId))throw new RuntimeException('Identificador da cobrança inválido.');
