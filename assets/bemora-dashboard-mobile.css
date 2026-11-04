@@ -1,0 +1,152 @@
+/* Finance dashboard: small-screen hierarchy, touch targets and dense KPIs. */
+@media (max-width: 700px) {
+  .bemora-finance .budget-wrap.budget-dashboard {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 18px 14px 100px;
+  }
+  .bemora-finance .budget-dashboard .budget-title { margin: 0 0 17px; }
+  .bemora-finance .budget-dashboard .budget-title .eyebrow {
+    font-size: 10px;
+    line-height: 1.5;
+    letter-spacing: .10em;
+    margin: 0 0 5px;
+  }
+  .bemora-finance .budget-dashboard .budget-title h1 {
+    font-size: clamp(25px, 6.2vw, 30px);
+    letter-spacing: -.04em;
+    line-height: 1.16;
+    margin: 0 0 7px;
+  }
+  .bemora-finance .budget-dashboard .budget-title p:not(.eyebrow) {
+    font-size: 12px;
+    line-height: 1.55;
+    max-width: 38ch;
+    color: #647b73;
+  }
+  /* Explicitly override the legacy <=420px single-column layout. */
+  .bemora-finance .budget-dashboard .budget-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px;
+  }
+  .bemora-finance .budget-dashboard .budget-card {
+    border-radius: 16px !important;
+    padding: 16px;
+    box-shadow: 0 6px 22px rgba(6,70,63,.045);
+    min-width: 0;
+  }
+  .bemora-finance .budget-dashboard .metric {
+    min-height: 121px;
+    padding: 14px 12px;
+    justify-content: space-between;
+    gap: 7px;
+  }
+  .bemora-finance .budget-dashboard .metric-label {
+    font-size: 11px;
+    line-height: 1.4;
+    margin: 0;
+    color: #698276;
+  }
+  .bemora-finance .budget-dashboard .metric strong {
+    font-size: clamp(17px, 4.3vw, 22px);
+    line-height: 1.18;
+    letter-spacing: -.045em;
+    overflow-wrap: normal;
+    word-break: normal;
+    white-space: nowrap;
+  }
+  .bemora-finance .budget-dashboard .metric small {
+    font-size: 10px;
+    line-height: 1.4;
+    margin: 0;
+  }
+  .bemora-finance .budget-dashboard .metric-feature {
+    background: #06463f !important;
+    border-color: #06463f !important;
+  }
+  .bemora-finance .budget-dashboard .metric-feature :is(strong,.metric-label,small) { color: #fff; }
+  .bemora-finance .dashboard-visual-grid,
+  .bemora-finance .dashboard-bottom-grid {
+    grid-template-columns: minmax(0,1fr);
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .bemora-finance .dashboard-section-head { gap: 9px; margin-bottom: 15px; }
+  .bemora-finance .dashboard-section-head h2 {
+    font-size: 17px;
+    line-height: 1.35;
+    margin: 0 0 4px;
+  }
+  .bemora-finance .dashboard-section-head p {
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .bemora-finance .budget-chart-pill { flex: 0 0 auto; font-size: 9px; padding: 6px 8px; }
+  .bemora-finance .dashboard-donut-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+    padding: 7px 0 0;
+  }
+  .bemora-finance .dashboard-donut {
+    width: min(100%, 224px);
+    max-width: 224px;
+    margin: 0 auto;
+  }
+  .bemora-finance .dashboard-donut-center strong { font-size: 18px; }
+  .bemora-finance .dashboard-chart-side { width: 100%; }
+  .bemora-finance .dashboard-legend { gap: 8px; }
+  .bemora-finance .dashboard-legend-button {
+    min-height: 55px;
+    padding: 11px;
+    gap: 9px;
+  }
+  .bemora-finance .dashboard-legend-button strong { font-size: 12px; }
+  .bemora-finance .dashboard-legend-name { font-size: 11px; }
+  .bemora-finance .dashboard-bill-bars { gap: 16px; }
+  .bemora-finance .dashboard-bill-top { align-items: baseline; }
+  .bemora-finance .dashboard-bill-top span { min-width: 0; overflow-wrap: anywhere; }
+  .bemora-finance .dashboard-track { height: 7px; }
+  .bemora-finance .bemora-dashboard-trend { margin: 12px 0; }
+  .bemora-finance .bemora-dashboard-trend .dashboard-section-head {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .bemora-finance .bemora-dashboard-trend-bars {
+    height: 167px;
+    padding: 14px 0 0;
+    gap: 4px;
+    min-width: 0;
+  }
+  .bemora-finance .bemora-dashboard-trend-month { min-width: 0; padding: 0 2px; }
+  .bemora-finance .bemora-dashboard-trend-month small { font-size: 10px; }
+  .bemora-finance .bemora-dashboard-trend-detail { font-size: 11px; }
+  .bemora-finance .dashboard-summary-row {
+    gap: 12px;
+    padding: 13px 0;
+    align-items: center;
+    font-size: 11px;
+  }
+  .bemora-finance .dashboard-summary-row span { min-width: 0; }
+  .bemora-finance .dashboard-summary-row strong { font-size: 12px; }
+  .bemora-finance .dashboard-transaction { gap: 8px; padding: 13px 0; }
+  .bemora-finance .dashboard-transaction strong { font-size: 12px; }
+  .bemora-finance .dashboard-transaction > span { font-size: 11px; }
+  .bemora-finance .dashboard-disclaimer {
+    font-size: 10px;
+    line-height: 1.6;
+    margin-top: 16px;
+  }
+}
+@media (max-width: 360px) {
+  .bemora-finance .budget-wrap.budget-dashboard { padding-inline: 10px; }
+  .bemora-finance .budget-dashboard .budget-grid { gap: 8px; }
+  .bemora-finance .budget-dashboard .metric { padding: 12px 10px; }
+  .bemora-finance .budget-dashboard .metric strong { font-size: 16px; }
+  .bemora-finance .budget-dashboard .metric small { font-size: 9px; }
+  .bemora-finance .budget-dashboard .budget-card { padding: 13px; }
+}
