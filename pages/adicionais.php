@@ -50,7 +50,7 @@ $baseRecurring=(float)$order['recurring_amount'];
  data-old-recurring="<?= e((string)$baseRecurring) ?>">
 <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
 <label>Quantidade total de pessoas<select name="members" <?= !$canUse?'disabled':'' ?>><?php for($n=$oldMembers;$n<=(int)$offer['max_members'];$n++): ?><option value="<?= $n ?>"><?= $n ?> <?= $n===1?'pessoa':'pessoas' ?></option><?php endfor; ?></select></label>
-<label class="addon-option"><input type="checkbox" name="shopping_addon" value="1" <?= $oldShopping?'checked disabled':(!$canUse?'disabled':'') ?>><span>Adicionar módulo Compras + scanner</span></label>
+<label class="addon-option"><input type="checkbox" name="shopping_addon" value="1" <?= $oldShopping?'checked disabled':(!$canUse?'disabled':'') ?>><span>Adicionar módulo Compras + scanner</span></label><?php if($oldShopping): ?><input type="hidden" name="shopping_addon" value="1"><?php endif; ?>
 <div class="addon-price"><small>Novo total recorrente estimado</small><strong id="addon-upgrade-total"><?= bemora_plan_price($baseRecurring) ?></strong><small>O pagamento imediato será proporcional aos dias restantes; o valor exato será confirmado pelo Asaas.</small></div>
 <button type="submit" <?= !$canUse?'disabled':'' ?>>Solicitar adicionais</button>
 </form></section>
