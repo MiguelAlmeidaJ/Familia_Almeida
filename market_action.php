@@ -84,6 +84,10 @@ try{
   $purchased=($_POST['purchased']??'')==='1';
   if($purchased&&$price===null)throw new RuntimeException('Informe o preço antes de marcar como comprado.');
   $source=($_POST['price_source']??'')==='label'?'label':'manual';
+  if($source==='label'){
+   require_once __DIR__.'/includes/plan_modules.php';
+   if(!bemora_has_module($pdo,(int)$user['tenant_id'],'scanner'))throw new RuntimeException('O leitor de etiquetas não está incluído no plano. Informe o preço manualmente.');
+  }
   $q=$pdo->prepare('SELECT id,name FROM bemora_market_items WHERE tenant_id=? AND list_id=? FOR UPDATE');
   $q->execute([$tenant,$listId]);$existing=$q->fetchAll(PDO::FETCH_ASSOC);
   foreach($existing as $row)if(bemora_market_normalize($row['name'])===bemora_market_normalize($name))
@@ -103,6 +107,10 @@ try{
   $purchased=(string)($_POST['purchased']??'')==='1';
   if($purchased&&$price===null)throw new RuntimeException('Confira o preço antes de marcar como comprado.');
   $source=($_POST['price_source']??'')==='label'?'label':'manual';
+  if($source==='label'){
+   require_once __DIR__.'/includes/plan_modules.php';
+   if(!bemora_has_module($pdo,(int)$user['tenant_id'],'scanner'))throw new RuntimeException('O leitor de etiquetas não está incluído no plano. Informe o preço manualmente.');
+  }
   $q=$pdo->prepare('SELECT id,name FROM bemora_market_items WHERE tenant_id=? AND list_id=? AND id<>?');
   $q->execute([$tenant,$listId,$itemId]);
   foreach($q->fetchAll(PDO::FETCH_ASSOC) as $row)if(bemora_market_normalize($row['name'])===bemora_market_normalize($name))
