@@ -19,7 +19,7 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2">
 <link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3">
 <?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=6">
-<link rel="stylesheet" href="/assets/bemora-market.css?v=10"></head>
+<link rel="stylesheet" href="/assets/bemora-market.css?v=11"></head>
 <body class="bemora-finance <?= $mode==='mercado'?'market-shopping-mode':'' ?>"><div class="shell ref-shell"><?php render_sidebar('compras',$csrf); ?><main><?php render_topbar($user); ?>
 <div class="content market-page">
 <header class="market-heading"><div><p class="eyebrow">COMPRAS EM FAMÍLIA</p><h1>Lista de compras</h1><p>Planeje em casa, confira preços no mercado e acompanhe o total conforme compra.</p></div><span class="market-badge"><i class="bi bi-basket2"></i> Bemora Compras</span></header>
