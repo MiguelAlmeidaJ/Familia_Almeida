@@ -16,18 +16,34 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   try{
    $count=(int)$invitation['max_members']; // Paid invitation owns the number of accesses.
    $address=bemora_validate_onboarding_address(is_array($_POST['address']??null)?$_POST['address']:[]);
-   $admin=filter_var($_POST['family_admin']??-1,FILTER_VALIDATE_INT);
+   $selectedAdmin=filter_var($_POST['family_admin']??-1,FILTER_VALIDATE_INT);
+   $financeMode=$count>1?(string)($_POST['finance_mode']??''):'shared';
+   if(!in_array($financeMode,['shared','separate'],true))throw new RuntimeException('Escolha entre finanças compartilhadas e separadas.');
    if($count<1||$count>30)throw new RuntimeException('Quantidade de acessos contratados inválida.');
-   if($admin===false||$admin<0||$admin>=$count)throw new RuntimeException('Escolha um administrador da família.');
-   $members=[];$emails=[];
+   if($selectedAdmin===false||$selectedAdmin<0||$selectedAdmin>=$count)throw new RuntimeException('Escolha um administrador entre os integrantes cadastrados.');
+   $members=[];$emails=[];$admin=null;$emptySlots=0;
    for($i=0;$i<$count;$i++){
-    $m=$_POST['members'][$i]??[];$mn=trim((string)($m['name']??''));$email=mb_strtolower(trim((string)($m['email']??'')));
+    $m=$_POST['members'][$i]??[];
+    if(!is_array($m))throw new RuntimeException('Dados de integrante inválidos.');
+    if((string)($m['empty']??'')==='1'){
+     // An unoccupied paid seat is never inserted as a user.
+     // Reject inconsistent payloads instead of silently discarding credentials.
+     foreach(['name','email','password','sex','birth_date'] as $field){
+      if(trim((string)($m[$field]??''))!=='')throw new RuntimeException('Uma vaga vazia não pode conter dados de cadastro.');
+     }
+     $emptySlots++;continue;
+    }
+    $mn=trim((string)($m['name']??''));$email=mb_strtolower(trim((string)($m['email']??'')));
     $pw=(string)($m['password']??'');$sex=(string)($m['sex']??'');$dob=(string)($m['birth_date']??'');
     $date=DateTimeImmutable::createFromFormat('!Y-m-d',$dob);
     if(mb_strlen($mn)<2||mb_strlen($mn)>80||!filter_var($email,FILTER_VALIDATE_EMAIL)||strlen($pw)<12||!in_array($sex,['M','F'],true)||!$date||$date->format('Y-m-d')!==$dob||$date>new DateTimeImmutable('today'))throw new RuntimeException('Confira os dados de cada membro. Senhas devem ter pelo menos 12 caracteres.');
     if(in_array($email,$emails,true))throw new RuntimeException('Não repita e-mails entre os membros.');
-    $emails[]=$email;$members[]=['name'=>$mn,'email'=>$email,'password_hash'=>password_hash($pw,PASSWORD_DEFAULT),'sex'=>$sex,'birth_date'=>$dob];
+    $emails[]=$email;
+    if($i===$selectedAdmin)$admin=count($members);
+    $members[]=['name'=>$mn,'email'=>$email,'password_hash'=>password_hash($pw,PASSWORD_DEFAULT),'sex'=>$sex,'birth_date'=>$dob];
    }
+   if(count($members)<1)throw new RuntimeException('Cadastre pelo menos um integrante antes de continuar.');
+   if($admin===null)throw new RuntimeException('O administrador deve ser um integrante cadastrado, não uma vaga vazia.');
    $pdo=db();
    if(!bemora_onboarding_address_ready($pdo))throw new RuntimeException('Cadastro de endereço ainda não disponível. Execute a migration 047 em Manutenção.');
    $pdo->beginTransaction();
@@ -41,9 +57,9 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    require_once __DIR__.'/includes/finance_scope.php';
    if(!bemora_multi_tenant_released()||!finance_separate_schema_ready($pdo))throw new RuntimeException('Cadastro temporariamente indisponível durante a validação de segurança.');
    $check=$pdo->prepare("INSERT INTO family_registrations(invitation_id,family_name,family_name_key,member_count,admin_member,members_json) VALUES(?,?,?,?,?,?)");
-   $check->execute([(int)$invitation['id'],$name,$key,$count,$admin,json_encode($members,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)]);
+   $check->execute([(int)$invitation['id'],$name,$key,count($members),$admin,json_encode($members,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)]);
    require_once __DIR__.'/includes/family_onboarding.php';
-   $login=bemora_activate_registration($pdo,(int)$pdo->lastInsertId(),$members,$admin,$name,$key,(int)$invitation['max_members']);
+   $login=bemora_activate_registration($pdo,(int)$pdo->lastInsertId(),$members,$admin,$name,$key,(int)$invitation['max_members'],$financeMode);
    bemora_store_onboarding_address($pdo,(int)$login['tenant_id'],$address);
    // Bind a completed checkout to the newly created isolated family.
    if((int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='subscription_orders'")->fetchColumn()===1){
@@ -64,7 +80,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Crie seu acesso • Bemora</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-<link rel="stylesheet" href="/assets/bemora-invite.css?v=6">
+<link rel="stylesheet" href="/assets/bemora-invite.css?v=7">
 <?php require_once __DIR__.'/includes/branding.php'; brand_head_tags(); ?>
 </head><body class="invite-page"><main class="invite-shell">
 <header class="invite-brand">
@@ -87,9 +103,12 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 <div class="invite-step" data-indicator="<?= (int)$invitation['max_members']>1?2:1 ?>"><span class="invite-step-number"><?= (int)$invitation['max_members']>1?3:2 ?></span><span>Localização</span></div>
 </nav>
 <section class="step" data-step="0"><div class="invite-section-head"><h3 class="invite-section-title"><?= (int)$invitation['max_members']===1?'Crie sua conta':'Cadastre os integrantes' ?></h3><span class="invite-seats-badge"><i class="bi bi-people" aria-hidden="true"></i> <?= (int)$invitation['max_members'] ?> <?= (int)$invitation['max_members']===1?'pessoa':'pessoas' ?></span></div>
-<p class="invite-subtitle"><?= (int)$invitation['max_members']===1?'Informe seus dados para acessar o Bemora.':'Cada integrante terá seu próprio e-mail e senha de acesso.' ?></p>
+<p class="invite-subtitle"><?= (int)$invitation['max_members']===1?'Informe seus dados para acessar o Bemora.':'Cadastre agora quem vai usar o sistema. As vagas deixadas vazias poderão ser preenchidas depois pelo administrador.' ?></p>
 <div class="member-tabs" id="member-tabs" role="tablist" aria-label="Integrantes"></div><div id="member-fields"></div></section>
-<?php if((int)$invitation['max_members']>1): ?><section class="step" data-step="1" hidden><h3 class="invite-section-title">Quem vai administrar os acessos?</h3><p class="invite-subtitle">Escolha quem poderá gerenciar os integrantes da conta.</p><div id="admin-options" style="margin-top:22px"></div></section><?php endif; ?>
+<?php if((int)$invitation['max_members']>1): ?><section class="step" data-step="1" hidden><h3 class="invite-section-title">Quem vai administrar os acessos?</h3><p class="invite-subtitle">Escolha quem poderá gerenciar os integrantes da conta.</p><div id="admin-options" style="margin-top:22px"></div>
+ <fieldset class="invite-finance-mode"><legend>Como vocês vão organizar as finanças?</legend><p class="invite-subtitle">Escolha como os dados financeiros serão apresentados aos integrantes.</p><div class="invite-finance-options">
+ <label class="invite-finance-choice"><input type="radio" name="finance_mode" value="shared" checked required><span><strong><i class="bi bi-people" aria-hidden="true"></i> Compartilhado</strong><small>Os integrantes usam o mesmo espaço financeiro, com uma visão conjunta das receitas, despesas e contas.</small></span></label>
+ <label class="invite-finance-choice"><input type="radio" name="finance_mode" value="separate" required><span><strong><i class="bi bi-person-lock" aria-hidden="true"></i> Separado</strong><small>Cada integrante organiza as próprias finanças no seu acesso, respeitando as permissões de titularidade.</small></span></label></div></fieldset></section><?php endif; ?>
 <section class="step" data-step="<?= (int)$invitation['max_members']>1?2:1 ?>" hidden>
  <div class="invite-section-head"><h3 class="invite-section-title">Onde você está?</h3><span class="invite-seats-badge"><i class="bi bi-geo-alt" aria-hidden="true"></i> Endereço do seu espaço</span></div>
  <p class="invite-subtitle">Vamos completar a localização da sua conta. Digite o CEP para preencher os dados automaticamente ou informe-os manualmente.</p>
