@@ -69,6 +69,8 @@ DirectoryIndex index.php
     RewriteRule ^meu-perfil/acao/?$ pages/profile_action.php [L,QSA]
     RewriteRule ^meu-perfil/foto/?$ pages/profile_avatar.php [L,QSA]
     RewriteRule ^minha-conta/?$ pages/minha_conta.php [L,QSA]
+    RewriteRule ^minha-assinatura/adicionais/acao/?$ addon_change_action.php [L,QSA]
+    RewriteRule ^minha-assinatura/adicionais/?$ pages/adicionais.php [L,QSA]
     RewriteRule ^minha-assinatura/?$ pages/minha_assinatura.php [L,QSA]
     RewriteRule ^evoluir-plano/?$ pages/evoluir_plano.php [L,QSA]
     RewriteRule ^evoluir-plano/solicitar/?$ plan_change_action.php [L,QSA]
