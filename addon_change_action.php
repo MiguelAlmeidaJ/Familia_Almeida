@@ -9,6 +9,9 @@ if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);exit('Mét
 verify_csrf();$pdo=db();$tid=(int)$user['tenant_id'];$changeId=0;
 try{
  if(!bemora_single_offer_enabled($pdo))throw new RuntimeException('Os adicionais ainda não estão disponíveis.');
+ if(!bemora_asaas_enabled())throw new RuntimeException('Pagamentos temporariamente indisponíveis.');
+ $ready=$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='bemora_addon_changes'");
+ if(!(int)$ready->fetchColumn())throw new RuntimeException('Execute a migration 046 antes de solicitar adicionais.');
  if(bemora_asaas_mode()==='production' && (string)config('asaas','addon_upgrades_production_enabled','0')!=='1')throw new RuntimeException('Inclusão de adicionais após a contratação ainda em homologação. Contate o suporte.');
  if(bemora_cancellation_for_family($pdo,$tid))throw new RuntimeException('Não é possível alterar uma assinatura em cancelamento.');
  $role=$pdo->prepare('SELECT role FROM tenant_users WHERE tenant_id=? AND user_id=?');$role->execute([$tid,(int)$user['id']]);
