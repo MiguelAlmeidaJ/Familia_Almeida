@@ -20,7 +20,7 @@ try{
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/bemora-landing.css?v=5">
+<link rel="stylesheet" href="/assets/bemora-landing.css?v=6">
 </head><body id="inicio">
 <header class="site-header"><div class="site-container navigation">
 <a class="site-brand" href="/" aria-label="Bemora, início"><img src="/assets/brand/logo.png" alt="Bemora by Anoar"></a>
@@ -60,31 +60,51 @@ unset($offers);
 $initialCycle=array_key_first(array_filter($plansByCycle,static fn($offers)=>count($offers)>0))??'monthly';
 ?>
 <section id="planos" class="section landing-pricing"><div class="site-container">
-<div class="landing-pricing-heading"><div class="section-heading"><span class="eyebrow">PLANOS BEMORA</span><h2>Um plano para<br><em>cada momento da vida.</em></h2><p>Do seu espaço individual à família toda. Escolha a modalidade que combina com você.</p></div>
-<div class="landing-pricing-benefit"><span aria-hidden="true">✳</span><p>Organização financeira com a liberdade de escolher como e com quem cuidar do seu dinheiro.</p></div></div>
-<div class="landing-billing-switch" role="tablist" aria-label="Modalidade de contratação">
+<div class="landing-pricing-heading">
+ <div class="section-heading"><span class="eyebrow">PLANOS BEMORA</span><h2>Mais clareza para cuidar<br><em>do que realmente importa.</em></h2><p>Escolha quantas pessoas vão organizar as finanças com você. Planos simples, para cada fase da vida.</p></div>
+ <div class="landing-pricing-benefit" aria-label="A organização acompanha você"><span aria-hidden="true">✳</span><p>Seu dinheiro, suas escolhas. Comece no seu ritmo e cresça com o Bemora.</p></div>
+</div>
+<div class="landing-billing-switch" role="tablist" aria-label="Periodicidade da assinatura">
 <?php foreach(['monthly'=>'Mensal','semiannual'=>'Semestral','annual'=>'Anual'] as $cycleKey=>$cycleName): ?>
-<button type="button" role="tab" id="billing-tab-<?= $cycleKey ?>" aria-controls="billing-panel-<?= $cycleKey ?>" aria-selected="<?= $cycleKey===$initialCycle?'true':'false' ?>" tabindex="<?= $cycleKey===$initialCycle?'0':'-1' ?>" data-billing-tab="<?= $cycleKey ?>" <?= !$plansByCycle[$cycleKey]?'disabled':'' ?>><?= $cycleName ?></button>
+ <button type="button" role="tab" id="billing-tab-<?= $cycleKey ?>" aria-controls="billing-panel-<?= $cycleKey ?>" aria-selected="<?= $cycleKey===$initialCycle?'true':'false' ?>" tabindex="<?= $cycleKey===$initialCycle?'0':'-1' ?>" data-billing-tab="<?= $cycleKey ?>" <?= !$plansByCycle[$cycleKey]?'disabled':'' ?>><?= $cycleName ?></button>
 <?php endforeach; ?>
 </div>
 <?php foreach(['monthly'=>'Mensal','semiannual'=>'Semestral','annual'=>'Anual'] as $cycleKey=>$cycleName): ?>
 <div role="tabpanel" id="billing-panel-<?= $cycleKey ?>" aria-labelledby="billing-tab-<?= $cycleKey ?>" data-billing-panel="<?= $cycleKey ?>" <?= $cycleKey!==$initialCycle?'hidden':'' ?>>
-<div class="landing-billing-caption"><span><?= $cycleKey==='monthly'?'Flexibilidade para organizar cada mês.':($cycleKey==='semiannual'?'Seis meses para acompanhar sua evolução.':'Um ano para viver com mais tranquilidade.') ?></span><span><?= count($plansByCycle[$cycleKey]) ?> <?= count($plansByCycle[$cycleKey])===1?'opção disponível':'opções disponíveis' ?></span></div>
+<div class="landing-billing-caption"><span><?= $cycleKey==='monthly'?'Pagamento mensal, sem complicação.':($cycleKey==='semiannual'?'Uma cobrança a cada seis meses.':'Uma cobrança por ano.') ?></span><span><?= count($plansByCycle[$cycleKey]) ?> <?= count($plansByCycle[$cycleKey])===1?'opção':'opções' ?></span></div>
 <div class="landing-pricing-grid">
-<?php foreach($plansByCycle[$cycleKey] as $plan): $promoted=bemora_plan_promo_active($plan);$finalPrice=$promoted?(float)$plan['promo_price']:(float)$plan['price']; ?>
-<article class="landing-plan-card">
-<div class="landing-plan-upper"><span class="landing-plan-cycle"><?= (int)$plan['max_members']===1?'Para você':((int)$plan['max_members']===2?'Para o casal':'Para a família') ?></span><?php if($promoted): ?><span class="landing-plan-offer">Oferta especial</span><?php endif; ?></div>
-<h3><?= htmlspecialchars($plan['name'],ENT_QUOTES,'UTF-8') ?></h3>
-<div class="landing-plan-price"><?php if($promoted): ?><del><?= htmlspecialchars(bemora_plan_price((float)$plan['price']),ENT_QUOTES,'UTF-8') ?></del><?php endif; ?><strong><?= htmlspecialchars(bemora_plan_price($finalPrice),ENT_QUOTES,'UTF-8') ?></strong><span>/ <?= htmlspecialchars(strtolower($cycleName),ENT_QUOTES,'UTF-8') ?></span></div>
-<p class="landing-plan-members"><span aria-hidden="true">♧</span> Até <?= (int)$plan['max_members'] ?> <?= (int)$plan['max_members']===1?'pessoa':'pessoas' ?></p>
-<div class="landing-plan-details"><?= nl2br(htmlspecialchars($plan['details'],ENT_QUOTES,'UTF-8')) ?></div>
-<?php if($promoted): ?><p class="landing-plan-expires">Oferta válida até <?= htmlspecialchars(date('d/m/Y H:i',strtotime((string)$plan['promo_ends_at'])),ENT_QUOTES,'UTF-8') ?></p><?php endif; ?>
-<a class="button button-dark landing-plan-cta" href="/checkout?plano=<?= (int)$plan['id'] ?>">Escolher este plano <span aria-hidden="true">↗</span></a>
+<?php foreach($plansByCycle[$cycleKey] as $plan):
+ $promoted=bemora_plan_promo_active($plan);
+ $finalPrice=$promoted?(float)$plan['promo_price']:(float)$plan['price'];
+ $months=['monthly'=>1,'semiannual'=>6,'annual'=>12][$cycleKey];
+ $highlight=(int)$plan['max_members']===4;
+ $details=trim((string)$plan['details']);
+?>
+<article class="landing-plan-card<?= $highlight?' landing-plan-featured':'' ?>">
+ <div class="landing-plan-upper"><span class="landing-plan-cycle"><?= (int)$plan['max_members']===1?'Para você':((int)$plan['max_members']===2?'Para o casal':'Para a família') ?></span>
+ <?php if($promoted): ?><span class="landing-plan-offer">Oferta especial</span><?php elseif($highlight): ?><span class="landing-plan-recommended">Para viver em família</span><?php endif; ?></div>
+ <h3><?= htmlspecialchars($plan['name'],ENT_QUOTES,'UTF-8') ?></h3>
+ <p class="landing-plan-tagline"><?= (int)$plan['max_members']===1?'Seu dinheiro organizado do seu jeito.':((int)$plan['max_members']===2?'Organização para construir juntos.':((int)$plan['max_members']<=4?'Mais clareza para a rotina da casa.':'Um espaço para famílias maiores.')) ?></p>
+ <div class="landing-plan-pricing">
+  <span class="landing-plan-price-label"><?= $cycleKey==='monthly'?'Valor mensal':'Valor por '.($cycleKey==='semiannual'?'semestre':'ano') ?></span>
+  <div class="landing-plan-price"><?php if($promoted): ?><del><?= htmlspecialchars(bemora_plan_price((float)$plan['price']),ENT_QUOTES,'UTF-8') ?></del><?php endif; ?><strong><?= htmlspecialchars(bemora_plan_price($finalPrice),ENT_QUOTES,'UTF-8') ?></strong><span>/ <?= $cycleKey==='monthly'?'mês':($cycleKey==='semiannual'?'6 meses':'ano') ?></span></div>
+  <?php if($months>1): ?><p class="landing-plan-equivalent">Equivale a <strong><?= htmlspecialchars(bemora_plan_price($finalPrice/$months),ENT_QUOTES,'UTF-8') ?>/mês</strong> · cobrado <?= $cycleKey==='semiannual'?'a cada 6 meses':'anualmente' ?></p><?php else: ?><p class="landing-plan-equivalent">Cobrança recorrente mensal</p><?php endif; ?>
+ </div>
+ <p class="landing-plan-members"><span aria-hidden="true">♧</span> Até <strong><?= (int)$plan['max_members'] ?> <?= (int)$plan['max_members']===1?'pessoa':'pessoas' ?></strong> no seu espaço</p>
+ <div class="landing-plan-feature-title">Com o Bemora você pode:</div>
+ <ul class="landing-plan-features">
+  <li>Organizar receitas e despesas</li>
+  <li>Acompanhar contas previstas</li>
+  <li>Visualizar relatórios financeiros</li>
+ </ul>
+ <?php if($details!==''): ?><details class="landing-plan-more"><summary>Ver descrição completa</summary><p><?= nl2br(htmlspecialchars($details,ENT_QUOTES,'UTF-8')) ?></p></details><?php endif; ?>
+ <?php if($promoted && !empty($plan['promo_ends_at'])): ?><p class="landing-plan-expires">Oferta válida até <?= htmlspecialchars(date('d/m/Y H:i',strtotime((string)$plan['promo_ends_at'])),ENT_QUOTES,'UTF-8') ?></p><?php endif; ?>
+ <a class="button button-dark landing-plan-cta" href="/checkout?plano=<?= (int)$plan['id'] ?>">Escolher <?= htmlspecialchars($plan['name'],ENT_QUOTES,'UTF-8') ?> <span aria-hidden="true">↗</span></a>
 </article>
 <?php endforeach; ?>
 </div></div>
 <?php endforeach; ?>
-<p class="landing-plan-legal">Planos recorrentes conforme periodicidade escolhida. O pagamento é intermediado pelo Asaas; cartão é processado no ambiente do provedor. Confira as condições no checkout e os documentos legais antes de contratar.</p>
+<p class="landing-plan-legal">Os valores exibidos são por período de cobrança, com renovação recorrente conforme o plano escolhido. Pagamento intermediado pelo Asaas. Consulte as condições, promoções e documentos legais no checkout.</p>
 </div></section>
 <?php endif; ?>
 <section id="duvidas" class="section faq"><div class="site-container faq-grid"><div><span class="eyebrow">AINDA TEM DÚVIDAS?</span><h2>Estamos aqui<br><em>para simplificar.</em></h2><p>Algumas respostas para começar com tranquilidade.</p></div><div class="faq-list"><details><summary>O Bemora é para uma pessoa ou para famílias?<span>+</span></summary><p>Para os dois! Você pode organizar suas finanças pessoais, em casal ou com a família, conforme o ambiente configurado.</p></details><details><summary>Posso separar minhas finanças das outras pessoas?<span>+</span></summary><p>Sim. O Bemora oferece opções para informações financeiras compartilhadas e individuais, conforme a configuração da sua família.</p></details><details><summary>Preciso instalar algum programa?<span>+</span></summary><p>Não. O Bemora funciona pelo navegador, no computador ou no celular.</p></details><details><summary>Como posso conhecer os planos?<span>+</span></summary><p>Entre em contato com nossa equipe comercial pelo WhatsApp para conhecer as condições de contratação disponíveis.</p></details></div></div></section>
