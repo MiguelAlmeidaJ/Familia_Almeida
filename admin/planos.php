@@ -15,12 +15,12 @@ $publicActiveCount=0;$archivedCount=0;foreach($plans as $plan){if((int)$plan['ac
 $flash=pull_flash();$csrf=csrf_token();
 admin_shell_start('plans','Planos','Administre planos públicos e planos internos sem venda no site.');
 ?>
-<link rel="stylesheet" href="/assets/bemora-plans-admin.css?v=6">
+<link rel="stylesheet" href="/assets/bemora-plans-admin.css?v=7">
 <div class="plans-admin">
 <?php if($flash): ?><div class="notice" role="status"><?= e($flash['message']) ?></div><?php endif; ?>
 <?php if($ready&&!$moduleReady): ?><div class="notice">Execute a migration <strong>20261104_043_subscription_plan_modules</strong> em Configurações → Manutenção para editar módulos por plano.</div><?php endif; ?>
 <?php if(!$ready): ?><div class="notice">A estrutura dos planos ainda não foi criada. Execute a migration <strong>20261030_023_subscription_plans</strong> em Configurações → Manutenção.</div><?php endif; ?>
-<div class="plans-admin-header"><div><h2>Ofertas cadastradas</h2><p>Ofertas arquivadas continuam aqui para auditoria e podem ser republicadas individualmente, se necessário.</p></div><a class="plans-add" href="/admin/planos/novo"><i class="bi bi-plus-lg"></i> Criar plano</a></div>
+<div class="plans-admin-header"><div><h2>Ofertas cadastradas</h2><p>Ofertas arquivadas continuam aqui para auditoria e podem ser republicadas individualmente, se necessário.</p></div><div class="plans-admin-header-actions"><a class="plans-benefits-link" href="/admin/beneficios"><i class="bi bi-patch-check"></i> Gerenciar benefícios</a><a class="plans-add" href="/admin/planos/novo"><i class="bi bi-plus-lg"></i> Criar plano</a></div></div>
 <section class="plans-catalog-tools plans-catalog-summary" aria-label="Gerenciamento do catálogo">
  <div class="plans-tool-header"><div><span class="plans-tool-eyebrow">CATÁLOGO COMERCIAL</span><h3>Organize suas ofertas</h3><p>Crie novos pacotes em uma página dedicada. Aqui você visualiza, edita, publica e arquiva os planos existentes.</p></div><span class="plans-tool-count"><?= $publicActiveCount ?> ofertas públicas ativas</span></div>
  <details class="plans-archive-box"><summary><i class="bi bi-archive"></i> Recomeçar catálogo público com segurança</summary>
