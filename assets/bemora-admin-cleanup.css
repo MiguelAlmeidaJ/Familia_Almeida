@@ -1,0 +1,27 @@
+/* Destructive test cleanup must remain visually secondary to ordinary controls. */
+.admin-danger-form{display:inline-flex;margin:0}
+.admin-danger-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:34px;padding:7px 10px;border:1px solid #efcaca;border-radius:9px;background:#fff;color:#a63b3b;font-size:12px;font-weight:750;cursor:pointer}
+.admin-danger-button:hover{background:#fff1f1;border-color:#d88989}
+.admin-danger-button:focus-visible{outline:2px solid #c75555;outline-offset:3px}
+.admin-danger-button:disabled{opacity:.5;cursor:not-allowed}
+.admin-danger-button.cancel{color:#8b5630;border-color:#e6ceae}
+.admin-danger-button.cancel:hover{background:#fff9ed}
+.admin-cleanup-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.admin-cleanup-note{margin:0 0 18px;padding:13px 16px;border:1px solid #f0dbc7;background:#fffbf5;border-radius:11px;color:#76543d;font-size:12px;line-height:1.6}
+.admin-cleanup-note strong{color:#91512c}
+.admin-cleanup-dialog{width:min(440px,calc(100vw - 28px));max-width:100%;border:1px solid #eadcda;border-radius:18px;padding:0;box-shadow:0 20px 70px #11261935;color:#184c3c}
+.admin-cleanup-dialog::backdrop{background:rgba(8,33,28,.55)}
+.admin-cleanup-content{padding:26px;display:grid;gap:14px}
+.admin-cleanup-symbol{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:#fff0e9;color:#b34237;font-size:22px}
+.admin-cleanup-dialog h2{font-size:20px;font-weight:850;margin:0}
+.admin-cleanup-description{margin:0;color:#6f8076;font-size:13px;line-height:1.65;overflow-wrap:anywhere}
+.admin-cleanup-dialog label{display:grid;gap:9px;font-size:12px;color:#436252}
+.admin-cleanup-dialog label strong{color:#a33d31;user-select:all}
+.admin-cleanup-dialog input{height:44px;border:1px solid #ceded3;border-radius:9px;padding:10px;font:inherit;color:#174f39;width:100%}
+.admin-cleanup-dialog input:focus-visible{outline:2px solid #b75b51;outline-offset:2px}
+.admin-cleanup-buttons{display:flex;justify-content:flex-end;gap:9px;margin-top:5px}
+.admin-cleanup-buttons button{padding:11px 17px;border-radius:9px;font-size:12px;font-weight:800;cursor:pointer}
+.admin-cleanup-close{background:#fff;border:1px solid #cdddd1;color:#245c45}
+.admin-cleanup-submit{background:#a93f3f;border:1px solid #a93f3f;color:#fff}
+.admin-cleanup-submit:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:600px){.admin-cleanup-content{padding:21px}.admin-cleanup-buttons button{flex:1}.admin-danger-button{min-height:40px}}
