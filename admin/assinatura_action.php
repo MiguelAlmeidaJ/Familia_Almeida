@@ -35,6 +35,8 @@ try{
  foreach(['monthly','semiannual','annual'] as $cycle)bemora_single_quote($new,$cycle,$max,true);
  $activating=$requestedEnabled&&(int)$current['enabled']!==1;
  if($activating&&(string)($_POST['confirmation']??'')!=='SUBSTITUIR PLANOS')throw new RuntimeException('Para substituir as ofertas antigas, digite SUBSTITUIR PLANOS.');
+ $q=$pdo->query("SELECT COALESCE(MAX(max_members),0) FROM subscription_orders WHERE single_offer=1 AND activated_tenant_id IS NOT NULL AND status IN ('completed','paid','payment_attention')");
+ if($max<(int)$q->fetchColumn())throw new RuntimeException('Este limite é menor que a quantidade de pessoas de assinaturas já contratadas.');
  $pdo->beginTransaction();
  $ids=[];
  foreach(['monthly','semiannual','annual'] as $cycle){
@@ -57,7 +59,9 @@ try{
   foreach($permissions as $module=>$enabled)$stmt->execute([$id,$module,$enabled]);
  }
  // Old offers are archived, never deleted; existing subscription_orders retain their FKs.
- $pdo->prepare("UPDATE subscription_plans SET active=0 WHERE public_sale=1 AND id NOT IN (?,?,?)")->execute(array_values($ids));
+ if($requestedEnabled){
+  $pdo->prepare("UPDATE subscription_plans SET active=0 WHERE public_sale=1 AND id NOT IN (?,?,?)")->execute(array_values($ids));
+ }
  $save=$pdo->prepare("UPDATE bemora_single_offer SET name=?,base_monthly=?,extra_member_monthly=?,shopping_monthly=?,max_members=?,semi_discount=?,annual_discount=?,monthly_plan_id=?,semiannual_plan_id=?,annual_plan_id=?,enabled=? WHERE id=1");
  $save->execute([$name,$base/100,$seat/100,$shop/100,$max,$semi,$annual,$ids['monthly'],$ids['semiannual'],$ids['annual'],$requestedEnabled?1:0]);
  $pdo->commit();
