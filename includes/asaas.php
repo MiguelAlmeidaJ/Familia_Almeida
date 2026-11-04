@@ -32,7 +32,7 @@ function bemora_asaas_request(string $method,string $path,?array $data=null):arr
     if($description!==''){
      // Server-side diagnostics only. Remove common personal data patterns.
      $description=preg_replace('/[A-Z0-9._%+\\-]+@[A-Z0-9.\\-]+\\.[A-Z]{2,}/i','[email]',$description);
-     $description=preg_replace('/\\b\\d{2,3}[.\\- ]?\\d{3}[.\\- ]?\\d{3}[/\\-. ]?\\d{1,4}\\b/','[documento]',$description);
+     $description=preg_replace('~\\b\\d{2,3}[.\\- ]?\\d{3}[.\\- ]?\\d{3}[/\\-. ]?\\d{1,4}\\b~','[documento]',$description);
      $description=preg_replace('/\\b\\d{10,14}\\b/','[numero]',$description);
      $description=preg_replace('/[\\r\\n\\t]+/',' ',$description);
      $details[]='description='.mb_substr($description,0,240);
