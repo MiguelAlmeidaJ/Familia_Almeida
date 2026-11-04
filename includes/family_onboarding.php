@@ -1,9 +1,11 @@
 <?php
 declare(strict_types=1);
-function bemora_activate_registration(PDO $pdo,int $registrationId,array $members,int $adminIndex,string $name,string $key,int $limit):array {
+function bemora_activate_registration(PDO $pdo,int $registrationId,array $members,int $adminIndex,string $name,string $key,int $limit,string $financeMode='shared'):array {
+ if(!in_array($financeMode,['shared','separate'],true))throw new RuntimeException('Modo financeiro inválido.');
+ if(!$members||$adminIndex<0||$adminIndex>=count($members)||count($members)>$limit)throw new RuntimeException('Integrantes ou administrador inválidos.');
  $slug='familia-'.$registrationId.'-'.bin2hex(random_bytes(4));
- $stmt=$pdo->prepare("INSERT INTO tenants(name,slug,name_key,active,status,max_members,finance_mode) VALUES(?,?,?,1,'active',?,'shared')");
- $stmt->execute([$name,$slug,$key,$limit]);
+ $stmt=$pdo->prepare("INSERT INTO tenants(name,slug,name_key,active,status,max_members,finance_mode) VALUES(?,?,?,1,'active',?,?)");
+ $stmt->execute([$name,$slug,$key,$limit,$financeMode]);
  $tenant=(int)$pdo->lastInsertId();
  $insert=$pdo->prepare('INSERT INTO users(name,email,password_hash,sex,birth_date) VALUES(?,?,?,?,?)');
  $link=$pdo->prepare('INSERT INTO tenant_users(tenant_id,user_id,role) VALUES(?,?,?)');
