@@ -20,6 +20,10 @@ jobs:
         run: |
           php tests/onboarding_address_cli.php
           node --check assets/bemora-onboarding-address.js
+      - name: Validate admin cleanup safeguards
+        run: |
+          php tests/admin_cleanup_policy_cli.php
+          node --check assets/bemora-admin-cleanup.js
       - name: Validate browser scanner JavaScript and label parsing
         run: |
           node --check assets/bemora-single.js
