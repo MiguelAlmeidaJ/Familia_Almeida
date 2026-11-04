@@ -14,7 +14,7 @@ $csrf=csrf_token();
 $flash=pull_flash();
 admin_shell_start('plans','Criar plano','Configure um pacote de módulos, integrantes e periodicidades em uma tela dedicada.');
 ?>
-<link rel="stylesheet" href="/assets/bemora-plans-admin.css?v=6">
+<link rel="stylesheet" href="/assets/bemora-plans-admin.css?v=7">
 <div class="plans-admin plans-builder-page">
  <nav class="plans-builder-breadcrumb" aria-label="Caminho"><a href="/admin/planos"><i class="bi bi-arrow-left"></i> Voltar aos planos</a><span> / </span><span>Novo pacote</span></nav>
  <?php if($flash): ?><div class="notice" role="status"><?= e($flash['message']) ?></div><?php endif; ?>
