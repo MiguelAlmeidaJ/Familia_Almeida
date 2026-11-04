@@ -242,53 +242,46 @@ function setPriceChoices(options){
  }
 }
 function parseLabel(text){
- const lines=text.split(/\r?\n/).map(s=>s.replace(/\s+/g,' ').trim()).filter(Boolean);
- // A common Brazilian label contains different prices for varejo/atacado.
- // Do not treat a barcode or tiny fractional quantity as a product price.
+ const lines=String(text||'').split(/\r?\n/).map(s=>s.replace(/\s+/g,' ').trim()).filter(Boolean);
  const candidates=[];
- let context='';
  for(let i=0;i<lines.length;i++){
   const line=lines[i];
-  if(/\b(varejo|atacado|clube|promocional|oferta)\b/i.test(line))context=line;
-  const matchAll=[...line.matchAll(/(?:R\s*\$\s*)?(\d{1,4}[,.]\s*\d{2})(?!\d)/g)];
-  for(const match of matchAll){
-   const n=Number(match[1].replace(/\s/g,'').replace(',','.'));
-   if(!Number.isFinite(n)||n<.50||n>=10000)continue;
-   const before=line.slice(Math.max(0,match.index-30),match.index);
-   const after=line.slice(match.index+match[0].length,match.index+match[0].length+25);
-   const surroundings=(before+' '+after+' '+context).toLowerCase();
-   if(/\b(?:c[oó]d(?:igo)?|ean|fabrica|validade|cep|cpf|cnpj)\b/.test(before.toLowerCase()))continue;
-   const nearest=(before.match(/(?:varejo|atacado|clube)[^a-záéíóúãõç]*$/i)||[])[0]||'';
-   const category=/atacado/i.test(nearest)?'Atacado':/varejo/i.test(nearest)?'Varejo':/clube/i.test(nearest)?'Clube':/atacado/i.test(line)&&!/(?:varejo|clube)/i.test(line)?'Atacado':/varejo/i.test(line)&&!/(?:atacado|clube)/i.test(line)?'Varejo':'';
-   const weight=(/R\s*\$/i.test(line)?4:0)+(/pre[cç]o|varejo|atacado/i.test(surroundings)?2:0)+(n>=1?1:0);
-   candidates.push({amount:n,label:category,weight,idx:i});
+  if(/\b(?:ean|cnpj|cpf|validade|c[oó]digo)\b/i.test(line))continue;
+  const amounts=[];
+  for(const m of line.matchAll(/(?:R\s*\$\s*)?(\d{1,4})\s*[,\.]\s*(\d{2})(?!\d)/g))amounts.push({amount:Number(m[1]+'.'+m[2]),explicit:/R\s*\$/i.test(line),weight:5});
+  // Promotional prices may be read as "R$ 27 00" or "R$ 27 oo".
+  for(const m of line.matchAll(/R\s*\$\s*(\d{1,4})\s+([0Oo]{2}|\d{2})(?!\d)/gi))amounts.push({amount:Number(m[1]+'.'+m[2].replace(/[Oo]/g,'0')),explicit:true,weight:9});
+  for(const m of amounts){
+   if(!Number.isFinite(m.amount)||m.amount<.50||m.amount>=10000)continue;
+   const label=/atacado/i.test(line)?'Atacado':/varejo/i.test(line)?'Varejo':/clube/i.test(line)?'Clube':'';
+   candidates.push({amount:m.amount,label,weight:m.weight+(m.explicit?5:0),idx:i});
   }
  }
- // Merge the same amount across OCR fragments, keeping the best label.
- const grouped=new Map();
- for(const c of candidates){const key=c.amount.toFixed(2);if(!grouped.has(key)||grouped.get(key).weight<c.weight)grouped.set(key,c);}
- const options=[...grouped.values()].sort((a,b)=>b.weight-a.weight||a.idx-b.idx).slice(0,5);
- const bad=/^(?:R\s*\$|pre[cç]o|varejo|atacado|desconto|promo[cç][aã]o|oferta|clube|total|leve|pague|mercado|supermercado|validade|c[oó]digo|ean|unit[aá]rio|unidades)/i;
- const names=lines.map((line,index)=>{
-  const value=line.replace(/(?:R\s*\$)?\s*\d{1,4}[,.]\s*\d{2}/g,'').replace(/[|*_=]+/g,' ').replace(/\s+/g,' ').trim();
-  const letters=(value.match(/[a-záàâãéêíóôõúç]/gi)||[]).length;
-  const digits=(value.match(/\d/g)||[]).length;
-  const hasPackage=/\b(?:\d+\s*(?:kg|g|ml|l|un|und|pct)|tipo\s*\d+)\b/i.test(value);
-  const badLine=bad.test(value)||/\b(?:R\$|CNPJ|ATACADO|VAREJO|LEVE|PAGUE|PROMO|COD|OFERTA|PRECO)\b/i.test(value);
-  const score=(hasPackage?8:0)+Math.min(letters,30)/5-digits/5-index*.9;
-  return {value,score,badLine,letters};
- }).filter(v=>!v.badLine&&v.letters>=6&&v.value.length>=7&&v.value.length<=90);
+ const prices=new Map();
+ for(const item of candidates){const key=item.amount.toFixed(2);if(!prices.has(key)||prices.get(key).weight<item.weight)prices.set(key,item);}
+ const options=[...prices.values()].sort((a,b)=>b.weight-a.weight||a.idx-b.idx).slice(0,5);
+ const noise=/\b(?:super|oferta|aproveite|atacado|varejo|promo[cç][aã]o|desconto|pre[cç]o|total|mercado|leve|pague|clube|validade)\b/i;
+ const names=[];
+ for(let i=0;i<lines.length;i++){
+  for(const n of [1,2]){
+   if(i+n>lines.length)continue;
+   const chunk=lines.slice(i,i+n);
+   if(chunk.some(s=>noise.test(s)||/R\s*\$|\d{1,4}\s*[,\.]\s*\d{2}/i.test(s)))continue;
+   const value=chunk.join(' ').replace(/[|*_=]+/g,' ').trim();
+   const letters=(value.match(/[a-záàâãéêíóôõúç]/gi)||[]).length;
+   const words=value.split(/\s+/).filter(w=>/[a-záàâãéêíóôõúç]{3,}/i.test(w)).length;
+   const score=words*4+Math.min(letters,40)*.12+(/\b(?:kg|g|ml|l|un|pct)\b/i.test(value)?5:0)-i*.7;
+   if(letters>=6&&value.length>=7&&value.length<=90)names.push({value,score});
+  }
+ }
  names.sort((a,b)=>b.score-a.score);
- const chosen=names[0];
- // Refuse low-quality OCR garbage rather than silently fabricating a label.
- const product=chosen&&chosen.score>=2.5?normalizeName(chosen.value):'';
- return {product,options};
+ return {product:names[0]&&names[0].score>=4?normalizeName(names[0].value):'',options};
 }
 function setupOutput(source){
  canvas.width=source.width;canvas.height=source.height;
  canvas.getContext('2d',{willReadFrequently:true}).drawImage(source,0,0);
  const url=canvas.toDataURL('image/jpeg',.92);
- preview.src=url;preview.hidden=false;
+ preview.src=url;preview.hidden=false;const reviewPreview=$('market-review-preview');if(reviewPreview){reviewPreview.src=url;reviewPreview.hidden=false;}
 }
 function cropFrom(source,x,y,w,h){
  const sw=source.videoWidth||source.naturalWidth||source.width;
@@ -392,22 +385,29 @@ async function recognize(cropped){
   let parsed=parseLabel(result.data.text||'');
   // Large price digits can dominate OCR. Read the product-name band separately
   // and prefer its result when the label header is clearer.
-  const topBand=cropFrom(cropped,0,0,1,.38);
-  const header=await reader.recognize(enhance(topBand));
-  const topParsed=parseLabel(header.data.text||'');
-  parsed.product=betterName(parsed.product,topParsed.product);
-  if(!parsed.product||!parsed.options.length){
-   const backup=await reader.recognize(cropped);
-   const alternative=parseLabel(backup.data.text||'');
-   parsed.product=betterName(parsed.product,alternative.product);
-   if(!parsed.options.length)parsed.options=alternative.options;
-  }
-  if(parsed.product)name.value=parsed.product;
+  const nameBand=cropFrom(cropped,.04,.12,.92,.53);
+   const header=await reader.recognize(enhance(nameBand));
+   const topParsed=parseLabel(header.data.text||'');
+   parsed.product=betterName(parsed.product,topParsed.product);
+   if(!parsed.options.length){
+    setStatus('Identificando o preço da etiqueta promocional…');
+    const priceBand=cropFrom(cropped,.04,.44,.92,.54);
+    const priceResult=await reader.recognize(enhance(priceBand));
+    const priceParsed=parseLabel(priceResult.data.text||'');
+    if(priceParsed.options.length)parsed.options=priceParsed.options;
+   }
+   if(!parsed.product||!parsed.options.length){
+    const backup=await reader.recognize(cropped);
+    const alternative=parseLabel(backup.data.text||'');
+    parsed.product=betterName(parsed.product,alternative.product);
+    if(!parsed.options.length)parsed.options=alternative.options;
+   }
+   if(parsed.product)name.value=parsed.product;
   setPriceChoices(parsed.options);
   if(parsed.options.length===1)price.value=parsed.options[0].amount.toFixed(2);
   // Multiple retail/wholesale prices must never be auto-selected.
   offerMatch();
-  if(!parsed.product||!parsed.options.length)setStatus('A leitura ficou incompleta. Ajuste o recorte ou preencha nome e preço manualmente.');
+  if(!parsed.product||!parsed.options.length)setStatus('A leitura ficou incompleta. Confira a etiqueta capturada e preencha o que faltar, ou escaneie novamente.');
   else if(parsed.options.length>1)setStatus('Foram encontrados vários preços. Selecione o valor correto (varejo ou atacado) e revise o nome.');
   else setStatus('Recorte lido. Confira o nome, preço e quantidade antes de confirmar.');
  }catch(error){setStatus('Não foi possível ler a etiqueta. Preencha os campos manualmente ou escaneie novamente.');}
