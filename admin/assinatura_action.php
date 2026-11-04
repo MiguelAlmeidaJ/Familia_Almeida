@@ -3,12 +3,14 @@ declare(strict_types=1);
 require_once __DIR__.'/../includes/admin_layout.php';
 require_once __DIR__.'/../includes/single_offer.php';
 require_once __DIR__.'/../includes/plan_modules.php';
+require_once __DIR__.'/../includes/plan_benefits.php';
 require_admin_access();
 if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);exit('Método não permitido.');}
 verify_csrf();
 $pdo=db();
 try{
  if(!bemora_single_offer_ready($pdo)||!bemora_modules_ready($pdo))throw new RuntimeException('Execute as migrations pendentes antes de configurar a assinatura.');
+ $selectedBenefits=bemora_benefits_ready($pdo)?bemora_validate_selected_benefits($pdo,$_POST['benefits']??[]):[];
  $current=bemora_single_offer($pdo);
  if(!$current)throw new RuntimeException('A configuração comercial não foi inicializada.');
  $name=trim((string)($_POST['name']??''));
@@ -58,6 +60,7 @@ try{
   $permissions=['reports'=>1,'shopping'=>0,'scanner'=>0];
   $stmt=$pdo->prepare('INSERT INTO subscription_plan_modules(plan_id,module_key,enabled) VALUES(?,?,?) ON DUPLICATE KEY UPDATE enabled=VALUES(enabled)');
   foreach($permissions as $module=>$enabled)$stmt->execute([$id,$module,$enabled]);
+  if(bemora_benefits_ready($pdo))bemora_sync_plan_benefits($pdo,$id,$selectedBenefits);
  }
  // Old offers are archived, never deleted; existing subscription_orders retain their FKs.
  if($requestedEnabled){
