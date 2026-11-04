@@ -205,3 +205,23 @@
 }
 @media(max-width:380px){.single-builder-fields{grid-template-columns:1fr}.single-plan-tag{display:none}.single-option-extra{display:none}}
 @media(prefers-reduced-motion:reduce){.single-public-builder .landing-plan-cta{transition:none}}
+
+/* Unified iconography for Bemora's public home. No external icon-font dependency. */
+.landing-icon-sprite{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
+.landing-icon{display:block;width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.mini-star{display:inline-flex;vertical-align:middle;align-items:center}
+.mini-star .landing-icon{width:18px;height:18px;stroke-width:1.65}
+.mock-symbol .landing-icon{width:18px;height:18px;stroke-width:1.8}
+.float-icon .landing-icon{width:19px;height:19px}
+.float-emoji{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:#fff4de;color:#b77c2e}
+.float-emoji .landing-icon{width:19px;height:19px;stroke-width:1.7}
+.feature-card .feature-icon{width:46px;height:46px;background:#e7f5ec;border:1px solid #d4eadc;color:#08785e;border-radius:13px;font-size:24px}
+.feature-icon .landing-icon{width:23px;height:23px;stroke-width:1.8}
+.audience-grid .audience-icon{display:grid;place-items:center;width:49px;height:49px;margin:19px 0 18px;border:1px solid #d5ebdf;background:#edf8f1;border-radius:13px;color:#0a8866}
+.audience-grid .audience-icon .landing-icon{width:24px;height:24px;stroke-width:1.7}
+.footer-premium .footer-contact-icon .landing-icon{width:16px;height:16px;stroke-width:1.8}
+.single-plan-symbol .landing-icon{width:20px;height:20px}
+.single-plan-footnote .landing-icon{width:14px;height:14px;color:#128765}
+.single-builder-heading>.landing-icon{width:36px;height:36px;padding:9px;background:#eaf5ee;color:#137a5a;border-radius:10px}
+.landing-button-arrow{font-size:18px;line-height:1}
+@media(max-width:650px){.feature-card .feature-icon{width:44px;height:44px}.audience-grid .audience-icon{width:46px;height:46px;margin:16px 0}}
