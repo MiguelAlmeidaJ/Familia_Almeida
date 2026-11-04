@@ -97,7 +97,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   <div class="invite-field invite-address-cep"><label for="address-postal">CEP</label><div class="invite-postal-entry"><input id="address-postal" name="address[postal_code]" type="text" placeholder="00000-000" inputmode="numeric" autocomplete="postal-code" maxlength="9" pattern="[0-9]{5}-?[0-9]{3}" required><button type="button" id="address-lookup"><i class="bi bi-search" aria-hidden="true"></i> Buscar CEP</button></div><small id="address-lookup-status" role="status" aria-live="polite">Consulta automática pelo CEP.</small></div>
   <div class="invite-field invite-address-wide"><label for="address-street">Endereço</label><input id="address-street" name="address[street]" type="text" placeholder="Rua, avenida ou logradouro" autocomplete="street-address" minlength="3" maxlength="180" required></div>
   <div class="invite-field"><label for="address-state">Estado</label><select id="address-state" name="address[state]" autocomplete="address-level1" required><option value="">Selecione o estado</option><?php foreach(bemora_brazil_states() as $uf=>$stateName): ?><option value="<?= e($uf) ?>"><?= e($stateName) ?> (<?= e($uf) ?>)</option><?php endforeach; ?></select></div>
-  <div class="invite-field"><label for="address-city">Cidade</label><select id="address-city" name="address[city]" autocomplete="address-level2" required disabled><option value="">Selecione primeiro um estado</option></select><small id="address-city-status" aria-live="polite">Escolha o estado para carregar os municípios.</small></div>
+  <div class="invite-field"><label for="address-city">Cidade</label><select id="address-city" name="address[city]" autocomplete="address-level2" required disabled><option value="">Selecione primeiro um estado</option></select><input id="address-city-manual" name="address[city_manual]" type="text" autocomplete="address-level2" placeholder="Informe sua cidade" minlength="2" maxlength="120" hidden disabled><small id="address-city-status" aria-live="polite">Escolha o estado para carregar os municípios.</small></div>
  </div>
  <p class="invite-help">Não conseguiu consultar o CEP? Você pode preencher o endereço e escolher estado e cidade manualmente.</p>
 </section>
@@ -108,7 +108,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 <script>
 (()=>{
 const max=<?= (int)$invitation['max_members'] ?>,form=document.getElementById('join-form'),count=document.getElementById('member_count'),fields=document.getElementById('member-fields'),tabs=document.getElementById('member-tabs'),options=document.getElementById('admin-options'),admin=document.getElementById('family-admin');
-const steps=[...document.querySelectorAll('[data-step]')],indicators=[...document.querySelectorAll('[data-indicator]')];let step=0,selected=0;
+const steps=[...document.querySelectorAll('[data-step]')],indicators=[...document.querySelectorAll('[data-indicator]')];const locationStep=max>1?2:1;let step=0,selected=0;
 function size(){return Math.min(max,Math.max(1,Number(count.value)||1))}
 function build(){
  const n=size();while(fields.children.length<n){const i=fields.children.length,d=document.createElement('div');d.className='member-fields';d.dataset.index=i;d.id='person-panel-'+i;d.setAttribute('role','tabpanel');
@@ -133,12 +133,25 @@ function adminOptions(){
  });
 }
 function validateMembers(){for(const [i,panel] of [...fields.children].entries()){for(const input of panel.querySelectorAll('input,select')){if(!input.checkValidity()){selected=i;renderMembers();input.reportValidity();return false}}}return true}
-function show(){steps.forEach((panel,i)=>{panel.hidden=i!==step});indicators.forEach((indicator,i)=>{indicator.classList.toggle('active',i===step);indicator.classList.toggle('done',i<step);if(i===step)indicator.setAttribute('aria-current','step');else indicator.removeAttribute('aria-current')});document.getElementById('back').hidden=step===0;document.getElementById('next').hidden=max===1||step!==0;document.getElementById('send').hidden=max>1&&step!==1;if(step===0)renderMembers();if(step===1)adminOptions()}
-document.getElementById('next').addEventListener('click',()=>{if(!validateMembers())return;step=1;show()});
+function show(){steps.forEach((panel,i)=>{panel.hidden=i!==step});indicators.forEach((indicator,i)=>{indicator.classList.toggle('active',i===step);indicator.classList.toggle('done',i<step);if(i===step)indicator.setAttribute('aria-current','step');else indicator.removeAttribute('aria-current')});document.getElementById('back').hidden=step===0;document.getElementById('next').hidden=step===locationStep;document.getElementById('send').hidden=step!==locationStep;if(step===0)renderMembers();if(step===1&&max>1)adminOptions()}
+document.getElementById('next').addEventListener('click',()=>{
+ if(step===0&&!validateMembers())return;
+ if(step>=locationStep)return;
+ step+=1;show();
+});
 document.getElementById('back').addEventListener('click',()=>{step=Math.max(0,step-1);show()});
-form.addEventListener('submit',e=>{if(!validateMembers()){e.preventDefault();step=0;show();return}if(max===1)admin.value='0';document.getElementById('send').disabled=true;document.getElementById('send').textContent='Criando acessos...'});
+form.addEventListener('submit',e=>{
+ if(!validateMembers()){e.preventDefault();step=0;show();return;}
+ if(typeof window.bemoraAddressValidate!=='function'||!window.bemoraAddressValidate()){
+  e.preventDefault();step=locationStep;show();return;
+ }
+ if(max===1)admin.value='0';
+ document.getElementById('send').disabled=true;
+ document.getElementById('send').textContent='Criando acessos...';
+});
 build();show();
 })();
 </script>
+<script src="/assets/bemora-onboarding-address.js?v=1"></script>
 <?php endif; ?>
 </main></body></html>
