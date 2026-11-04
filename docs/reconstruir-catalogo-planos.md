@@ -54,3 +54,15 @@ Configure de forma incremental: um pacote individual, depois um pacote para casa
 - Nome, módulos, limites e preços estão corretos nos três períodos.
 - Cupom e checkout Asaas permanecem com o preço final correto.
 - Membros já contratantes preservam acesso; acesso aos módulos funciona por rotas diretas e endpoints.
+
+
+## Benefícios comerciais independentes (migration 044)
+
+- Execute `20261104_044_plan_benefits` em **Administração → Configurações → Manutenção** depois de atualizar o código.
+- Em **Administração → Benefícios**, cadastre e edite os benefícios reutilizáveis, a ordem e o estado ativo/inativo.
+- Em **Planos → Criar plano**, marque apenas os benefícios que devem aparecer nos cards de todas as três ofertas geradas.
+- Em **Planos → Editar**, ajuste os benefícios específicos da oferta existente, inclusive de períodos diferentes.
+- O texto "Com o Bemora você pode:" e a descrição expansível foram retirados dos cards públicos; a descrição do plano é agora apenas informação interna para o admin e outras telas que já a utilizem.
+- A migration cadastra os benefícios comerciais que antes eram fixos na página pública e os associa aos planos existentes, de acordo com seus módulos.
+- Benefícios comerciais **não** concedem acesso a recursos. A liberação real continua determinada pelos módulos em `subscription_plan_modules`.
+- Desativar um benefício remove o texto dos cards públicos sem apagar os vínculos; reativá-lo restaura a visibilidade nos planos vinculados.
