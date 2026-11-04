@@ -1,14 +1,16 @@
 <?php
 declare(strict_types=1);
 // Public landing page: no authentication required. Pricing is loaded read-only.
-$publicPlans=[];
+$publicPlans=[];$publicBenefits=[];
 try{
  require_once __DIR__.'/includes/bootstrap.php';
  require_once __DIR__.'/includes/plans.php';
  require_once __DIR__.'/includes/plan_modules.php';
+ require_once __DIR__.'/includes/plan_benefits.php';
  $pdo=db();
  if(bemora_plans_table_exists($pdo)){
   $publicPlans=$pdo->query('SELECT id,name,billing_cycle,details,max_members,price,promo_price,promo_starts_at,promo_ends_at FROM subscription_plans WHERE active=1 AND public_sale=1 ORDER BY FIELD(billing_cycle,\'monthly\',\'semiannual\',\'annual\'),price,id')->fetchAll(PDO::FETCH_ASSOC);
+  $publicBenefits=bemora_plan_benefits($pdo,array_column($publicPlans,'id'));
  }
 }catch(Throwable $e){error_log('Bemora landing: plan catalog unavailable.');}
 ?><!doctype html>
@@ -21,7 +23,7 @@ try{
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/bemora-landing.css?v=6">
+<link rel="stylesheet" href="/assets/bemora-landing.css?v=7">
 </head><body id="inicio">
 <header class="site-header"><div class="site-container navigation">
 <a class="site-brand" href="/" aria-label="Bemora, início"><img src="/assets/brand/logo.png" alt="Bemora by Anoar"></a>
@@ -80,7 +82,7 @@ $initialCycle=array_key_first(array_filter($plansByCycle,static fn($offers)=>cou
  $planModules=bemora_plan_modules($pdo,(int)$plan['id']);
  $months=['monthly'=>1,'semiannual'=>6,'annual'=>12][$cycleKey];
  $highlight=(int)$plan['max_members']===4;
- $details=trim((string)$plan['details']);
+ $benefits=$publicBenefits[(int)$plan['id']]??[];
 ?>
 <article class="landing-plan-card<?= $highlight?' landing-plan-featured':'' ?>">
  <div class="landing-plan-upper"><span class="landing-plan-cycle"><?= (int)$plan['max_members']===1?'Para você':((int)$plan['max_members']===2?'Para o casal':'Para a família') ?></span>
@@ -93,15 +95,11 @@ $initialCycle=array_key_first(array_filter($plansByCycle,static fn($offers)=>cou
   <?php if($months>1): ?><p class="landing-plan-equivalent">Equivale a <strong><?= htmlspecialchars(bemora_plan_price($finalPrice/$months),ENT_QUOTES,'UTF-8') ?>/mês</strong> · cobrado <?= $cycleKey==='semiannual'?'a cada 6 meses':'anualmente' ?></p><?php else: ?><p class="landing-plan-equivalent">Cobrança recorrente mensal</p><?php endif; ?>
  </div>
  <p class="landing-plan-members"><span aria-hidden="true">♧</span> Até <strong><?= (int)$plan['max_members'] ?> <?= (int)$plan['max_members']===1?'pessoa':'pessoas' ?></strong> no seu espaço</p>
- <div class="landing-plan-feature-title">Com o Bemora você pode:</div>
- <ul class="landing-plan-features">
-  <li>Organizar receitas e despesas</li>
-  <li>Acompanhar contas previstas</li>
-  <?php if($planModules['reports']): ?><li>Visualizar relatórios financeiros</li><?php endif; ?>
-  <?php if($planModules['shopping']): ?><li>Organizar listas de compras</li><?php endif; ?>
-  <?php if($planModules['scanner']): ?><li>Escanear etiquetas de preços</li><?php endif; ?>
+ <?php if($benefits): ?>
+ <ul class="landing-plan-features" aria-label="Benefícios incluídos">
+  <?php foreach($benefits as $benefit): ?><li><?= htmlspecialchars($benefit['title'],ENT_QUOTES,'UTF-8') ?></li><?php endforeach; ?>
  </ul>
- <?php if($details!==''): ?><details class="landing-plan-more"><summary>Ver descrição completa</summary><p><?= nl2br(htmlspecialchars($details,ENT_QUOTES,'UTF-8')) ?></p></details><?php endif; ?>
+ <?php endif; ?>
  <?php if($promoted && !empty($plan['promo_ends_at'])): ?><p class="landing-plan-expires">Oferta válida até <?= htmlspecialchars(date('d/m/Y H:i',strtotime((string)$plan['promo_ends_at'])),ENT_QUOTES,'UTF-8') ?></p><?php endif; ?>
  <a class="button button-dark landing-plan-cta" href="/checkout?plano=<?= (int)$plan['id'] ?>">Escolher <?= htmlspecialchars($plan['name'],ENT_QUOTES,'UTF-8') ?> <span aria-hidden="true">↗</span></a>
 </article>
