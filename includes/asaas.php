@@ -17,7 +17,33 @@ function bemora_asaas_request(string $method,string $path,?array $data=null):arr
  $output=curl_exec($ch);$code=(int)curl_getinfo($ch,CURLINFO_RESPONSE_CODE);$error=curl_error($ch);curl_close($ch);
  if($output===false){error_log('Bemora Asaas: network failure '.$error);throw new RuntimeException('Não foi possível conectar ao meio de pagamento.');}
  $decoded=json_decode((string)$output,true);
- if($code<200||$code>=300){error_log('Bemora Asaas: HTTP '.$code);throw new RuntimeException('O Asaas não aceitou a solicitação. Verifique os dados e tente novamente.',$code);}
+ if($code<200||$code>=300){
+  // A short reference lets support find the exact error in the private PHP log.
+  // Do not log request bodies, access tokens, customer IDs, documents or URLs.
+  $reference=strtoupper(bin2hex(random_bytes(4)));
+  $operation=preg_match('~^/([a-zA-Z]+)~',$path,$route)?strtolower($route[1]):'unknown';
+  $details=[];
+  if(is_array($decoded)){
+   foreach(($decoded['errors']??[]) as $item){
+    if(!is_array($item))continue;
+    $errorCode=(string)($item['code']??'');
+    if(preg_match('/^[A-Za-z0-9_-]{1,50}$/D',$errorCode))$details[]='code='.$errorCode;
+    $description=trim((string)($item['description']??''));
+    if($description!==''){
+     // Server-side diagnostics only. Remove common personal data patterns.
+     $description=preg_replace('/[A-Z0-9._%+\\-]+@[A-Z0-9.\\-]+\\.[A-Z]{2,}/i','[email]',$description);
+     $description=preg_replace('/\\b\\d{2,3}[.\\- ]?\\d{3}[.\\- ]?\\d{3}[/\\-. ]?\\d{1,4}\\b/','[documento]',$description);
+     $description=preg_replace('/\\b\\d{10,14}\\b/','[numero]',$description);
+     $description=preg_replace('/[\\r\\n\\t]+/',' ',$description);
+     $details[]='description='.mb_substr($description,0,240);
+    }
+    if(count($details)>=6)break;
+   }
+  }
+  error_log('Bemora Asaas | ref='.$reference.' | operation='.$operation.' | HTTP '.$code.' | '.implode(' | ',$details));
+  $status=$code===401?'Falha de autenticação da integração':($code===403?'Acesso à API não autorizado':($code===429?'Limite de requisições atingido':($code>=500?'Serviço de pagamentos temporariamente indisponível':'Solicitação não aprovada pela plataforma')));
+  throw new RuntimeException($status.' (HTTP '.$code.', referência '.$reference.').',$code);
+ }
  if(!is_array($decoded))throw new RuntimeException('Resposta inválida da plataforma de pagamento.');
  return $decoded;
 }
