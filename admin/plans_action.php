@@ -4,6 +4,7 @@ require_once __DIR__.'/../includes/admin_layout.php';
 require_once __DIR__.'/../includes/plans.php';
 require_once __DIR__.'/../includes/plan_modules.php';
 require_once __DIR__.'/../includes/plan_benefits.php';
+require_once __DIR__.'/../includes/single_offer.php';
 require_admin_access();
 if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);exit('Método não permitido.');}
 verify_csrf();
@@ -11,6 +12,7 @@ $pdo=db();
 try{
  if(!bemora_plans_table_exists($pdo))throw new RuntimeException('Execute a migration 023 em Manutenção.');
  $action=(string)($_POST['action']??'');
+ if(bemora_single_offer_enabled($pdo) && in_array($action,['save','create_bundle','toggle'],true))throw new RuntimeException('Com a assinatura única ativa, altere as ofertas em Administração → Assinatura.');
  $id=filter_var($_POST['id']??0,FILTER_VALIDATE_INT);
 
  if($action==='archive_public_catalog'){
