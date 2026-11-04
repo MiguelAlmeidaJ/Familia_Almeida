@@ -7,6 +7,9 @@ return [
   if(!in_array('admin_subscription_removed_at',$cols,true)){
    $pdo->exec("ALTER TABLE subscription_orders ADD COLUMN admin_subscription_removed_at DATETIME NULL");
   }
+  if(!in_array('admin_subscription_had_settled_payments',$cols,true)){
+   $pdo->exec("ALTER TABLE subscription_orders ADD COLUMN admin_subscription_had_settled_payments TINYINT(1) NOT NULL DEFAULT 0");
+  }
   $pdo->exec("CREATE TABLE IF NOT EXISTS admin_cleanup_audit (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     admin_user_id BIGINT UNSIGNED NOT NULL,
