@@ -1,7 +1,9 @@
-const CACHE_NAME = 'bemora-shopping-v6';
+const CACHE_NAME = 'bemora-shopping-v7';
+const PWA_FALLBACK = '/pwa-offline.html';
 const OFFLINE_SHOPPING_PAGE = '/compras-offline.html';
 const STATIC_PATHS = new Set([
   '/compras-offline.html',
+  '/pwa-offline.html',
   '/assets/style.css',
   '/assets/shopping.js',
   '/assets/shopping-offline.js',
@@ -74,6 +76,18 @@ self.addEventListener('fetch', (event) => {
       fetch(request, { cache: 'no-store' })
         .catch(() => caches.match(OFFLINE_SHOPPING_PAGE))
         .then((response) => response || caches.match(OFFLINE_SHOPPING_PAGE))
+    );
+    return;
+  }
+
+  // Para as demais telas: nunca armazenar HTML autenticado em Cache Storage.
+  // Uma falha de conexão apresenta apenas uma tela pública, sem dados financeiros.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request, { cache: 'no-store' }).catch(async () =>
+        (await caches.match(PWA_FALLBACK)) ||
+        new Response('Sem conexão', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
+      )
     );
     return;
   }
