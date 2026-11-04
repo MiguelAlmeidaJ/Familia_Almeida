@@ -96,6 +96,13 @@ function require_auth(): array
             }
         }
     }
+    // Plan entitlements are checked on every protected page and write endpoint.
+    if(empty($user['system_admin']) && !empty($user['tenant_id'])){
+        require_once __DIR__.'/plan_modules.php';
+        $script=str_replace('\\\\','/',(string)($_SERVER['SCRIPT_NAME']??''));
+        $moduleRoutes=['/pages/relatorios.php'=>'reports','/pages/market_lists.php'=>'shopping','/market_action.php'=>'shopping'];
+        if(isset($moduleRoutes[$script]))bemora_require_module(db(),(int)$user['tenant_id'],$moduleRoutes[$script]);
+    }
     // Financial suspension is separate from family account activation and never deletes data.
     // Keep the billing page, profile and logout available so the customer can regularize.
     if(empty($user['system_admin']) && !empty($user['tenant_id'])){
