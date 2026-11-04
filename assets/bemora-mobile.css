@@ -1,0 +1,98 @@
+/* Bemora mobile shell — shared by browser and installed PWA.
+   Presentation only: no route, form or financial logic changes. */
+@media (max-width: 700px) {
+  html, body { max-width: 100%; overflow-x: clip; }
+  .bemora-finance .shell.ref-shell,
+  .bemora-finance .shell.ref-shell > main { min-width: 0; width: 100%; max-width: 100%; }
+  .bemora-finance .ref-topbar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    column-gap: 8px !important;
+    row-gap: 10px !important;
+    padding: 10px 14px 12px !important;
+    padding-top: max(10px, env(safe-area-inset-top, 0px)) !important;
+    min-height: 0 !important;
+  }
+  .bemora-finance .ref-topbar .topbar-left {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .bemora-finance .ref-topbar .ref-topbar-title {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .bemora-finance .ref-topbar .mobile-menu-toggle {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 12px;
+  }
+  .bemora-finance .ref-topbar .ref-private {
+    margin-left: 0 !important;
+    min-width: 0;
+    font-size: 10px;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .bemora-finance .ref-topbar .topbar-month {
+    grid-column: 1 / -1;
+    order: initial !important;
+    margin: 0 !important;
+    width: 100% !important;
+    min-height: 43px;
+    padding: 4px 7px;
+    border-radius: 13px;
+    background: #f8fbf9;
+    border-color: #dbece3;
+  }
+  .bemora-finance .ref-topbar .topbar-month > a {
+    min-width: 39px;
+    min-height: 35px;
+    display: grid;
+    place-items: center;
+  }
+  .bemora-finance .ref-topbar .topbar-month-current { min-width: 0; font-size: 12px; }
+  .bemora-finance .ref-topbar .topbar-month-current input { height: 100%; }
+  /* A compact row of the existing actions replaces three vertically stacked
+     buttons and reserves enough safe-area room for iOS gesture navigation. */
+  .bemora-finance .bemora-support-fab:not(.is-suspended),
+  .bemora-finance .bemora-fab,
+  .bemora-finance .bemora-global-bill-fab {
+    position: fixed !important;
+    width: 46px !important;
+    height: 46px !important;
+    min-width: 46px !important;
+    min-height: 46px !important;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+    box-shadow: 0 7px 20px rgba(6,70,63,.22) !important;
+  }
+  .bemora-finance .bemora-support-fab:not(.is-suspended) { right: 132px !important; }
+  .bemora-finance .bemora-fab { right: 73px !important; }
+  .bemora-finance .bemora-global-bill-fab { right: 14px !important; }
+  .bemora-finance .bemora-support-fab.is-suspended {
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .bemora-finance .budget-wrap.budget-dashboard,
+  .bemora-finance .content,
+  .bemora-finance .category-page {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .bemora-finance :is(.bemora-quick-dialog,.bemora-global-bill-dialog,.bemora-support-dialog) {
+    max-height: calc(100dvh - 28px - env(safe-area-inset-bottom, 0px));
+  }
+}
+@media (max-width: 360px) {
+  .bemora-finance .ref-topbar { padding-inline: 10px !important; }
+  .bemora-finance .ref-topbar .ref-topbar-title { font-size: 10px; }
+  .bemora-finance .ref-topbar .ref-private span { display: none; }
+}
