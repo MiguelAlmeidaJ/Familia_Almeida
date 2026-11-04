@@ -170,3 +170,12 @@
  .checkout-coupon-entry input{flex-basis:100%;width:100%}
  .checkout-coupon-entry button{width:100%}
 }
+
+/* On narrow screens, review the chosen subscription before entering personal data. */
+@media(max-width:760px){
+ .checkout-columns>.checkout-summary{order:-1}
+ .checkout-summary h2{margin:11px 0 7px}
+ .checkout-summary>p{font-size:12px;margin:0}
+ .checkout-summary .checkout-total{padding-top:12px;border-top:1px solid #e5eee8}
+ .checkout-summary .checkout-small{font-size:10px;line-height:1.65}
+}
