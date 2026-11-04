@@ -3,8 +3,9 @@ declare(strict_types=1);
 require_once __DIR__.'/../includes/admin_layout.php';
 require_once __DIR__.'/../includes/plans.php';
 require_once __DIR__.'/../includes/billing_access.php';
+require_once __DIR__.'/../includes/admin_test_cleanup.php';
 require_admin_access();
-$pdo=db();$flash=pull_flash();
+$pdo=db();$flash=pull_flash();$cleanupReady=bemora_cleanup_ready($pdo);
 $ordersReady=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='subscription_orders'")->fetchColumn()===1;
 $tenants=$pdo->query("SELECT t.id,t.name,t.slug,t.status,t.active,t.max_members,t.finance_mode,COUNT(tu.user_id) members FROM tenants t LEFT JOIN tenant_users tu ON tu.tenant_id=t.id GROUP BY t.id,t.name,t.slug,t.status,t.active,t.max_members,t.finance_mode ORDER BY t.name")->fetchAll(PDO::FETCH_ASSOC);
 $internalPlans=[];
@@ -29,7 +30,7 @@ $pending=$pdo->query("SELECT r.family_name,r.member_count,r.submitted_at,r.id FR
 $token=$_SESSION['new_family_invite']??null;unset($_SESSION['new_family_invite']);
 $origin=(!empty($_SERVER['HTTPS'])&&$_SERVER['HTTPS']!=='off'?'https':'http').'://'.($_SERVER['HTTP_HOST']??'localhost');
 admin_shell_start('tenants','Famílias','Visão centralizada dos espaços, membros, planos e assinaturas do Bemora.');
-?><link rel="stylesheet" href="/assets/bemora-families-admin.css?v=4"><?php
+?><link rel="stylesheet" href="/assets/bemora-families-admin.css?v=4"><link rel="stylesheet" href="/assets/bemora-admin-cleanup.css?v=1"><?php
 ?>
 <?php if($flash): ?><div class="notice" role="status"><?= e($flash['message']) ?></div><?php endif; ?>
 <div class="metrics family-metrics"><article class="metric"><span>Famílias cadastradas</span><strong><?= count($tenants) ?></strong><small>Todos os espaços</small></article><article class="metric"><span>Famílias ativas</span><strong><?= $activeCount ?></strong><small>Com acesso habilitado</small></article><article class="metric"><span>Assinaturas vinculadas</span><strong><?= $linkedCount ?></strong><small>Contratações identificadas</small></article><article class="metric"><span>Convites recentes</span><strong><?= count($invitations) ?></strong><small>Últimos registros exibidos</small></article></div>
@@ -41,6 +42,7 @@ admin_shell_start('tenants','Famílias','Visão centralizada dos espaços, membr
 <form method="post" action="/admin/family_action.php" class="family-invite-form"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="invite">
 <label for="max">Quantidade máxima de membros</label><input id="max" class="family-input" type="number" min="1" max="30" name="max_members" value="5" required><p class="sub">O convidado poderá cadastrar de 1 até esse limite.</p><label for="invite-email" style="display:block;margin-top:14px">E-mail (opcional)</label><input id="invite-email" class="family-input" name="invite_email" type="email" autocomplete="email" placeholder="nome@exemplo.com"><p class="sub">Se informado, enviaremos o convite por e-mail. Você também poderá copiar o link.</p>
 <div class="family-modal-footer"><button type="button" class="family-cancel" data-modal-close>Cancelar</button><button type="submit" class="family-create-button"><i class="bi bi-link-45deg" aria-hidden="true"></i> Gerar link</button></div></form></div></div>
+<div class="admin-cleanup-note"><strong>Limpeza de espaços de teste:</strong> a exclusão elimina os dados locais do espaço e os usuários exclusivos. É necessário excluir previamente os pedidos não pagos vinculados. Espaços com assinaturas pagas e o espaço legado principal estão protegidos.<?php if(!$cleanupReady): ?> <strong>Execute a migration 20261104_048_admin_cleanup para ativar a limpeza.</strong><?php endif; ?></div>
 <section class="panel family-overview"><div class="panel-head"><div><h2>Famílias existentes</h2><p class="sub">Plano vinculado, utilização e situação de cada espaço financeiro.</p></div><span class="member"><?= count($tenants) ?> registros</span></div>
 <div class="family-search"><label for="family-filter"><i class="bi bi-search" aria-hidden="true"></i><input id="family-filter" type="search" placeholder="Buscar por família, plano ou identificador…" autocomplete="off"></label></div>
 <div class="table-wrap"><table class="family-data-table"><thead><tr><th>Família</th><th>Plano atual</th><th>Membros</th><th>Assinatura</th><th>Estado</th><th>Ações</th></tr></thead><tbody>
@@ -58,6 +60,17 @@ admin_shell_start('tenants','Famílias','Visão centralizada dos espaços, membr
 <?php if($manualSuspensionReady): ?><form method="post" action="/admin/family_action.php" onsubmit="return confirm('<?= (int)($billing['manual_suspended']??0)===1?'Remover a suspensão administrativa desta família? Ela continuará bloqueada se houver inadimplência.':'Suspender o acesso financeiro desta família para teste? Os dados e a assinatura no Asaas serão preservados.' ?>')">
 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="id" value="<?= (int)$t['id'] ?>"><input type="hidden" name="action" value="<?= (int)($billing['manual_suspended']??0)===1?'manual_resume':'manual_suspend' ?>">
 <button type="submit" class="family-icon-button <?= (int)($billing['manual_suspended']??0)===1?'activate':'maintenance' ?>" title="<?= (int)($billing['manual_suspended']??0)===1?'Remover suspensão manual':'Suspender acesso para teste' ?>" aria-label="<?= (int)($billing['manual_suspended']??0)===1?'Remover suspensão manual':'Suspender acesso para teste' ?>"><i class="bi <?= (int)($billing['manual_suspended']??0)===1?'bi-unlock':'bi-shield-slash' ?>" aria-hidden="true"></i></button></form><?php endif; ?>
+<?php if($cleanupReady && $t['slug']!=='familia-almeida'): ?>
+<form method="post" action="/admin/limpeza/acao" data-admin-cleanup class="admin-danger-form"
+ data-confirm-text="EXCLUIR ESPAÇO <?= (int)$t['id'] ?>"
+ data-confirm-description="Exclui permanentemente os dados financeiros locais e usuários exclusivos deste espaço. Pedidos Asaas vinculados devem ser removidos separadamente antes. A exclusão é irreversível.">
+ <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+ <input type="hidden" name="action" value="delete_tenant">
+ <input type="hidden" name="id" value="<?= (int)$t['id'] ?>">
+ <input type="hidden" name="confirmation" value="">
+ <button type="submit" class="family-icon-button admin-danger-button" title="Excluir espaço de teste" aria-label="Excluir espaço de teste"><i class="bi bi-trash3" aria-hidden="true"></i></button>
+</form>
+<?php endif; ?>
 </div></td></tr>
 <?php endforeach; ?>
 <?php if(!$tenants): ?><tr><td colspan="6">Nenhuma família cadastrada.</td></tr><?php endif; ?>
@@ -73,4 +86,5 @@ document.getElementById('family-filter')?.addEventListener('input',event=>{const
 document.getElementById('copy-invite-link')?.addEventListener('click',async()=>{const field=document.getElementById('generated-invite-link');try{await navigator.clipboard.writeText(field.value);document.getElementById('copy-invite-link').textContent='Copiado!'}catch(_){field.select()}});
 })();
 </script>
+<script src="/assets/bemora-admin-cleanup.js?v=1" defer></script>
 <?php admin_shell_end(); ?>
