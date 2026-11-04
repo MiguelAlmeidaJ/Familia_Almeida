@@ -3,13 +3,18 @@ declare(strict_types=1);
 require_once __DIR__.'/../includes/admin_layout.php';
 require_once __DIR__.'/../includes/single_offer.php';
 require_once __DIR__.'/../includes/plan_benefits.php';
+require_once __DIR__.'/../includes/plan_benefits.php';
 require_admin_access();
 $pdo=db();$ready=bemora_single_offer_ready($pdo);
 $offer=$ready?bemora_single_offer($pdo):null;
+$benefits=bemora_benefits_catalog($pdo,true);
+$firstPlan=$offer?bemora_single_offer_plan_id($offer,'monthly'):0;
+$selectedByPlan=bemora_plan_benefit_ids($pdo,$firstPlan?[$firstPlan]:[]);
+$selectedBenefits=$selectedByPlan[$firstPlan]??[];
 $flash=pull_flash();$csrf=csrf_token();
 admin_shell_start('plans','Assinatura Bemora','Uma assinatura, com integrantes extras e o módulo de Compras opcionais.');
 ?>
-<link rel="stylesheet" href="/assets/bemora-single.css?v=1">
+<link rel="stylesheet" href="/assets/bemora-single.css?v=2">
 <div class="single-admin">
 <?php if($flash): ?><div class="single-message" role="status"><?= e($flash['message']) ?></div><?php endif; ?>
 <?php if(!$ready): ?><div class="single-message">Execute a migration <strong>20261104_045_single_offer</strong> em <a href="/configuracoes/manutencao">Manutenção</a> antes de configurar a assinatura.</div><?php endif; ?>
@@ -29,6 +34,9 @@ admin_shell_start('plans','Assinatura Bemora','Uma assinatura, com integrantes e
 <label>Desconto semestral (%)<input name="semi_discount" type="number" min="0" max="80" step=".01" required value="<?= e((string)($offer['semi_discount']??'0')) ?>"></label>
 <label>Desconto anual (%)<input name="annual_discount" type="number" min="0" max="80" step=".01" required value="<?= e((string)($offer['annual_discount']??'0')) ?>"></label>
 </div><div class="single-preview" id="single-admin-preview" aria-live="polite"></div></section>
+<section class="single-panel"><div class="single-panel-title"><span>04</span><div><h3>Benefícios apresentados no site</h3><p>Escolha os benefícios cadastrados que todos os assinantes recebem. Compras é um adicional e não deve ser anunciado como incluído na base.</p></div></div>
+<div class="single-benefit-list"><?php foreach($benefits as $benefit): ?><label><input type="checkbox" name="benefits[]" value="<?= (int)$benefit['id'] ?>" <?= in_array((int)$benefit['id'],$selectedBenefits,true)?'checked':'' ?>><span><?= e($benefit['title']) ?></span></label><?php endforeach; ?>
+<?php if(!$benefits): ?><p>Cadastre benefícios em <a href="/admin/beneficios">Administração → Benefícios</a> para apresentá-los na página pública.</p><?php endif; ?></div></section>
 <section class="single-panel single-publish"><div><h3>Disponibilidade</h3><p>Salvar valores não muda o preço recorrente dos contratos já emitidos no Asaas.</p></div>
 <label class="single-switch"><input type="checkbox" name="enabled" value="1" <?= $offer&&(int)$offer['enabled']?'checked':'' ?>> Disponibilizar contratação pública</label>
 <?php if(!$offer||(int)$offer['enabled']===0): ?><label class="single-confirm">Para substituir o catálogo anterior e publicar esta oferta, digite <strong>SUBSTITUIR PLANOS</strong>:<input name="confirmation" autocomplete="off" placeholder="SUBSTITUIR PLANOS"></label><?php endif; ?>
