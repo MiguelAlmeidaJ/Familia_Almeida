@@ -7,14 +7,16 @@ const form=document.getElementById('market-scan-form');
 if(!form||!app.list)return;
 const $=id=>document.getElementById(id);
 const video=$('market-video'),canvas=$('market-canvas'),start=$('market-start'),stop=$('market-stop'),capture=$('market-capture');
-const placeholder=$('market-placeholder'),status=$('market-ocr-status'),photo=$('market-photo'),preview=$('market-photo-preview');
+const placeholder=$('market-placeholder'),status=$('market-ocr-status'),preview=$('market-photo-preview');
+ const cameraStep=$('market-camera-step'),reviewStep=$('market-review-step'),scanFeedback=$('market-scan-feedback');
 const name=$('market-name'),price=$('market-price'),qty=$('market-qty'),unit=$('market-unit'),match=$('market-match'),tip=$('market-match-tip'),save=$('market-save');
 const total=$('market-total'),progress=$('market-purchased'),count=$('market-count'),missing=$('market-missing'),rows=$('market-scan-items');
 let stream=null,worker=null,loading=null,list=app.list;
 const money=n=>Number(n).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const clean=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 const normalizeName=s=>s.replace(/\s+/g,' ').trim().slice(0,160);
-function setStatus(text){status.textContent=text;}
+function setStatus(text){status.textContent=text;if(scanFeedback)scanFeedback.textContent=text;}
+ function setScanStep(step){const review=step==='review';if(cameraStep)cameraStep.hidden=review;if(reviewStep)reviewStep.hidden=!review;document.querySelectorAll('[data-market-progress]').forEach(el=>{if(el.dataset.marketProgress===step)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current');});if(review)stopCamera();}
 const basketTotal=$('market-scan-total'),basketCount=$('market-items-count');
 const basketProgress=$('market-progress-track'),basketFill=$('market-progress-fill');
 const basketFeedback=$('market-shopping-feedback');
@@ -158,21 +160,22 @@ function stopCamera(){
  video.srcObject=null;video.style.visibility='hidden';placeholder.hidden=false;capture.disabled=true;stop.disabled=true;start.disabled=false;
 }
 start.addEventListener('click',async()=>{
- if(!navigator.mediaDevices?.getUserMedia){setStatus('Câmera indisponível neste navegador. Use a opção de selecionar uma foto.');return;}
+ if(!navigator.mediaDevices?.getUserMedia){setStatus('Câmera indisponível. Abra o Bemora em HTTPS e permita o acesso à câmera.');return;}
  try{
   stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
   if(scanDialog&&!scanDialog.open){stopCamera();return;}
   video.srcObject=stream;await video.play();placeholder.hidden=true;video.style.visibility='visible';
   capture.disabled=false;stop.disabled=false;start.disabled=true;
   setStatus('Centralize a etiqueta dentro da moldura e pressione Capturar etiqueta.');
- }catch(e){stopCamera();setStatus('Não foi possível acessar a câmera. Verifique a permissão ou selecione uma foto da etiqueta.');}
+ }catch(e){stopCamera();setStatus('Não foi possível acessar a câmera. Verifique a permissão do navegador e tente novamente.');}
 });
 stop.addEventListener('click',stopCamera);
 const scanDialog=document.getElementById('market-scan-dialog');
-scanDialog?.addEventListener('close',stopCamera);
+scanDialog?.addEventListener('close',()=>{stopCamera();setScanStep('camera');});
+ $('market-review-back')?.addEventListener('click',()=>{setScanStep('camera');start.click();});
 document.getElementById('market-open-camera')?.addEventListener('click',()=>{
  if(!scanDialog||list.status==='completed')return;
- scanDialog.showModal();
+ setScanStep('camera');scanDialog.showModal();
  start.click();
 });
 document.getElementById('market-close-camera')?.addEventListener('click',()=>scanDialog?.close());
@@ -215,7 +218,7 @@ for(const button of document.querySelectorAll('[data-market-shape]')){
   }
   const hint=$('market-shape-hint');
   if(hint)hint.textContent='Enquadre a etiqueta '+shapes[shape].label+' dentro da marcação; o recorte seguirá exatamente essa área.';
-  if(uploadImage&&cropEditor&&!cropEditor.hidden){cropRect={...shapes[shape].crop};drawCropEditor();}
+  
  });
 }
 const cropEditor=$('market-crop-editor'),cropCanvas=$('market-crop-canvas'),cropApply=$('market-crop-apply');
@@ -379,7 +382,7 @@ function enhance(source){
 }
 async function recognize(cropped){
  if(recognizing)return;
- recognizing=true;save.disabled=true;capture.disabled=true;cropApply.disabled=true;
+ recognizing=true;save.disabled=true;capture.disabled=true;
  name.value='';price.value='';setPriceChoices([]);
  try{
   setupOutput(cropped);
@@ -407,38 +410,16 @@ async function recognize(cropped){
   if(!parsed.product||!parsed.options.length)setStatus('A leitura ficou incompleta. Ajuste o recorte ou preencha nome e preço manualmente.');
   else if(parsed.options.length>1)setStatus('Foram encontrados vários preços. Selecione o valor correto (varejo ou atacado) e revise o nome.');
   else setStatus('Recorte lido. Confira o nome, preço e quantidade antes de confirmar.');
- }catch(error){setStatus('Não foi possível ler este recorte. Tente outra foto ou preencha os campos manualmente.');}
- finally{recognizing=false;save.disabled=list.status==='completed';capture.disabled=!stream;cropApply.disabled=false;}
+ }catch(error){setStatus('Não foi possível ler a etiqueta. Preencha os campos manualmente ou escaneie novamente.');}
+ finally{recognizing=false;save.disabled=list.status==='completed';capture.disabled=!stream;setScanStep('review');}
 }
 capture.addEventListener('click',()=>{
  if(!stream||!video.videoWidth||recognizing)return;
  try{
   const cropped=cropVisibleGuide();
-  cropEditor.hidden=true;
+
   recognize(cropped);
- }catch(error){setStatus('Não foi possível recortar a câmera. Tente selecionar uma foto.');}
-});
-photo?.addEventListener('change',async()=>{
- const file=photo.files?.[0];if(!file)return;
- if(!file.type.startsWith('image/')||file.size>12*1024*1024){setStatus('Escolha uma imagem de até 12 MB.');return;}
- try{
-  const bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});
-  const longest=Math.max(bitmap.width,bitmap.height);
-  const scale=Math.min(1,1400/longest);
-  const display=document.createElement('canvas');display.width=Math.round(bitmap.width*scale);display.height=Math.round(bitmap.height*scale);
-  display.getContext('2d').drawImage(bitmap,0,0,display.width,display.height);
-  bitmap.close();
-  uploadImage=display;
-  cropCanvas.width=display.width;cropCanvas.height=display.height;
-  cropRect={...shapes[currentShape].crop};
-  cropEditor.hidden=false;preview.hidden=true;
-  drawCropEditor();
-  setStatus('Arraste o dedo para selecionar somente a etiqueta e toque em Ler área selecionada.');
- }catch(error){setStatus('Não foi possível abrir a imagem. Tente uma foto em JPG ou PNG.');}
-});
-cropApply?.addEventListener('click',()=>{
- if(!uploadImage||recognizing)return;
- recognize(cropFrom(uploadImage,cropRect.x,cropRect.y,cropRect.w,cropRect.h));
+ }catch(error){setStatus('Não foi possível capturar a etiqueta. Reposicione a câmera e tente novamente.');}
 });
 form.addEventListener('submit',async e=>{
  e.preventDefault();
