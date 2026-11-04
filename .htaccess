@@ -77,6 +77,8 @@ DirectoryIndex index.php
     RewriteRule ^admin/assinaturas/?$ admin/assinaturas.php [L,QSA]
     RewriteRule ^admin/suporte/?$ admin/suporte.php [L,QSA]
     RewriteRule ^admin/support_action/?$ admin/support_action.php [L,QSA]
+    RewriteRule ^admin/beneficios/acao/?$ admin/beneficios_action.php [L,QSA]
+    RewriteRule ^admin/beneficios/?$ admin/beneficios.php [L,QSA]
     RewriteRule ^admin/planos/novo/?$ admin/plano_novo.php [L,QSA]
     RewriteRule ^admin/planos/?$ admin/planos.php [L,QSA]
     RewriteRule ^admin/tenants/?$ admin/tenants.php [L,QSA]
