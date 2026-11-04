@@ -19,7 +19,7 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/bemora.css?v=2">
 <link rel="stylesheet" href="/assets/bemora-finance.css?v=2"><link rel="stylesheet" href="/assets/bemora-finish.css?v=3">
 <?php brand_head_tags(); ?><link rel="stylesheet" href="/assets/bemora-sidebar.css?v=6">
-<link rel="stylesheet" href="/assets/bemora-market.css?v=12"></head>
+<link rel="stylesheet" href="/assets/bemora-market.css?v=13"></head>
 <body class="bemora-finance <?= $mode==='mercado'?'market-shopping-mode':'' ?>"><div class="shell ref-shell"><?php render_sidebar('compras',$csrf); ?><main><?php render_topbar($user); ?>
 <div class="content market-page">
 <header class="market-heading"><div><p class="eyebrow">COMPRAS EM FAMÍLIA</p><h1>Lista de compras</h1><p>Planeje em casa, confira preços no mercado e acompanhe o total conforme compra.</p></div><span class="market-badge"><i class="bi bi-basket2"></i> Bemora Compras</span></header>
@@ -53,7 +53,8 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <?php else: ?>
 <div class="market-scanner-layout">
 <section class="market-panel market-cart-panel">
-<div class="market-cart-top"><div><span class="market-items-kicker">DURANTE AS COMPRAS</span><h2>Seu carrinho</h2><p>Confira seus produtos e valores. Use a câmera para registrar novos preços.</p></div></div>
+<div class="market-cart-top"><div><span class="market-items-kicker">DURANTE AS COMPRAS</span><h2>Seu carrinho</h2><p>Confira produtos e preços pela câmera ou manualmente.</p></div></div>
+<div class="market-manual-shortcut"><button type="button" id="market-open-manual" class="market-manual-button" <?= $current['status']==='completed'?'disabled':'' ?>><i class="bi bi-plus-circle" aria-hidden="true"></i> Adicionar produto manualmente</button><span>Sem câmera: informe nome, quantidade e preço.</span></div>
 <section class="market-scan-items" id="market-shopping-items" aria-labelledby="market-shopping-heading">
 <div class="market-items-head"><div><span class="market-items-kicker">SEU CARRINHO</span><h3 id="market-shopping-heading">Itens da compra</h3><p>Desfaça uma compra ou retire um produto sem sair do modo mercado.</p></div><span class="market-items-count" id="market-items-count"><?= $current['purchased'] ?>/<?= $current['count'] ?></span></div>
 <div class="market-progress-track" role="progressbar" aria-label="Progresso da lista" aria-valuemin="0" aria-valuemax="<?= max(1,$current['count']) ?>" aria-valuenow="<?= $current['purchased'] ?>" id="market-progress-track"><span id="market-progress-fill" style="width:<?= $current['count']?round($current['purchased']/$current['count']*100):0 ?>%"></span></div>
@@ -70,7 +71,7 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 </div>
 <dialog id="market-scan-dialog" class="market-dialog market-scan-dialog" aria-labelledby="market-scan-heading">
 <div class="market-dialog-header"><div><span class="market-items-kicker">MODO MERCADO</span><h2 id="market-scan-heading">Escanear etiqueta</h2></div><button type="button" class="market-dialog-close" id="market-close-camera" aria-label="Fechar câmera"><i class="bi bi-x-lg"></i></button></div>
-<div class="market-scan-progress" aria-label="Etapas"><span data-market-progress="camera" aria-current="step"><b>1</b> Escanear etiqueta</span><span data-market-progress="review"><b>2</b> Conferir produto</span></div><div class="market-dialog-body"><p class="market-scan-feedback" id="market-scan-feedback" role="status" aria-live="polite"></p><div class="market-scanner-modal-grid">
+<div class="market-scan-progress" id="market-scan-progress" aria-label="Etapas"><span data-market-progress="camera" aria-current="step"><b>1</b> Escanear etiqueta</span><span data-market-progress="review"><b>2</b> Conferir produto</span></div><div class="market-dialog-body"><p class="market-scan-feedback" id="market-scan-feedback" role="status" aria-live="polite"></p><div class="market-scanner-modal-grid">
 <section class="market-panel" id="market-camera-step"><h2>Escanear etiqueta de preço</h2><p class="market-muted">Centralize o nome e o preço na moldura e toque em capturar. Você poderá corrigir os dados antes de confirmar.</p>
 <div class="market-shape-controls" role="group" aria-label="Formato da etiqueta">
 <span>Formato da etiqueta</span>
@@ -87,7 +88,7 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 <p class="market-muted" id="market-ocr-status" role="status" aria-live="polite">O recorte da câmera será analisado no navegador. Confira nome e valores antes de salvar.</p><img id="market-photo-preview" class="market-photo-preview" alt="Apenas a área recortada e analisada pelo OCR" hidden>
 </section>
 
-<section class="market-panel market-confirm-panel" id="market-review-step" hidden><img id="market-review-preview" class="market-review-preview" alt="Recorte capturado da etiqueta" hidden><button type="button" id="market-review-back" class="market-secondary market-scan-back"><i class="bi bi-arrow-left"></i> Escanear novamente</button><h2>Conferir produto</h2><p class="market-muted">A leitura da etiqueta é uma sugestão. Confirme ou corrija o produto, preço e quantidade.</p>
+<section class="market-panel market-confirm-panel" id="market-review-step" hidden><img id="market-review-preview" class="market-review-preview" alt="Recorte capturado da etiqueta" hidden><button type="button" id="market-review-back" class="market-secondary market-scan-back"><i class="bi bi-arrow-left"></i> Escanear novamente</button><h2 id="market-review-title">Conferir produto</h2><p class="market-muted" id="market-review-description">A leitura da etiqueta é uma sugestão. Confirme ou corrija o produto, preço e quantidade.</p>
 <form id="market-scan-form">
 <label>Produto<input id="market-name" maxlength="160" minlength="2" required placeholder="Ex.: Leite integral 1L"></label>
 <div class="market-inline"><label>Preço unitário (R$)<input id="market-price" type="number" step="0.01" min="0.01" required placeholder="0,00"></label><label>Quantidade<input id="market-qty" type="number" step="0.001" min="0.001" value="1" required></label></div>
@@ -134,5 +135,5 @@ $mode=($_GET['modo']??'')==='mercado'?'mercado':'lista';
 </dialog>
 <?php endif; ?>
 <script>window.BEMORA_MARKET=<?= json_encode(['csrf'=>$csrf,'list'=>$current],JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR) ?>;</script>
-<script src="/assets/bemora-market.js?v=9" defer></script><script src="/assets/bemora-market-popups.js?v=1" defer></script>
+<script src="/assets/bemora-market.js?v=10" defer></script><script src="/assets/bemora-market-popups.js?v=1" defer></script>
 </body></html>
