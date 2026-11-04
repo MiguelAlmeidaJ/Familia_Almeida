@@ -70,8 +70,8 @@ function bemora_cleanup_delete_order(PDO $pdo,int $orderId,int $adminId):void {
    if(!preg_match('/^[a-zA-Z0-9_-]{4,100}$/D',$paymentId))throw new RuntimeException('Identificador da cobrança inválido.');
    $remotePayment=bemora_asaas_request('GET','/payments/'.rawurlencode($paymentId));
    if((string)($remotePayment['id']??'')!==$paymentId || (string)($remotePayment['customer']??'')!==(string)$o['asaas_customer_id']
-      || !in_array((string)($remotePayment['status']??''),['PENDING','OVERDUE','DELETED'],true))
-    throw new RuntimeException('A cobrança não está comprovadamente sem pagamento. Exclusão bloqueada.');
+      || (string)($remotePayment['status']??'')!=='DELETED')
+    throw new RuntimeException('A cobrança avulsa precisa estar cancelada no Asaas (DELETED) antes de remover o pedido.');
   }
   // Other payment objects may represent paid upgrades or addon charges.
   foreach(['subscription_change_requests','bemora_addon_changes'] as $table){
