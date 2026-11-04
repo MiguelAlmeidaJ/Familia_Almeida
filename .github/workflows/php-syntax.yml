@@ -18,12 +18,18 @@ jobs:
           find . -type f -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
       - name: Validate browser scanner JavaScript and label parsing
         run: |
+          node --check assets/bemora-single.js
+          node --check assets/bemora-single-public.js
+          node --check assets/bemora-checkout.js
+          node --check assets/bemora-addon-account.js
+          node --check assets/bemora-plans-admin.js
           node --check assets/bemora-market.js
           node tests/market_ocr_cli.js
           node --check assets/bemora-market-popups.js
           node tests/market_ui_cli.js
       - name: Validate checkout documents and mobile numbers
         run: |
+          php tests/single_offer_quote_cli.php
           php tests/checkout_validation_cli.php
           php tests/coupon_benefits_cli.php
           php tests/subscription_cancellation_policy.php
