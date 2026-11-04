@@ -47,6 +47,8 @@ function bemora_tenant_modules(PDO $pdo,int $tenantId):array {
  if(isset($cache[$tenantId]))return $cache[$tenantId];
  if(!bemora_modules_ready($pdo))return $cache[$tenantId]=array_fill_keys(array_keys(bemora_module_catalog()),true);
  $modules=bemora_plan_modules($pdo,bemora_tenant_plan_id($pdo,$tenantId));
+ require_once __DIR__.'/single_offer.php';
+ if(!bemora_single_offer_ready($pdo))return $cache[$tenantId]=$modules;
  // Optional shopping access is attached to the verified paid order, not the public plan.
  $q=$pdo->prepare("SELECT shopping_addon FROM subscription_orders WHERE activated_tenant_id=? AND single_offer=1 AND asaas_subscription_id IS NOT NULL AND status IN ('completed','paid','payment_attention') ORDER BY id DESC LIMIT 1");
  $q->execute([$tenantId]);
