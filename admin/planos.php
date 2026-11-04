@@ -2,15 +2,18 @@
 declare(strict_types=1);
 require_once __DIR__.'/../includes/admin_layout.php';
 require_once __DIR__.'/../includes/plans.php';
+require_once __DIR__.'/../includes/plan_modules.php';
 require_admin_access();
-$pdo=db();$ready=bemora_plans_table_exists($pdo);
+$pdo=db();$ready=bemora_plans_table_exists($pdo);$moduleReady=$ready&&bemora_modules_ready($pdo);
 $plans=$ready?$pdo->query('SELECT * FROM subscription_plans ORDER BY active DESC,id DESC')->fetchAll(PDO::FETCH_ASSOC):[];
+foreach($plans as &$plan){$plan['modules']=bemora_plan_modules($pdo,(int)$plan['id']);}unset($plan);
 $flash=pull_flash();$csrf=csrf_token();
 admin_shell_start('plans','Planos','Administre planos públicos e planos internos sem venda no site.');
 ?>
-<link rel="stylesheet" href="/assets/bemora-plans-admin.css?v=1">
+<link rel="stylesheet" href="/assets/bemora-plans-admin.css?v=2">
 <div class="plans-admin">
 <?php if($flash): ?><div class="notice" role="status"><?= e($flash['message']) ?></div><?php endif; ?>
+<?php if($ready&&!$moduleReady): ?><div class="notice">Execute a migration <strong>20261104_043_subscription_plan_modules</strong> em Configurações → Manutenção para editar módulos por plano.</div><?php endif; ?>
 <?php if(!$ready): ?><div class="notice">A estrutura dos planos ainda não foi criada. Execute a migration <strong>20261030_023_subscription_plans</strong> em Configurações → Manutenção.</div><?php endif; ?>
 <div class="plans-admin-header"><div><h2>Planos cadastrados</h2><p>Controle também quais planos podem ser contratados publicamente.</p></div><button class="plans-add" type="button" id="plan-new" <?= !$ready?'disabled':'' ?>><i class="bi bi-plus-lg"></i> Novo plano</button></div>
 <div class="plans-admin-grid">
@@ -20,6 +23,7 @@ admin_shell_start('plans','Planos','Administre planos públicos e planos interno
 <h3><?= e($p['name']) ?></h3><p class="plans-description"><?= nl2br(e($p['details'])) ?></p>
 <div class="plans-price"><?php if($promo): ?><del><?= e(bemora_plan_price((float)$p['price'])) ?></del><strong><?= e(bemora_plan_price((float)$p['promo_price'])) ?></strong><small>Promoção até <?= e(date('d/m/Y H:i',strtotime((string)$p['promo_ends_at']))) ?></small><?php else: ?><strong><?= e(bemora_plan_price((float)$p['price'])) ?></strong><?php if($p['promo_price']!==null): ?><small>Promoção encerrada</small><?php endif; ?><?php endif; ?></div>
 <div class="plans-members"><i class="bi bi-people"></i> Até <?= (int)$p['max_members'] ?> <?= (int)$p['max_members']===1?'membro':'membros' ?></div>
+<div class="plans-module-pills" aria-label="Módulos habilitados"><?php foreach(bemora_module_catalog() as $key=>$module): ?><?php if($p['modules'][$key]): ?><span><?= e($module['label']) ?></span><?php endif; ?><?php endforeach; ?></div>
 <div class="plans-card-actions"><button class="plan-edit" type="button" data-plan="<?= e(json_encode($p,JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP)) ?>"><i class="bi bi-pencil"></i> Editar</button><form method="post" action="/admin/plans_action.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="<?= (int)$p['id'] ?>"><button type="submit"><?= $p['active']?'Ocultar':'Publicar' ?></button></form></div>
 </article>
 <?php endforeach; ?>
@@ -36,6 +40,7 @@ admin_shell_start('plans','Planos','Administre planos públicos e planos interno
 <label>Modalidade<select name="billing_cycle" required><option value="monthly">Mensal</option><option value="semiannual">Semestral</option><option value="annual">Anual</option></select></label>
 <label>Máximo de membros<input type="number" name="max_members" min="1" max="30" value="2" required></label>
 <label class="wide">Disponibilidade<select name="public_sale"><option value="1">Venda pública — aparece no site</option><option value="0">Plano interno — não aparece no site nem no checkout</option></select></label>
+<fieldset class="plans-modules-fieldset wide" <?= !$moduleReady?'disabled':'' ?>><legend>Módulos incluídos</legend><p>Receitas, despesas, contas e painel financeiro permanecem disponíveis em todos os planos. Escolha os recursos adicionais:</p><div class="plans-modules-grid"><?php foreach(bemora_module_catalog() as $key=>$module): ?><label class="plans-module-option"><input type="checkbox" name="modules[]" value="<?= e($key) ?>" checked><span><strong><?= e($module['label']) ?></strong><small><?= e($module['description']) ?></small></span></label><?php endforeach; ?></div></fieldset>
 <label class="wide">Detalhes do plano<textarea name="details" rows="4" maxlength="3000" required placeholder="Descreva os benefícios do plano. Separe cada benefício em uma linha."></textarea></label>
 <label>Preço normal (R$)<input name="price" inputmode="decimal" placeholder="49,90" required><small>Para plano interno gratuito, informe 0,00.</small></label>
 <label>Preço promocional (R$) <small>Opcional</small><input name="promo_price" inputmode="decimal" placeholder="39,90"></label>
@@ -44,5 +49,5 @@ admin_shell_start('plans','Planos','Administre planos públicos e planos interno
 <p class="plans-form-hint">Planos internos podem ter preço zero. Neles, promoções ficam desabilitadas quando o valor é gratuito.</p>
 <div class="plans-dialog-actions"><button type="button" class="plan-dialog-cancel">Cancelar</button><button type="submit" class="plans-add">Salvar plano</button></div>
 </form></dialog>
-<script src="/assets/bemora-plans-admin.js?v=2" defer></script>
+<script src="/assets/bemora-plans-admin.js?v=3" defer></script>
 <?php admin_shell_end(); ?>
