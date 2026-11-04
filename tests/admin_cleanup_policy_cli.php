@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__.'/../includes/admin_test_cleanup.php';
+require_once __DIR__.'/../includes/admin_cleanup_policy.php';
 $base=[
  'paid_at'=>null,'status'=>'awaiting_payment','asaas_subscription_id'=>null,
  'admin_subscription_removed_at'=>null,'admin_subscription_had_settled_payments'=>0,
