@@ -4,8 +4,9 @@ require_once __DIR__.'/../includes/admin_layout.php';
 require_once __DIR__.'/../includes/plans.php';
 require_once __DIR__.'/../includes/plan_modules.php';
 require_once __DIR__.'/../includes/plan_benefits.php';
+require_once __DIR__.'/../includes/single_offer.php';
 require_admin_access();
-$pdo=db();$ready=bemora_plans_table_exists($pdo);$moduleReady=$ready&&bemora_modules_ready($pdo);
+$pdo=db();$singleMode=bemora_single_offer_enabled($pdo);$ready=bemora_plans_table_exists($pdo);$moduleReady=$ready&&bemora_modules_ready($pdo);
 $plans=$ready?$pdo->query('SELECT * FROM subscription_plans ORDER BY active DESC,id DESC')->fetchAll(PDO::FETCH_ASSOC):[];
 $benefitReady=$ready&&bemora_benefits_ready($pdo);
 $benefits=bemora_benefits_catalog($pdo,true);
@@ -20,14 +21,14 @@ admin_shell_start('plans','Planos','Administre planos públicos e planos interno
 <?php if($flash): ?><div class="notice" role="status"><?= e($flash['message']) ?></div><?php endif; ?>
 <?php if($ready&&!$moduleReady): ?><div class="notice">Execute a migration <strong>20261104_043_subscription_plan_modules</strong> em Configurações → Manutenção para editar módulos por plano.</div><?php endif; ?>
 <?php if(!$ready): ?><div class="notice">A estrutura dos planos ainda não foi criada. Execute a migration <strong>20261030_023_subscription_plans</strong> em Configurações → Manutenção.</div><?php endif; ?>
-<div class="plans-admin-header"><div><h2>Ofertas cadastradas</h2><p>Ofertas arquivadas continuam aqui para auditoria e podem ser republicadas individualmente, se necessário.</p></div><div class="plans-admin-header-actions"><a class="plans-benefits-link" href="/admin/beneficios"><i class="bi bi-patch-check"></i> Gerenciar benefícios</a><a class="plans-add" href="/admin/planos/novo"><i class="bi bi-plus-lg"></i> Criar plano</a></div></div>
-<section class="plans-catalog-tools plans-catalog-summary" aria-label="Gerenciamento do catálogo">
+<div class="plans-admin-header"><div><h2><?= $singleMode?'Histórico de planos':'Ofertas cadastradas' ?></h2><p>Ofertas arquivadas continuam aqui para auditoria e podem ser republicadas individualmente, se necessário.</p></div><div class="plans-admin-header-actions"><a class="plans-benefits-link" href="/admin/beneficios"><i class="bi bi-patch-check"></i> Gerenciar benefícios</a><?php if($singleMode): ?><a class="plans-add" href="/admin/assinatura"><i class="bi bi-arrow-left"></i> Voltar à assinatura</a><?php else: ?><a class="plans-add" href="/admin/planos/novo"><i class="bi bi-plus-lg"></i> Criar plano</a><?php endif; ?></div></div>
+<?php if($singleMode): ?><div class="notice">Este é o histórico técnico do catálogo anterior. A assinatura única é configurada em <a href="/admin/assinatura">Administração → Assinatura</a>. Os planos legados não podem mais ser publicados ou editados.</div><?php else: ?><section class="plans-catalog-tools plans-catalog-summary" aria-label="Gerenciamento do catálogo">
  <div class="plans-tool-header"><div><span class="plans-tool-eyebrow">CATÁLOGO COMERCIAL</span><h3>Organize suas ofertas</h3><p>Crie novos pacotes em uma página dedicada. Aqui você visualiza, edita, publica e arquiva os planos existentes.</p></div><span class="plans-tool-count"><?= $publicActiveCount ?> ofertas públicas ativas</span></div>
  <details class="plans-archive-box"><summary><i class="bi bi-archive"></i> Recomeçar catálogo público com segurança</summary>
   <p>Retira da venda as <?= $publicActiveCount ?> ofertas públicas atualmente ativas. Não exclui planos, pedidos, cobranças Asaas, famílias nem histórico; assinaturas anteriores permanecem vinculadas aos planos originais. Planos internos não são alterados.</p>
   <form action="/admin/plans_action.php" method="post" id="plans-archive-form"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="archive_public_catalog"><label>Digite <strong>ARQUIVAR PLANOS</strong> para confirmar<input name="confirmation" required autocomplete="off" placeholder="ARQUIVAR PLANOS"></label><button type="submit" class="plans-archive-submit" <?= $publicActiveCount<1?'disabled':'' ?>>Arquivar catálogo público atual</button></form>
  </details>
-</section>
+</section><?php endif; ?>
 <div class="plans-admin-grid">
 <?php foreach($plans as $p): if(!(int)$p['active'])continue; $promo=bemora_plan_promo_active($p); ?>
 <article class="plans-admin-card <?= !$p['active']?'is-hidden':'' ?>">
@@ -36,7 +37,7 @@ admin_shell_start('plans','Planos','Administre planos públicos e planos interno
 <div class="plans-price"><?php if($promo): ?><del><?= e(bemora_plan_price((float)$p['price'])) ?></del><strong><?= e(bemora_plan_price((float)$p['promo_price'])) ?></strong><small>Promoção até <?= e(date('d/m/Y H:i',strtotime((string)$p['promo_ends_at']))) ?></small><?php else: ?><strong><?= e(bemora_plan_price((float)$p['price'])) ?></strong><?php if($p['promo_price']!==null): ?><small>Promoção encerrada</small><?php endif; ?><?php endif; ?></div>
 <div class="plans-members"><i class="bi bi-people"></i> Até <?= (int)$p['max_members'] ?> <?= (int)$p['max_members']===1?'membro':'membros' ?></div>
 <div class="plans-module-pills" aria-label="Módulos habilitados"><?php foreach(bemora_module_catalog() as $key=>$module): ?><?php if($p['modules'][$key]): ?><span><?= e($module['label']) ?></span><?php endif; ?><?php endforeach; ?></div>
-<div class="plans-card-actions"><button class="plan-edit" type="button" data-plan="<?= e(json_encode($p,JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP)) ?>"><i class="bi bi-pencil"></i> Editar</button><form method="post" action="/admin/plans_action.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="<?= (int)$p['id'] ?>"><button type="submit"><?= $p['active']?'Ocultar':'Publicar' ?></button></form></div>
+<div class="plans-card-actions" <?= $singleMode?'hidden':'' ?>><button class="plan-edit" type="button" data-plan="<?= e(json_encode($p,JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP)) ?>"><i class="bi bi-pencil"></i> Editar</button><form method="post" action="/admin/plans_action.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="<?= (int)$p['id'] ?>"><button type="submit"><?= $p['active']?'Ocultar':'Publicar' ?></button></form></div>
 </article>
 <?php endforeach; ?>
 <?php if($archivedCount): ?><div class="plans-archived-toggle"><button type="button" id="plans-show-archived" aria-expanded="false" aria-controls="plans-archived">Mostrar <?= $archivedCount ?> ofertas inativas ou rascunhos</button></div><?php endif; ?>
@@ -48,7 +49,7 @@ admin_shell_start('plans','Planos','Administre planos públicos e planos interno
  <h3><?= e($p['name']) ?></h3><p class="plans-description"><?= e($p['details']) ?></p>
  <div class="plans-price"><strong><?= e(bemora_plan_price((float)$p['price'])) ?></strong></div>
  <div class="plans-members"><i class="bi bi-people"></i> Até <?= (int)$p['max_members'] ?> integrantes</div>
- <div class="plans-card-actions"><form method="post" action="/admin/plans_action.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="<?= (int)$p['id'] ?>"><button type="submit">Ativar oferta</button></form></div>
+ <div class="plans-card-actions" <?= $singleMode?'hidden':'' ?>><form method="post" action="/admin/plans_action.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="<?= (int)$p['id'] ?>"><button type="submit">Ativar oferta</button></form></div>
 </article>
 <?php endforeach; ?></div></div><?php endif; ?>
 <div class="plans-admin-grid">
@@ -56,7 +57,7 @@ admin_shell_start('plans','Planos','Administre planos públicos e planos interno
 </div>
 <div class="plans-admin-note"><i class="bi bi-info-circle"></i> Cadastre os textos comerciais em <a href="/admin/beneficios">Benefícios</a> e selecione-os em cada oferta. A lista não muda as permissões de módulos.  Alterar módulos pode modificar o acesso de famílias já vinculadas. O limite de pessoas continua configurado por oferta; valores adicionais por integrante ainda não são cobrados separadamente. Planos internos não aparecem no site, checkout nem catálogo de upgrade. Para conceder acesso sem pagamento, utilize os convites administrativos em Famílias; cadastrar o plano não ativa uma assinatura automaticamente.</div>
 </div>
-<dialog id="plan-dialog" class="plans-dialog" aria-labelledby="plan-dialog-title">
+<?php if(!$singleMode): ?><dialog id="plan-dialog" class="plans-dialog" aria-labelledby="plan-dialog-title">
 <form method="post" action="/admin/plans_action.php" id="plan-form">
 <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="save"><input type="hidden" name="id" id="plan-id" value="">
 <div class="plans-dialog-head"><div><h2 id="plan-dialog-title">Editar oferta</h2><p>Altere os dados da oferta selecionada.</p></div><button type="button" class="plan-dialog-close" aria-label="Fechar">×</button></div>
@@ -77,6 +78,6 @@ admin_shell_start('plans','Planos','Administre planos públicos e planos interno
 </div>
 <p class="plans-form-hint">Planos internos podem ter preço zero. Neles, promoções ficam desabilitadas quando o valor é gratuito.</p>
 <div class="plans-dialog-actions"><button type="button" class="plan-dialog-cancel">Cancelar</button><button type="submit" class="plans-add">Salvar plano</button></div>
-</form></dialog>
+</form></dialog><?php endif; ?>
 <script src="/assets/bemora-plans-admin.js?v=7" defer></script>
 <?php admin_shell_end(); ?>
