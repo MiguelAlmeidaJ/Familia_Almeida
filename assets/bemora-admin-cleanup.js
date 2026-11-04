@@ -1,0 +1,31 @@
+(()=>{'use strict';
+const forms=[...document.querySelectorAll('form[data-admin-cleanup]')];
+if(!forms.length)return;
+const dialog=document.createElement('dialog');
+dialog.className='admin-cleanup-dialog';
+dialog.setAttribute('aria-labelledby','admin-cleanup-title');
+dialog.innerHTML='<form method="dialog" class="admin-cleanup-content"><span class="admin-cleanup-symbol" aria-hidden="true"><i class="bi bi-exclamation-triangle"></i></span><h2 id="admin-cleanup-title">Confirmar operação</h2><p class="admin-cleanup-description"></p><label>Digite <strong class="admin-cleanup-phrase"></strong> para confirmar<input type="text" class="admin-cleanup-text" autocomplete="off" spellcheck="false" required></label><div class="admin-cleanup-buttons"><button type="button" class="admin-cleanup-close">Voltar</button><button type="button" class="admin-cleanup-submit" disabled>Confirmar</button></div></form>';
+document.body.append(dialog);
+const text=dialog.querySelector('.admin-cleanup-text'),phrase=dialog.querySelector('.admin-cleanup-phrase'),description=dialog.querySelector('.admin-cleanup-description');
+const commit=dialog.querySelector('.admin-cleanup-submit'),close=dialog.querySelector('.admin-cleanup-close');
+let active=null,expected='';
+dialog.addEventListener('close',()=>{active=null;text.value='';commit.disabled=true;});
+close.addEventListener('click',()=>dialog.close());
+text.addEventListener('input',()=>{commit.disabled=text.value.trim()!==expected;});
+commit.addEventListener('click',()=>{
+ if(!active||text.value.trim()!==expected)return;
+ const form=active;form.querySelector('input[name="confirmation"]').value=expected;
+ active=null;dialog.close();
+ form.dataset.confirmed='1';
+ form.requestSubmit();
+});
+forms.forEach(form=>form.addEventListener('submit',event=>{
+ if(form.dataset.confirmed==='1')return;
+ event.preventDefault();
+ active=form;expected=form.dataset.confirmText||'';
+ phrase.textContent=expected;
+ description.textContent=form.dataset.confirmDescription||'Esta ação não pode ser desfeita.';
+ text.value='';commit.disabled=true;
+ dialog.showModal();text.focus();
+}));
+})();
