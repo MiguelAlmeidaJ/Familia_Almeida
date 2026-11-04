@@ -118,3 +118,28 @@
  .invite-steps .invite-step-number{width:26px;height:26px}
 }
 @media(max-width:370px){.invite-postal-entry{flex-direction:column}.invite-postal-entry button{min-height:42px}}
+
+/* Optional unoccupied contracted seats and finance mode choice. */
+.invite-vacancy-toggle{display:flex;align-items:flex-start;gap:12px;margin:0 0 18px;padding:14px 16px;border:1px solid #d4e8db;border-radius:12px;background:#f0f8f3;cursor:pointer}
+.invite-vacancy-toggle input{margin-top:2px;flex:none;width:19px;height:19px;accent-color:#087b60;cursor:pointer}
+.invite-vacancy-toggle span{display:grid;gap:4px}
+.invite-vacancy-toggle strong{font-size:13px;color:#0a5945}
+.invite-vacancy-toggle small{font-size:12px;line-height:1.55;color:#668476}
+.invite-vacancy-toggle:has(input:disabled){display:none}
+.member-fields.is-vacant{border-color:#cfe1d4;background:#f7faf8}
+.member-fields.is-vacant .invite-form-grid{display:none}
+.invite-slot-message{margin:12px 0 2px;display:flex;align-items:center;gap:8px;color:#47715c;font-size:13px;line-height:1.5}
+.invite-slot-message[hidden]{display:none!important}
+.member-tab.is-vacant{border-style:dashed;color:#668b79;background:#f7fbf8}
+.member-tab.is-vacant.active{background:#eaf5ed;border-color:#82bb9d}
+.invite-finance-mode{margin:28px 0 4px;padding:0;border:0;min-width:0}
+.invite-finance-mode legend{font:800 21px 'Nunito Sans',sans-serif;color:var(--deep);margin-bottom:8px}
+.invite-finance-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-top:18px}
+.invite-finance-choice{display:flex;align-items:flex-start;gap:11px;padding:17px 15px;border:1px solid #dce9e1;border-radius:13px;background:#fff;cursor:pointer}
+.invite-finance-choice:has(input:checked){border-color:#9bcdb3;background:#edf8f1;box-shadow:0 0 0 2px #ccebd8}
+.invite-finance-choice input{width:19px;height:19px;flex:none;margin-top:2px;accent-color:#0a7658}
+.invite-finance-choice>span{display:grid;gap:8px}
+.invite-finance-choice strong{font-size:14px;color:#125742;display:flex;align-items:center;gap:8px}
+.invite-finance-choice strong i{font-size:17px;color:#178e6d}
+.invite-finance-choice small{font-size:12px;line-height:1.6;color:#688476}
+@media(max-width:650px){.invite-finance-options{grid-template-columns:1fr}.invite-finance-choice{padding:14px}.invite-vacancy-toggle{padding:13px}}
