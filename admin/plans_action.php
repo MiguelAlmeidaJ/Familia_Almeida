@@ -12,7 +12,7 @@ $pdo=db();
 try{
  if(!bemora_plans_table_exists($pdo))throw new RuntimeException('Execute a migration 023 em Manutenção.');
  $action=(string)($_POST['action']??'');
- if(bemora_single_offer_enabled($pdo) && in_array($action,['save','create_bundle','toggle'],true))throw new RuntimeException('Com a assinatura única ativa, altere as ofertas em Administração → Assinatura.');
+ if(bemora_single_offer_enabled($pdo) && in_array($action,['save','create_bundle','toggle','archive_public_catalog'],true))throw new RuntimeException('Com a assinatura única ativa, altere as ofertas em Administração → Assinatura.');
  $id=filter_var($_POST['id']??0,FILTER_VALIDATE_INT);
 
  if($action==='archive_public_catalog'){
