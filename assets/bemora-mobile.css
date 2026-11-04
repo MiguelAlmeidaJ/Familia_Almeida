@@ -63,29 +63,34 @@
   }
   .bemora-finance .ref-topbar .topbar-month-current { min-width: 0; font-size: 12px; }
   .bemora-finance .ref-topbar .topbar-month-current input { height: 100%; }
-  /* A compact row of the existing actions replaces three vertically stacked
-     buttons and reserves enough safe-area room for iOS gesture navigation. */
+  /* Three fixed actions, stacked vertically as on desktop. */
   .bemora-finance .bemora-support-fab:not(.is-suspended),
   .bemora-finance .bemora-fab,
   .bemora-finance .bemora-global-bill-fab {
     position: fixed !important;
-    width: 46px !important;
-    height: 46px !important;
-    min-width: 46px !important;
-    min-height: 46px !important;
-    bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 14px !important;
+    width: 50px !important;
+    height: 50px !important;
+    min-width: 50px !important;
+    min-height: 50px !important;
+    border-radius: 50% !important;
     box-shadow: 0 7px 20px rgba(6,70,63,.22) !important;
   }
-  .bemora-finance .bemora-support-fab:not(.is-suspended) { right: 132px !important; }
-  .bemora-finance .bemora-fab { right: 73px !important; }
-  .bemora-finance .bemora-global-bill-fab { right: 14px !important; }
+  .bemora-finance .bemora-support-fab:not(.is-suspended) {
+    bottom: calc(138px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .bemora-finance .bemora-fab {
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .bemora-finance .bemora-global-bill-fab,
   .bemora-finance .bemora-support-fab.is-suspended {
+    right: 14px !important;
     bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
   }
   .bemora-finance .budget-wrap.budget-dashboard,
   .bemora-finance .content,
   .bemora-finance .category-page {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(190px + env(safe-area-inset-bottom, 0px)) !important;
   }
   .bemora-finance :is(.bemora-quick-dialog,.bemora-global-bill-dialog,.bemora-support-dialog) {
     max-height: calc(100dvh - 28px - env(safe-area-inset-bottom, 0px));
@@ -99,3 +104,15 @@
 
 /* Allow the mobile header's month picker to occupy its own row. */
 @media(max-width:700px){.bemora-finance .topbar.ref-topbar{height:auto!important;min-height:0!important;position:relative!important;top:auto!important;box-sizing:border-box!important;margin-bottom:16px!important}}
+
+/* Hide fixed controls while the existing mobile sidebar is open. */
+@media(max-width:900px){
+  html.sidebar-mobile-open .bemora-support-fab,
+  html.sidebar-mobile-open .bemora-fab,
+  html.sidebar-mobile-open .bemora-global-bill-fab,
+  html.sidebar-mobile-open .market-special-actions{
+    display:none!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+  }
+}
