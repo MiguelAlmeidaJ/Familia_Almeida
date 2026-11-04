@@ -39,7 +39,7 @@ admin_shell_start('subscriptions','Assinaturas','Acompanhe solicitações de pag
 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="cancel_subscription"><input type="hidden" name="id" value="<?= (int)$order['id'] ?>"><input type="hidden" name="confirmation" value="">
 <button type="submit" class="admin-danger-button cancel" title="Remover recorrência no Asaas"><i class="bi bi-x-circle" aria-hidden="true"></i> Cancelar assinatura</button></form>
 <?php elseif($order['admin_subscription_removed_at']): ?><span class="plans-cancel-status">Removida do Asaas</span><?php endif; ?>
-<?php if($cleanupReady && !$order['paid_at'] && !(int)$order['admin_subscription_had_settled_payments'] && !in_array($order['status'],['paid','completed','payment_attention'],true) && (!$order['asaas_subscription_id'] || $order['admin_subscription_removed_at'])): ?>
+<?php if($cleanupReady && bemora_cleanup_order_deletable($order)): ?>
 <form method="post" action="/admin/limpeza/acao" data-admin-cleanup
  data-confirm-text="EXCLUIR PEDIDO <?= (int)$order['id'] ?>"
  data-confirm-description="Apaga definitivamente este pedido de teste sem pagamento e seus dados locais associados. Não é possível desfazer. Confira que a recorrência foi removida antes de prosseguir." class="admin-danger-form">
