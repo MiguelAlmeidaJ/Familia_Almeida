@@ -6,7 +6,9 @@ require_once __DIR__.'/../includes/admin_test_cleanup.php';
 require_admin_access();
 $pdo=db();$cleanupReady=bemora_cleanup_ready($pdo);$exists=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='subscription_orders'")->fetchColumn()===1;
 $cancelReady=(int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='subscription_cancellations'")->fetchColumn()===1;
-$orders=$exists?$pdo->query("SELECT o.id,o.plan_name,o.billing_cycle,o.amount,o.buyer_name,o.buyer_email,o.status,o.asaas_subscription_id,o.activated_tenant_id,o.admin_subscription_removed_at,o.created_at,o.paid_at FROM subscription_orders o ORDER BY o.id DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC):[];
+$removedColumn=$cleanupReady?'o.admin_subscription_removed_at':'NULL AS admin_subscription_removed_at';
+$settledColumn=$cleanupReady?'o.admin_subscription_had_settled_payments':'0 AS admin_subscription_had_settled_payments';
+$orders=$exists?$pdo->query("SELECT o.id,o.plan_name,o.billing_cycle,o.amount,o.buyer_name,o.buyer_email,o.status,o.asaas_subscription_id,o.activated_tenant_id,$removedColumn,$settledColumn,o.created_at,o.paid_at FROM subscription_orders o ORDER BY o.id DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC):[];
 $cancellations=[];
 if($cancelReady){
  $q=$pdo->query("SELECT c.tenant_id,c.order_id,c.status,c.access_until,c.requested_at FROM subscription_cancellations c");
@@ -37,7 +39,7 @@ admin_shell_start('subscriptions','Assinaturas','Acompanhe solicitações de pag
 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="cancel_subscription"><input type="hidden" name="id" value="<?= (int)$order['id'] ?>"><input type="hidden" name="confirmation" value="">
 <button type="submit" class="admin-danger-button cancel" title="Remover recorrência no Asaas"><i class="bi bi-x-circle" aria-hidden="true"></i> Cancelar assinatura</button></form>
 <?php elseif($order['admin_subscription_removed_at']): ?><span class="plans-cancel-status">Removida do Asaas</span><?php endif; ?>
-<?php if($cleanupReady && !$order['paid_at'] && !in_array($order['status'],['paid','completed','payment_attention'],true) && (!$order['asaas_subscription_id'] || $order['admin_subscription_removed_at'])): ?>
+<?php if($cleanupReady && !$order['paid_at'] && !(int)$order['admin_subscription_had_settled_payments'] && !in_array($order['status'],['paid','completed','payment_attention'],true) && (!$order['asaas_subscription_id'] || $order['admin_subscription_removed_at'])): ?>
 <form method="post" action="/admin/limpeza/acao" data-admin-cleanup
  data-confirm-text="EXCLUIR PEDIDO <?= (int)$order['id'] ?>"
  data-confirm-description="Apaga definitivamente este pedido de teste sem pagamento e seus dados locais associados. Não é possível desfazer. Confira que a recorrência foi removida antes de prosseguir." class="admin-danger-form">
