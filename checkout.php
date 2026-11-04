@@ -2,26 +2,48 @@
 declare(strict_types=1);
 require_once __DIR__.'/includes/asaas.php';
 require_once __DIR__.'/includes/legal.php';
-$pdo=db();$ready=false;$plan=null;$error='';$publicToken='';
+require_once __DIR__.'/includes/single_offer.php';
+$pdo=db();$ready=false;$plan=null;$error='';$publicToken='';$single=null;$quote=null;
 try{
  $ready=bemora_plans_table_exists($pdo) && (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='subscription_orders'")->fetchColumn()===1;
- if($ready){$id=filter_input(INPUT_GET,'plano',FILTER_VALIDATE_INT);$q=$pdo->prepare('SELECT * FROM subscription_plans WHERE id=? AND active=1 AND public_sale=1');$q->execute([$id?:0]);$plan=$q->fetch(PDO::FETCH_ASSOC);}
+ if($ready){
+  $single=bemora_single_offer_enabled($pdo)?bemora_single_offer($pdo):null;
+  if($single){
+   $cycle=(string)($_GET['ciclo']??'monthly');
+   if(!in_array($cycle,['monthly','semiannual','annual'],true))$cycle='monthly';
+   $members=filter_var($_GET['integrantes']??1,FILTER_VALIDATE_INT);
+   if($members===false)$members=1;
+   $shopping=($_GET['compras']??'')==='1';
+   $quote=bemora_single_quote($single,$cycle,$members,$shopping);
+   $id=$quote['plan_id'];
+  }else $id=filter_input(INPUT_GET,'plano',FILTER_VALIDATE_INT);
+  $q=$pdo->prepare('SELECT * FROM subscription_plans WHERE id=? AND active=1 AND public_sale=1');
+  $q->execute([$id?:0]);$plan=$q->fetch(PDO::FETCH_ASSOC);
+ }
 }catch(Throwable $e){$error='Checkout temporariamente indisponível.';}
 if(!$plan && $error===''){$error='Este plano não está disponível.';}
 $promo=$plan?bemora_plan_promo_active($plan):false;
-$amount=$plan?($promo?(float)$plan['promo_price']:(float)$plan['price']):0;
+$amount=$quote?(float)$quote['total']:($plan?($promo?(float)$plan['promo_price']:(float)$plan['price']):0);
 $cycle=$plan?bemora_plan_cycles()[$plan['billing_cycle']]??'':'';
 $legalApproved=bemora_legal_approved();
 $commercialRequiresLegal=bemora_asaas_mode()==='production';
 if($commercialRequiresLegal&&!$legalApproved)$error='Contratação temporariamente indisponível enquanto os documentos legais são finalizados.';
 $csrf=csrf_token();$checkoutError=(string)($_SESSION['checkout_error']??'');unset($_SESSION['checkout_error']);
-?><!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><title>Assinar Bemora</title><link rel="icon" href="/assets/brand/favicon.png"><link rel="stylesheet" href="/assets/bemora-checkout.css?v=7"></head><body>
+?><!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><title>Assinar Bemora</title><link rel="icon" href="/assets/brand/favicon.png"><link rel="stylesheet" href="/assets/bemora-checkout.css?v=8"></head><body>
 <header class="checkout-header"><a href="/"><img src="/assets/brand/logo.png" alt="Bemora by Anoar"></a><span class="checkout-secure-label">🔒 Checkout seguro</span></header><main class="checkout-main">
 <div class="checkout-head"><a href="/#planos">← Voltar aos planos</a><h1>Vamos começar sua nova fase financeira?</h1><p>Confira sua assinatura e informe os dados do responsável pelo pagamento.</p></div>
 <?php if($checkoutError): ?><div class="checkout-alert"><?= htmlspecialchars($checkoutError,ENT_QUOTES,'UTF-8') ?></div><?php endif; ?>
 <?php if($error): ?><div class="checkout-alert"><?= htmlspecialchars($error,ENT_QUOTES,'UTF-8') ?></div><?php elseif(!bemora_asaas_enabled()): ?><div class="checkout-alert">As contratações online ainda não estão habilitadas. Entre em contato com o comercial para conhecer o plano.</div><?php else: ?>
 <div class="checkout-columns"><section class="checkout-panel"><div class="checkout-section-label">ETAPA 1 DE 2 · IDENTIFICAÇÃO</div><h2>Seus dados</h2><p class="checkout-intro">Precisamos de algumas informações para emitir sua cobrança com segurança.</p><form method="post" action="/checkout/iniciar" id="checkout-form">
 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf,ENT_QUOTES,'UTF-8') ?>"><input type="hidden" name="plan_id" value="<?= (int)$plan['id'] ?>"><input type="hidden" name="quoted_amount" value="<?= htmlspecialchars(number_format($amount,2,'.',''),ENT_QUOTES,'UTF-8') ?>">
+<?php if($single): ?>
+<div class="checkout-single-options" id="checkout-single-options" data-base="<?= e((string)$single['base_monthly']) ?>" data-seat="<?= e((string)$single['extra_member_monthly']) ?>" data-shop="<?= e((string)$single['shopping_monthly']) ?>" data-semi="<?= e((string)$single['semi_discount']) ?>" data-annual="<?= e((string)$single['annual_discount']) ?>">
+ <div class="checkout-single-heading"><h3>Personalize sua assinatura</h3><p>Defina os adicionais antes do pagamento.</p></div>
+ <label>Periodicidade<select name="cycle" id="checkout-cycle"><?php foreach(bemora_plan_cycles() as $key=>$label): ?><option value="<?= e($key) ?>" data-plan="<?= bemora_single_offer_plan_id($single,$key) ?>" <?= $key===$quote['cycle']?'selected':'' ?>><?= e($label) ?></option><?php endforeach; ?></select></label>
+ <label>Quantidade de pessoas (incluindo você)<select name="members" id="checkout-members"><?php for($n=1;$n<=(int)$single['max_members'];$n++): ?><option value="<?= $n ?>" <?= $n===$quote['members']?'selected':'' ?>><?= $n ?> <?= $n===1?'pessoa':'pessoas' ?></option><?php endfor; ?></select></label>
+ <label class="checkout-single-shopping"><input type="checkbox" name="shopping_addon" value="1" <?= $quote['shopping']?'checked':'' ?>><span>Incluir Compras + scanner</span></label>
+</div>
+<?php endif; ?>
 <label>Nome completo<input name="name" autocomplete="name" maxlength="120" minlength="3" placeholder="Seu nome completo" required></label>
 <label>E-mail<input type="email" name="email" autocomplete="email" maxlength="254" placeholder="voce@exemplo.com.br" required></label>
 <div class="checkout-row"><label>CPF ou CNPJ<input id="checkout-document" name="cpf_cnpj" autocomplete="off" inputmode="numeric" maxlength="18" placeholder="000.000.000-00" aria-describedby="checkout-document-help" required><small id="checkout-document-help" class="checkout-field-hint">CPF ou CNPJ do responsável pelo pagamento</small></label><label>Celular com DDD<input id="checkout-phone" name="phone" autocomplete="tel" inputmode="numeric" maxlength="15" placeholder="(00) 90000-0000" aria-describedby="checkout-phone-help" required><small id="checkout-phone-help" class="checkout-field-hint">Para atualizações sobre a assinatura</small></label></div>
@@ -51,7 +73,7 @@ $csrf=csrf_token();$checkoutError=(string)($_SESSION['checkout_error']??'');unse
 <?php else: ?><p class="checkout-small">Ambiente de homologação: documentos legais ainda não publicados. Não utilize dados reais de clientes nesta contratação.</p><?php endif; ?>
 <button type="submit" id="checkout-submit" class="checkout-primary">Ir para pagamento seguro <span aria-hidden="true">→</span></button>
 <p class="checkout-small">O acesso à família será disponibilizado após a confirmação da contratação conforme as condições do plano e eventuais períodos gratuitos.</p></form></section>
-<aside class="checkout-panel checkout-summary"><span class="checkout-small-label">SEU PLANO BEMORA</span><h2><?= htmlspecialchars($plan['name'],ENT_QUOTES,'UTF-8') ?></h2><p><?= htmlspecialchars($cycle,ENT_QUOTES,'UTF-8') ?> · Até <?= (int)$plan['max_members'] ?> <?= (int)$plan['max_members']===1?'membro':'membros' ?></p><div class="checkout-description"><?= nl2br(htmlspecialchars($plan['details'],ENT_QUOTES,'UTF-8')) ?></div>
+<aside class="checkout-panel checkout-summary"><span class="checkout-small-label">SEU PLANO BEMORA</span><h2><?= htmlspecialchars($plan['name'],ENT_QUOTES,'UTF-8') ?></h2><p id="checkout-seats-cycle"><?= htmlspecialchars($cycle,ENT_QUOTES,'UTF-8') ?> · <?= $quote?(int)$quote['members']:(int)$plan['max_members'] ?> pessoas</p><?php if(!$single): ?><div class="checkout-description"><?= nl2br(htmlspecialchars($plan['details'],ENT_QUOTES,'UTF-8')) ?></div><?php endif; ?>
 <div class="checkout-total"><span>Valor da assinatura</span><div><?php if($promo): ?><del><?= htmlspecialchars(bemora_plan_price((float)$plan['price']),ENT_QUOTES,'UTF-8') ?></del><?php endif; ?><strong id="checkout-final-price"><?= htmlspecialchars(bemora_plan_price($amount),ENT_QUOTES,'UTF-8') ?></strong></div></div>
 <p id="checkout-coupon-saving" class="checkout-coupon-saving" hidden></p><p class="checkout-small">Cobrança recorrente <?= htmlspecialchars(strtolower($cycle),ENT_QUOTES,'UTF-8') ?> pelo valor indicado. Preço promocional, quando aplicável, será usado como valor recorrente contratado até alteração comunicada das condições.</p></aside></div>
 <?php endif; ?>
@@ -75,4 +97,4 @@ $csrf=csrf_token();$checkoutError=(string)($_SESSION['checkout_error']??'');unse
 </div>
 </dialog>
 <?php endif; ?>
-</main><script src="/assets/bemora-checkout.js?v=6" defer></script><script src="/assets/bemora-checkout-legal.js?v=1" defer></script></body></html>
+</main><script src="/assets/bemora-checkout.js?v=7" defer></script><script src="/assets/bemora-checkout-legal.js?v=1" defer></script></body></html>
