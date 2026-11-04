@@ -9,9 +9,9 @@ Esta versão permite **arquivar** o catálogo público antigo e criar novas ofer
 3. No painel **Configurações → Manutenção**, confira se a migration `20261104_043_subscription_plan_modules` está executada. Não há migration adicional nesta etapa.
 4. Em **Administração → Planos**, abra **Recomeçar catálogo público com segurança**. Leia o aviso, digite `ARQUIVAR PLANOS` e confirme.
 5. Os planos antigos deixam de aparecer como ofertas ativas no site e no checkout. Eles continuam no banco e podem ser consultados em **Mostrar ofertas arquivadas**; pedidos, assinaturas, famílias e cupons não são excluídos.
-6. No formulário **Monte planos por módulos e integrantes**, escolha o nome do pacote, número máximo de integrantes, preço base mensal, adicional mensal por integrante (opcional, pode ser zero), descontos semestral e anual, módulos e descrição.
+6. Na tela **Administração → Planos**, clique em **Criar plano** para abrir a nova página **/admin/planos/novo**. No formulário **Monte planos por módulos e integrantes**, escolha o nome do pacote, número máximo de integrantes, preço base mensal, adicional mensal por integrante (opcional, pode ser zero), descontos semestral e anual, módulos e descrição.
 7. Escolha **Criar como rascunho** (padrão) para homologar antes de vender, ou **Publicar as 3 ofertas agora**.
-8. Clique em **Criar 3 ofertas**. A mesma configuração gera um registro mensal, um semestral e um anual. Para ofertar outras quantidades de pessoas ou outro conjunto de funcionalidades, repita o processo com um nome/limite distintos.
+8. Na nova página, clique em **Criar 3 ofertas**. A mesma configuração gera um registro mensal, um semestral e um anual. Para ofertar outras quantidades de pessoas ou outro conjunto de funcionalidades, repita o processo com um nome/limite distintos.
 9. Confira a vitrine pública e cada checkout de teste. Publique os rascunhos individualmente quando a operação comercial estiver pronta.
 
 ## Como são calculados os valores
