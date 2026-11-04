@@ -7,6 +7,8 @@ require_once __DIR__.'/asaas.php';
  */
 function bemora_apply_paid_addon_change(PDO $pdo,string $paymentId):bool {
  if(!preg_match('/^[A-Za-z0-9_-]{3,100}$/D',$paymentId))return false;
+ $present=$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='bemora_addon_changes'");
+ if(!(int)$present->fetchColumn())return false;
  $check=$pdo->prepare("SELECT id FROM bemora_addon_changes WHERE asaas_payment_id=? AND status IN ('awaiting_payment','payment_confirmed','reconciliation_required') LIMIT 1");
  $check->execute([$paymentId]);$requestId=(int)$check->fetchColumn();
  if(!$requestId)return false;
