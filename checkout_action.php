@@ -50,9 +50,9 @@ try{
  if($code!==''){
   $coupon=bemora_coupon_find($pdo,$code);
   if(!$coupon)throw new RuntimeException('Cupom não encontrado.');
-  $quote=bemora_coupon_quote($coupon,$plan,$amount);
-  if(!$quote['supported'])throw new RuntimeException('Este tipo de cupom ainda não está habilitado para pagamento automático. Escolha outro cupom ou fale com o suporte.');
-  $couponId=(int)$coupon['id'];$couponKind=$coupon['kind'];$amount=(float)$quote['amount'];$recurringAmount=(float)$quote['recurring_amount'];$freeMonths=(int)($quote['free_months']??0);
+  $couponQuote=bemora_coupon_quote($coupon,$plan,$amount);
+  if(!$couponQuote['supported'])throw new RuntimeException('Este tipo de cupom ainda não está habilitado para pagamento automático. Escolha outro cupom ou fale com o suporte.');
+  $couponId=(int)$coupon['id'];$couponKind=$coupon['kind'];$amount=(float)$couponQuote['amount'];$recurringAmount=(float)$couponQuote['recurring_amount'];$freeMonths=(int)($couponQuote['free_months']??0);
  }
  $quoted=(string)($_POST['quoted_amount']??'');
  if(!preg_match('/^\\d+\\.\\d{2}$/D',$quoted)||abs((float)$quoted-$baseAmount)>0.001)throw new RuntimeException('O preço deste plano foi atualizado. Confira o valor exibido antes de prosseguir.');
