@@ -96,3 +96,6 @@
   .bemora-finance .ref-topbar .ref-topbar-title { font-size: 10px; }
   .bemora-finance .ref-topbar .ref-private span { display: none; }
 }
+
+/* Allow the mobile header's month picker to occupy its own row. */
+@media(max-width:700px){.bemora-finance .topbar.ref-topbar{height:auto!important;min-height:0!important;position:relative!important;top:auto!important;box-sizing:border-box!important;margin-bottom:16px!important}}
