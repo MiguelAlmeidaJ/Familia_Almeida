@@ -7,6 +7,8 @@ function bemora_cleanup_ready(PDO $pdo):bool {
  $q=$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='admin_cleanup_audit'");
  if((int)$q->fetchColumn()!==1)return false;
  $q=$pdo->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='subscription_orders' AND column_name='admin_subscription_removed_at'");
+ if((int)$q->fetchColumn()!==1)return false;
+ $q=$pdo->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='subscription_orders' AND column_name='admin_subscription_had_settled_payments'");
  return (int)$q->fetchColumn()===1;
 }
 function bemora_cleanup_has_table(PDO $pdo,string $table):bool {
@@ -31,13 +33,19 @@ function bemora_cleanup_cancel_subscription(PDO $pdo,int $orderId,int $adminId):
  if(!preg_match('/^[A-Za-z0-9_-]{4,100}$/D',$sid)||!preg_match('/^[A-Za-z0-9_-]{4,100}$/D',$cid))throw new RuntimeException('Este pedido não possui uma assinatura Asaas válida.');
  $remote=bemora_asaas_request('GET','/subscriptions/'.rawurlencode($sid));
  if((string)($remote['id']??'')!==$sid||(string)($remote['customer']??'')!==$cid)throw new RuntimeException('A assinatura consultada não corresponde ao cliente do pedido.');
+ $invoices=bemora_cancellation_payment_list($sid,$cid);
+ $hasSettled=false;
+ foreach($invoices as $payment){
+  // Anything except an unequivocally open or deleted invoice needs retention.
+  if(!in_array((string)($payment['status']??''),['PENDING','OVERDUE','DELETED'],true)){$hasSettled=true;break;}
+ }
  $answer=bemora_asaas_request('DELETE','/subscriptions/'.rawurlencode($sid));
  if(($answer['deleted']??false)!==true && (string)($answer['id']??'')!==$sid)throw new RuntimeException('O Asaas não confirmou a remoção. Consulte a assinatura antes de tentar novamente.');
  // Remote cancellation has occurred, so do not roll back this fact with a failed audit.
  $pdo->beginTransaction();
  try{
-  $q=$pdo->prepare('UPDATE subscription_orders SET admin_subscription_removed_at=NOW() WHERE id=? AND admin_subscription_removed_at IS NULL');
-  $q->execute([$orderId]);
+  $q=$pdo->prepare('UPDATE subscription_orders SET admin_subscription_removed_at=NOW(),admin_subscription_had_settled_payments=? WHERE id=? AND admin_subscription_removed_at IS NULL');
+  $q->execute([$hasSettled?1:0,$orderId]);
   bemora_cleanup_audit($pdo,$adminId,'cancel_asaas',$orderId,'subscription_order');
   $pdo->commit();
  }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();error_log('Bemora: assinatura removida no Asaas, mas marcação local falhou. Pedido #'.$orderId);throw new RuntimeException('Asaas confirmou a exclusão, mas a atualização local falhou. NÃO repita a exclusão; concilie este pedido com o suporte.');}
@@ -49,10 +57,18 @@ function bemora_cleanup_delete_order(PDO $pdo,int $orderId,int $adminId):void {
   $q=$pdo->prepare('SELECT * FROM subscription_orders WHERE id=? FOR UPDATE');
   $q->execute([$orderId]);$o=$q->fetch(PDO::FETCH_ASSOC);
   if(!$o)throw new RuntimeException('Pedido não encontrado.');
-  if(!empty($o['paid_at'])||in_array((string)$o['status'],['paid','completed','payment_attention'],true))
+  if(!empty($o['paid_at'])||(int)$o['admin_subscription_had_settled_payments']===1||in_array((string)$o['status'],['paid','completed','payment_attention'],true))
    throw new RuntimeException('Pedidos com pagamento ou acesso ativado devem ser preservados. Use a política de retenção/LGPD, não a limpeza de testes.');
   if(!empty($o['asaas_subscription_id'])&&empty($o['admin_subscription_removed_at']))
    throw new RuntimeException('Remova primeiro a assinatura no Asaas, usando Cancelar no painel.');
+  if(!empty($o['asaas_payment_id']) && empty($o['asaas_subscription_id'])){
+   $paymentId=(string)$o['asaas_payment_id'];
+   if(!preg_match('/^[a-zA-Z0-9_-]{4,100}$/D',$paymentId))throw new RuntimeException('Identificador da cobrança inválido.');
+   $remotePayment=bemora_asaas_request('GET','/payments/'.rawurlencode($paymentId));
+   if((string)($remotePayment['id']??'')!==$paymentId || (string)($remotePayment['customer']??'')!==(string)$o['asaas_customer_id']
+      || !in_array((string)($remotePayment['status']??''),['PENDING','OVERDUE','DELETED'],true))
+    throw new RuntimeException('A cobrança não está comprovadamente sem pagamento. Exclusão bloqueada.');
+  }
   // Other payment objects may represent paid upgrades or addon charges.
   foreach(['subscription_change_requests','bemora_addon_changes'] as $table){
    if(!bemora_cleanup_has_table($pdo,$table))continue;
@@ -65,6 +81,9 @@ function bemora_cleanup_delete_order(PDO $pdo,int $orderId,int $adminId):void {
    $pdo->prepare("DELETE FROM `$table` WHERE order_id=?")->execute([$orderId]);
   }
   $pdo->prepare('DELETE FROM subscription_orders WHERE id=?')->execute([$orderId]);
+  if(!empty($o['invite_id']) && bemora_cleanup_has_table($pdo,'family_invitations')){
+   $pdo->prepare('UPDATE family_invitations SET revoked_at=COALESCE(revoked_at,NOW()) WHERE id=? AND used_at IS NULL')->execute([(int)$o['invite_id']]);
+  }
   // Never erase Asaas customers or charges already paid. Invitations associated
   // with a registered workspace are kept until that workspace is removed.
   bemora_cleanup_audit($pdo,$adminId,'delete_unpaid_order',$orderId,'subscription_order');
