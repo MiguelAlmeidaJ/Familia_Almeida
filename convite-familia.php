@@ -129,29 +129,85 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 const max=<?= (int)$invitation['max_members'] ?>,form=document.getElementById('join-form'),count=document.getElementById('member_count'),fields=document.getElementById('member-fields'),tabs=document.getElementById('member-tabs'),options=document.getElementById('admin-options'),admin=document.getElementById('family-admin');
 const steps=[...document.querySelectorAll('[data-step]')],indicators=[...document.querySelectorAll('[data-indicator]')];const locationStep=max>1?2:1;let step=0,selected=0;
 function size(){return Math.min(max,Math.max(1,Number(count.value)||1))}
+
+function slotEmpty(panel){return panel.querySelector('input[name$="[empty]"]').checked;}
+function actualMembers(){return [...fields.children].filter(panel=>!slotEmpty(panel));}
+function toggleSlot(panel){
+ const empty=slotEmpty(panel);
+ panel.querySelectorAll('.invite-form-grid input,.invite-form-grid select').forEach(control=>{
+  control.disabled=empty;control.required=!empty;if(empty)control.value='';
+ });
+ panel.classList.toggle('is-vacant',empty);
+ panel.querySelector('.invite-slot-message').hidden=!empty;
+ if(empty&&Number(admin.value)===Number(panel.dataset.index)){
+  const first=[...fields.children].find(p=>!slotEmpty(p));
+  admin.value=first?String(first.dataset.index):'0';
+ }
+ renderMembers();
+}
 function build(){
- const n=size();while(fields.children.length<n){const i=fields.children.length,d=document.createElement('div');d.className='member-fields';d.dataset.index=i;d.id='person-panel-'+i;d.setAttribute('role','tabpanel');
- d.innerHTML=`<div class="invite-form-grid">
- <div class="invite-field"><label for="person-${i}-name">Nome</label><input id="person-${i}-name" name="members[${i}][name]" maxlength="80" minlength="2" required></div>
- <div class="invite-field"><label for="person-${i}-email">E-mail</label><input id="person-${i}-email" type="email" name="members[${i}][email]" required></div>
- <div class="invite-field"><label for="person-${i}-password">Senha</label><input id="person-${i}-password" type="password" name="members[${i}][password]" minlength="12" autocomplete="new-password" required></div>
+ const n=size();
+ while(fields.children.length<n){
+  const i=fields.children.length,d=document.createElement('div');
+  d.className='member-fields';d.dataset.index=String(i);d.id='person-panel-'+i;d.setAttribute('role','tabpanel');
+  d.innerHTML=`<label class="invite-vacancy-toggle"><input type="checkbox" name="members[${i}][empty]" value="1" ${max===1?'disabled':''}><span><strong>Deixar esta vaga vazia</strong><small>Você poderá cadastrar este integrante mais tarde no painel, sem perder a vaga contratada.</small></span></label>
+ <p class="invite-slot-message" hidden><i class="bi bi-person-plus" aria-hidden="true"></i> Vaga reservada para cadastrar depois, em Membros.</p>
+ <div class="invite-form-grid">
+ <div class="invite-field"><label for="person-${i}-name">Nome</label><input id="person-${i}-name" name="members[${i}][name]" maxlength="80" minlength="2" autocomplete="name" required></div>
+ <div class="invite-field"><label for="person-${i}-email">E-mail</label><input id="person-${i}-email" type="email" name="members[${i}][email]" autocomplete="email" required></div>
+ <div class="invite-field"><label for="person-${i}-password">Senha</label><input id="person-${i}-password" type="password" name="members[${i}][password]" minlength="12" autocomplete="new-password" required><small>Use pelo menos 12 caracteres.</small></div>
  <div class="invite-field"><label for="person-${i}-sex">Sexo</label><select id="person-${i}-sex" name="members[${i}][sex]" required><option value="">Selecione</option><option value="M">Masculino</option><option value="F">Feminino</option></select></div>
  <div class="invite-field"><label for="person-${i}-birth">Data de nascimento</label><input id="person-${i}-birth" type="date" name="members[${i}][birth_date]" max="<?= date('Y-m-d') ?>" required></div>
- </div>`;fields.append(d)}
- while(fields.children.length>n)fields.lastElementChild.remove();selected=Math.min(n-1,selected);if(Number(admin.value)>=n)admin.value='0';renderMembers();
+ </div>`;
+  d.querySelector('input[name$="[empty]"]').addEventListener('change',()=>toggleSlot(d));
+  d.querySelector('input[name$="[name]"]').addEventListener('input',()=>renderMembers());
+  fields.append(d);
+ }
+ while(fields.children.length>n)fields.lastElementChild.remove();
+ selected=Math.min(n-1,selected);renderMembers();
 }
 function renderMembers(){
- const n=fields.children.length;tabs.replaceChildren();
- for(let i=0;i<n;i++){const b=document.createElement('button');b.type='button';b.className='member-tab'+(i===selected?' active':'');b.id='person-tab-'+i;b.setAttribute('role','tab');b.setAttribute('aria-controls','person-panel-'+i);b.setAttribute('aria-selected',String(i===selected));b.textContent='Pessoa '+(i+1);b.addEventListener('click',()=>{selected=i;renderMembers()});tabs.append(b)}
- [...fields.children].forEach((panel,i)=>{panel.hidden=i!==selected;panel.setAttribute('aria-labelledby','person-tab-'+i)});
+ tabs.replaceChildren();
+ for(const [i,panel] of [...fields.children].entries()){
+  const vacant=slotEmpty(panel),name=panel.querySelector('input[name$="[name]"]').value.trim();
+  const button=document.createElement('button');button.type='button';
+  button.className='member-tab'+(i===selected?' active':'')+(vacant?' is-vacant':'');
+  button.id='person-tab-'+i;button.setAttribute('role','tab');
+  button.setAttribute('aria-controls','person-panel-'+i);
+  button.setAttribute('aria-selected',String(i===selected));
+  button.textContent=vacant?'Vaga '+(i+1)+' · depois':name||'Pessoa '+(i+1);
+  button.addEventListener('click',()=>{selected=i;renderMembers()});
+  tabs.append(button);
+ }
+ [...fields.children].forEach((panel,i)=>{panel.hidden=i!==selected;panel.setAttribute('aria-labelledby','person-tab-'+i);});
 }
 function adminOptions(){
- options.replaceChildren();[...fields.children].forEach((panel,i)=>{
- const name=panel.querySelector('input[name$="[name]"]').value.trim()||'Pessoa '+(i+1);
- const label=document.createElement('label');label.className='admin-choice';const radio=document.createElement('input');radio.type='radio';radio.name='admin_choice';radio.value=String(i);radio.checked=Number(admin.value)===i;radio.addEventListener('change',()=>{admin.value=String(i)});const title=document.createElement('strong');title.textContent=name;label.append(radio,title);options.append(label);
+ if(!options)return;
+ options.replaceChildren();
+ const available=actualMembers();
+ if(!available.length)return;
+ if(!available.some(p=>Number(p.dataset.index)===Number(admin.value)))admin.value=available[0].dataset.index;
+ available.forEach(panel=>{
+  const i=Number(panel.dataset.index),name=panel.querySelector('input[name$="[name]"]').value.trim()||'Pessoa '+(i+1);
+  const label=document.createElement('label');label.className='admin-choice',radio=document.createElement('input');
+  radio.type='radio';radio.name='admin_choice';radio.value=String(i);radio.checked=Number(admin.value)===i;
+  radio.addEventListener('change',()=>{admin.value=String(i)});
+  const title=document.createElement('strong');title.textContent=name;
+  label.append(radio,title);options.append(label);
  });
 }
-function validateMembers(){for(const [i,panel] of [...fields.children].entries()){for(const input of panel.querySelectorAll('input,select')){if(!input.checkValidity()){selected=i;renderMembers();input.reportValidity();return false}}}return true}
+function validateMembers(){
+ if(!actualMembers().length){
+  selected=0;renderMembers();alert('Cadastre pelo menos uma pessoa para criar o espaço Bemora.');return false;
+ }
+ for(const [i,panel] of [...fields.children].entries()){
+  if(slotEmpty(panel))continue;
+  for(const input of panel.querySelectorAll('.invite-form-grid input,.invite-form-grid select')){
+   if(!input.checkValidity()){selected=i;renderMembers();input.reportValidity();input.focus();return false;}
+  }
+ }
+ return true;
+}
 function show(){steps.forEach((panel,i)=>{panel.hidden=i!==step});indicators.forEach((indicator,i)=>{indicator.classList.toggle('active',i===step);indicator.classList.toggle('done',i<step);if(i===step)indicator.setAttribute('aria-current','step');else indicator.removeAttribute('aria-current')});document.getElementById('back').hidden=step===0;document.getElementById('next').hidden=step===locationStep;document.getElementById('send').hidden=step!==locationStep;if(step===0)renderMembers();if(step===1&&max>1)adminOptions()}
 document.getElementById('next').addEventListener('click',()=>{
  if(step===0&&!validateMembers())return;
