@@ -79,6 +79,7 @@ try{
   }
   $pdo->commit();
   flash('success','Pacote '. $name .' criado com três ofertas '.($active?'publicadas':'em rascunho').'. Confira os valores por período antes de publicar.');
+  $bundleCreated=true;
  }elseif($action==='toggle'){
 
   if(!$id || $id<1)throw new RuntimeException('Plano inválido.');
@@ -150,4 +151,4 @@ try{
   $pdo->commit();
  }else{throw new RuntimeException('Ação inválida.');}
 }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();flash('error',$e instanceof PDOException?'Erro ao gravar o plano no banco de dados.':$e->getMessage());}
-redirect_to('/admin/planos');
+redirect_to((($action??'')==='create_bundle' && empty($bundleCreated))?'/admin/planos/novo':'/admin/planos');
