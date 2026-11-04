@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/includes/bootstrap.php';
+require_once __DIR__.'/includes/onboarding_address.php';
 $token=(string)($_GET['token']??$_POST['token']??'');
 $valid=preg_match('/^[a-f0-9]{64}$/D',$token)===1;
 $invitation=null;$error='';
@@ -14,6 +15,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
  else{
   try{
    $count=(int)$invitation['max_members']; // Paid invitation owns the number of accesses.
+   $address=bemora_validate_onboarding_address(is_array($_POST['address']??null)?$_POST['address']:[]);
    $admin=filter_var($_POST['family_admin']??-1,FILTER_VALIDATE_INT);
    if($count<1||$count>30)throw new RuntimeException('Quantidade de acessos contratados inválida.');
    if($admin===false||$admin<0||$admin>=$count)throw new RuntimeException('Escolha um administrador da família.');
@@ -26,7 +28,9 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
     if(in_array($email,$emails,true))throw new RuntimeException('Não repita e-mails entre os membros.');
     $emails[]=$email;$members[]=['name'=>$mn,'email'=>$email,'password_hash'=>password_hash($pw,PASSWORD_DEFAULT),'sex'=>$sex,'birth_date'=>$dob];
    }
-   $pdo=db();$pdo->beginTransaction();
+   $pdo=db();
+   if(!bemora_onboarding_address_ready($pdo))throw new RuntimeException('Cadastro de endereço ainda não disponível. Execute a migration 047 em Manutenção.');
+   $pdo->beginTransaction();
    $check=$pdo->prepare("SELECT id FROM family_invitations WHERE id=? AND token_hash=? AND used_at IS NULL AND revoked_at IS NULL AND expires_at>NOW() FOR UPDATE");
    $check->execute([(int)$invitation['id'],hash('sha256',$token)]);if(!$check->fetch())throw new RuntimeException('Convite já utilizado.');
    // Internal tenant name is generated automatically; no buyer-facing family name.
@@ -40,6 +44,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    $check->execute([(int)$invitation['id'],$name,$key,$count,$admin,json_encode($members,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)]);
    require_once __DIR__.'/includes/family_onboarding.php';
    $login=bemora_activate_registration($pdo,(int)$pdo->lastInsertId(),$members,$admin,$name,$key,(int)$invitation['max_members']);
+   bemora_store_onboarding_address($pdo,(int)$login['tenant_id'],$address);
    // Bind a completed checkout to the newly created isolated family.
    if((int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='subscription_orders'")->fetchColumn()===1){
     $orderLink=$pdo->prepare("UPDATE subscription_orders SET activated_tenant_id=?,status='completed' WHERE invite_id=? AND status='paid' AND activated_tenant_id IS NULL");
@@ -59,7 +64,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Crie seu acesso • Bemora</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-<link rel="stylesheet" href="/assets/bemora-invite.css?v=5">
+<link rel="stylesheet" href="/assets/bemora-invite.css?v=6">
 <?php require_once __DIR__.'/includes/branding.php'; brand_head_tags(); ?>
 </head><body class="invite-page"><main class="invite-shell">
 <header class="invite-brand">
@@ -79,14 +84,26 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 <nav class="invite-steps" aria-label="Etapas do cadastro">
 <div class="invite-step active" data-indicator="0" aria-current="step"><span class="invite-step-number">1</span><span><?= (int)$invitation['max_members']===1?'Seus dados':'Integrantes' ?></span></div>
 <?php if((int)$invitation['max_members']>1): ?><div class="invite-step" data-indicator="1"><span class="invite-step-number">2</span><span>Administrador</span></div><?php endif; ?>
+<div class="invite-step" data-indicator="<?= (int)$invitation['max_members']>1?2:1 ?>"><span class="invite-step-number"><?= (int)$invitation['max_members']>1?3:2 ?></span><span>Localização</span></div>
 </nav>
 <section class="step" data-step="0"><div class="invite-section-head"><h3 class="invite-section-title"><?= (int)$invitation['max_members']===1?'Crie sua conta':'Cadastre os integrantes' ?></h3><span class="invite-seats-badge"><i class="bi bi-people" aria-hidden="true"></i> <?= (int)$invitation['max_members'] ?> <?= (int)$invitation['max_members']===1?'pessoa':'pessoas' ?></span></div>
 <p class="invite-subtitle"><?= (int)$invitation['max_members']===1?'Informe seus dados para acessar o Bemora.':'Cada integrante terá seu próprio e-mail e senha de acesso.' ?></p>
 <div class="member-tabs" id="member-tabs" role="tablist" aria-label="Integrantes"></div><div id="member-fields"></div></section>
 <?php if((int)$invitation['max_members']>1): ?><section class="step" data-step="1" hidden><h3 class="invite-section-title">Quem vai administrar os acessos?</h3><p class="invite-subtitle">Escolha quem poderá gerenciar os integrantes da conta.</p><div id="admin-options" style="margin-top:22px"></div></section><?php endif; ?>
+<section class="step" data-step="<?= (int)$invitation['max_members']>1?2:1 ?>" hidden>
+ <div class="invite-section-head"><h3 class="invite-section-title">Onde você está?</h3><span class="invite-seats-badge"><i class="bi bi-geo-alt" aria-hidden="true"></i> Endereço do seu espaço</span></div>
+ <p class="invite-subtitle">Vamos completar a localização da sua conta. Digite o CEP para preencher os dados automaticamente ou informe-os manualmente.</p>
+ <div class="invite-address-grid">
+  <div class="invite-field invite-address-cep"><label for="address-postal">CEP</label><div class="invite-postal-entry"><input id="address-postal" name="address[postal_code]" type="text" placeholder="00000-000" inputmode="numeric" autocomplete="postal-code" maxlength="9" pattern="[0-9]{5}-?[0-9]{3}" required><button type="button" id="address-lookup"><i class="bi bi-search" aria-hidden="true"></i> Buscar CEP</button></div><small id="address-lookup-status" role="status" aria-live="polite">Consulta automática pelo CEP.</small></div>
+  <div class="invite-field invite-address-wide"><label for="address-street">Endereço</label><input id="address-street" name="address[street]" type="text" placeholder="Rua, avenida ou logradouro" autocomplete="street-address" minlength="3" maxlength="180" required></div>
+  <div class="invite-field"><label for="address-state">Estado</label><select id="address-state" name="address[state]" autocomplete="address-level1" required><option value="">Selecione o estado</option><?php foreach(bemora_brazil_states() as $uf=>$stateName): ?><option value="<?= e($uf) ?>"><?= e($stateName) ?> (<?= e($uf) ?>)</option><?php endforeach; ?></select></div>
+  <div class="invite-field"><label for="address-city">Cidade</label><select id="address-city" name="address[city]" autocomplete="address-level2" required disabled><option value="">Selecione primeiro um estado</option></select><small id="address-city-status" aria-live="polite">Escolha o estado para carregar os municípios.</small></div>
+ </div>
+ <p class="invite-help">Não conseguiu consultar o CEP? Você pode preencher o endereço e escolher estado e cidade manualmente.</p>
+</section>
 <div class="invite-actions"><button type="button" class="invite-btn secondary" id="back" hidden><i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar</button>
 <button type="button" class="invite-btn primary" id="next" <?= (int)$invitation['max_members']===1?'hidden':'' ?>>Continuar <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
-<button type="submit" class="invite-btn primary" id="send" <?= (int)$invitation['max_members']>1?'hidden':'' ?>><i class="bi bi-check2-circle" aria-hidden="true"></i> Criar acesso<?= (int)$invitation['max_members']>1?'s':'' ?></button></div>
+<button type="submit" class="invite-btn primary" id="send" hidden><i class="bi bi-check2-circle" aria-hidden="true"></i> Criar acesso<?= (int)$invitation['max_members']>1?'s':'' ?></button></div>
 </form></section>
 <script>
 (()=>{
