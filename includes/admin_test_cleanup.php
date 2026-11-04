@@ -119,7 +119,7 @@ function bemora_cleanup_delete_tenant(PDO $pdo,int $tenantId,int $adminId):void 
  if(!bemora_cleanup_ready($pdo))throw new RuntimeException('Execute a migration 048.');
  $pdo->beginTransaction();
  try{
-  $q=$pdo->prepare('SELECT id,slug FROM tenants WHERE id=? FOR UPDATE');
+  $q=$pdo->prepare('SELECT id,slug,name_key FROM tenants WHERE id=? FOR UPDATE');
   $q->execute([$tenantId]);$tenant=$q->fetch(PDO::FETCH_ASSOC);
   if(!$tenant)throw new RuntimeException('Espaço não encontrado.');
   if($tenant['slug']==='familia-almeida')throw new RuntimeException('O espaço legado principal é protegido contra exclusão.');
@@ -135,6 +135,19 @@ function bemora_cleanup_delete_tenant(PDO $pdo,int $tenantId,int $adminId):void 
    $pdo->prepare("DELETE FROM `$table` WHERE tenant_id=?")->execute([$tenantId]);
   }
   $pdo->prepare('DELETE FROM tenants WHERE id=?')->execute([$tenantId]);
+  // Remove the consumed invitation/registration created for this workspace,
+  // provided no surviving order still refers to that invitation.
+  if(!empty($tenant['name_key']) && bemora_cleanup_has_table($pdo,'family_registrations')){
+   $q=$pdo->prepare('SELECT id,invitation_id FROM family_registrations WHERE family_name_key=? FOR UPDATE');
+   $q->execute([(string)$tenant['name_key']]);
+   foreach($q->fetchAll(PDO::FETCH_ASSOC) as $registration){
+    $linked=$pdo->prepare('SELECT COUNT(*) FROM subscription_orders WHERE invite_id=?');
+    $linked->execute([(int)$registration['invitation_id']]);
+    if((int)$linked->fetchColumn()>0)continue;
+    $pdo->prepare('DELETE FROM family_registrations WHERE id=?')->execute([(int)$registration['id']]);
+    $pdo->prepare('DELETE FROM family_invitations WHERE id=?')->execute([(int)$registration['invitation_id']]);
+   }
+  }
   // Do not delete a user shared with a different tenant; never delete system admins.
   foreach($users as $uid){
    $pdo->prepare("DELETE FROM users WHERE id=? AND system_role='user' AND NOT EXISTS (SELECT 1 FROM tenant_users WHERE user_id=?)")->execute([$uid,$uid]);
