@@ -57,3 +57,5 @@
 .plans-benefits-empty{font-size:12px;color:#7b9487;grid-column:1/-1}
 @media(max-width:900px){.plans-benefits-layout{grid-template-columns:1fr}}
 @media(max-width:620px){.plans-benefit-checks{grid-template-columns:1fr}.plans-benefit-row{grid-template-columns:1fr 1fr}.plans-benefit-row label:first-of-type{grid-column:1/-1}.plans-benefit-row button{align-self:end}}
+
+.plans-admin-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.plans-benefits-link{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:43px;border:1px solid #bddaca;border-radius:10px;padding:10px 14px;color:#0a7054!important;font-size:12px;font-weight:750;text-decoration:none;background:#fff}.plans-benefits-link:hover{background:#f1faf4}.plans-admin-header-actions .plans-add{min-height:43px}@media(max-width:700px){.plans-admin-header-actions{width:100%;display:grid;gap:8px}.plans-admin-header-actions :is(.plans-add,.plans-benefits-link){width:100%;justify-content:center}}
