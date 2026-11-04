@@ -4,6 +4,7 @@ require_once __DIR__.'/includes/asaas.php';
 require_once __DIR__.'/includes/coupons.php';
 require_once __DIR__.'/includes/checkout_validation.php';
 require_once __DIR__.'/includes/legal.php';
+require_once __DIR__.'/includes/single_offer.php';
 if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);exit;}
 verify_csrf();
 if(!bemora_asaas_enabled() || (bemora_asaas_mode()==='production' && (string)config('asaas','production_enabled','0')!=='1')){http_response_code(503);exit('Checkout ainda não liberado.');}
@@ -15,6 +16,16 @@ try{
  $id=filter_var($_POST['plan_id']??null,FILTER_VALIDATE_INT);
  $q=$pdo->prepare('SELECT * FROM subscription_plans WHERE id=? AND active=1 AND public_sale=1');$q->execute([$id?:0]);$plan=$q->fetch(PDO::FETCH_ASSOC);
  if(!$plan)throw new RuntimeException('Plano indisponível.');
+ $single=bemora_single_offer_enabled($pdo)?bemora_single_offer($pdo):null;
+ $quote=null;
+ if($single){
+  $cycle=(string)($_POST['cycle']??'');
+  $members=filter_var($_POST['members']??null,FILTER_VALIDATE_INT);
+  if($members===false||$members===null)throw new RuntimeException('Selecione a quantidade de pessoas.');
+  $shopping=($_POST['shopping_addon']??'')==='1';
+  $quote=bemora_single_quote($single,$cycle,$members,$shopping);
+  if((int)$plan['id']!==$quote['plan_id']||$plan['billing_cycle']!==$cycle)throw new RuntimeException('Oferta alterada. Recarregue o checkout.');
+ }
  $legalApproved=bemora_legal_approved();
  if($legalApproved){
   $versions=bemora_legal_versions();
@@ -32,7 +43,7 @@ try{
  $doc=preg_replace('/\D/','',(string)($_POST['cpf_cnpj']??''));$phone=preg_replace('/\D/','',(string)($_POST['phone']??''));
  if(mb_strlen($name)<3||mb_strlen($name)>120||!filter_var($email,FILTER_VALIDATE_EMAIL)||!bemora_checkout_valid_document($doc)||!bemora_checkout_valid_phone($phone))throw new RuntimeException('Revise os dados do responsável.');
  $q=$pdo->prepare('SELECT id FROM users WHERE email=? LIMIT 1');$q->execute([$email]);if($q->fetchColumn())throw new RuntimeException('Este e-mail já possui cadastro. Entre em contato com o suporte para contratar uma nova assinatura.');
- $promo=bemora_plan_promo_active($plan);$amount=$promo?(float)$plan['promo_price']:(float)$plan['price'];
+ $promo=bemora_plan_promo_active($plan);$amount=$quote?(float)$quote['total']:($promo?(float)$plan['promo_price']:(float)$plan['price']);
  $baseAmount=$amount;
  $coupon=null;$couponId=null;$couponKind=null;$freeMonths=0;$recurringAmount=$baseAmount;
  $code=trim((string)($_POST['coupon_code']??''));
@@ -56,7 +67,11 @@ try{
   if(abs((float)$verified['amount']-$amount)>0.001)throw new RuntimeException('O valor do cupom mudou. Recarregue o checkout.');
  }
  $freeUntil=$freeMonths>0?(new DateTimeImmutable('today'))->modify('+'.$freeMonths.' months')->format('Y-m-d'):null;
- $pdo->prepare('INSERT INTO subscription_orders(public_token_hash,plan_id,plan_name,billing_cycle,max_members,amount,buyer_name,buyer_email,buyer_cpf_cnpj,buyer_phone,coupon_id,list_amount,coupon_kind,recurring_amount,coupon_free_until) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')->execute([$hash,(int)$plan['id'],$plan['name'],$plan['billing_cycle'],(int)$plan['max_members'],$amount,$name,$email,$doc,$phone,$couponId,$baseAmount,$couponKind,$recurringAmount,$freeUntil]);
+ if($quote){
+  $pdo->prepare('INSERT INTO subscription_orders(public_token_hash,plan_id,plan_name,billing_cycle,max_members,amount,buyer_name,buyer_email,buyer_cpf_cnpj,buyer_phone,coupon_id,list_amount,coupon_kind,recurring_amount,coupon_free_until,additional_members,shopping_addon,single_offer) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')->execute([$hash,(int)$plan['id'],$plan['name'],$plan['billing_cycle'],(int)$quote['members'],$amount,$name,$email,$doc,$phone,$couponId,$baseAmount,$couponKind,$recurringAmount,$freeUntil,$quote['members']-1,$quote['shopping']?1:0,1]);
+ }else{
+  $pdo->prepare('INSERT INTO subscription_orders(public_token_hash,plan_id,plan_name,billing_cycle,max_members,amount,buyer_name,buyer_email,buyer_cpf_cnpj,buyer_phone,coupon_id,list_amount,coupon_kind,recurring_amount,coupon_free_until) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')->execute([$hash,(int)$plan['id'],$plan['name'],$plan['billing_cycle'],(int)$plan['max_members'],$amount,$name,$email,$doc,$phone,$couponId,$baseAmount,$couponKind,$recurringAmount,$freeUntil]);
+ }
  $orderId=(int)$pdo->lastInsertId();
  if($legalApproved){
   $pdo->prepare('UPDATE subscription_orders SET terms_version=?,privacy_version=?,terms_accepted_at=NOW() WHERE id=?')
@@ -105,5 +120,9 @@ try{
   }catch(Throwable $ignored){if($pdo->inTransaction())$pdo->rollBack();error_log('Bemora: voucher release requires reconciliation.');}
  }
  $_SESSION['checkout_error']=$e instanceof PDOException?'Não foi possível criar o pedido. Tente novamente.':$e->getMessage();
- header('Location: /checkout?plano='.(int)($_POST['plan_id']??0),true,303);exit;
+ $returnUrl='/checkout?plano='.(int)($_POST['plan_id']??0);
+ if(($single??null) && isset($_POST['cycle'],$_POST['members'])){
+  $returnUrl='/checkout?ciclo='.rawurlencode((string)$_POST['cycle']).'&integrantes='.(int)$_POST['members'].'&compras='.(($_POST['shopping_addon']??'')==='1'?'1':'0');
+ }
+ header('Location: '.$returnUrl,true,303);exit;
 }
