@@ -7,6 +7,8 @@ require_once __DIR__ . '/../includes/layout.php';
 require_once __DIR__ . '/../includes/reports.php';
 
 $user = require_family_access();
+require_once __DIR__ . '/../includes/plan_modules.php';
+$canReports=bemora_has_module(db(),(int)$user['tenant_id'],'reports');
 $pdo = db();
 $month = selected_month();
 $ready = monthly_budget_ready($pdo);
@@ -96,7 +98,7 @@ $ratio=$data['billTotal']>0?min(100,100*(float)$bill['amount']/(float)$data['bil
 </article>
 </section>
 <section class="budget-card bemora-dashboard-trend">
-<div class="dashboard-section-head"><div><h2><i class="bi bi-graph-up-arrow"></i> Sua evolução financeira</h2><p>Compare as receitas, contas e o saldo projetado dos últimos seis meses.</p></div><a href="/relatorios?mes=<?= e($month) ?>" class="bemora-report-link">Abrir relatórios <i class="bi bi-arrow-right"></i></a></div>
+<div class="dashboard-section-head"><div><h2><i class="bi bi-graph-up-arrow"></i> Sua evolução financeira</h2><p>Compare as receitas, contas e o saldo projetado dos últimos seis meses.</p></div><?php if($canReports): ?><a href="/relatorios?mes=<?= e($month) ?>" class="bemora-report-link">Abrir relatórios <i class="bi bi-arrow-right"></i></a><?php endif; ?></div>
 <div class="bemora-dashboard-trend-bars" id="bemora-dashboard-trend-bars">
 <?php $miniMax=max(1,...array_map(static fn($r)=>max(0,(float)$r['income'],(float)$r['bills']+(float)$r['expenses']),$miniTrend)); foreach($miniTrend as $item): ?>
 <button type="button" class="bemora-dashboard-trend-month" data-month="<?= e($item['month']) ?>" data-income="<?= e((string)$item['income']) ?>" data-costs="<?= e((string)($item['bills']+$item['expenses'])) ?>" data-balance="<?= e((string)$item['balance']) ?>" aria-label="Ver valores de <?= e($item['month']) ?>"><div class="bemora-dashboard-trend-columns"><span class="income" style="height:<?= number_format(max(2,100*$item['income']/$miniMax),2,'.','') ?>%" title="Receitas: <?= e(money($item['income'])) ?>"></span><span class="expense" style="height:<?= number_format(max(2,100*($item['bills']+$item['expenses'])/$miniMax),2,'.','') ?>%" title="Contas e gastos: <?= e(money($item['bills']+$item['expenses'])) ?>"></span></div><small><?= e(substr($item['month'],5,2).'/'.substr($item['month'],2,2)) ?></small></button>
