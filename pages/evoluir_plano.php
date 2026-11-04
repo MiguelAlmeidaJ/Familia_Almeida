@@ -4,6 +4,7 @@ require_once __DIR__.'/../includes/auth.php';
 require_once __DIR__.'/../includes/layout.php';
 require_once __DIR__.'/../includes/plans.php';
 require_once __DIR__.'/../includes/asaas.php';
+require_once __DIR__.'/../includes/single_offer.php';
 require_once __DIR__.'/../includes/paid_plan_changes.php';
 require_once __DIR__.'/../includes/subscription_cancellation.php';
 header('Cache-Control: private, no-store, max-age=0');
@@ -12,6 +13,7 @@ $user=require_family_access();$pdo=db();$tid=(int)$user['tenant_id'];$csrf=csrf_
 if(bemora_cancellation_for_family($pdo,$tid)){flash('error','Há um cancelamento de assinatura registrado. Consulte Minha assinatura.');redirect_to('/minha-assinatura');}
 $q=$pdo->prepare("SELECT o.*,t.name family_name FROM subscription_orders o JOIN tenants t ON t.id=o.activated_tenant_id WHERE o.activated_tenant_id=? AND o.status='completed' ORDER BY o.id DESC LIMIT 1");
 $q->execute([$tid]);$order=$q->fetch(PDO::FETCH_ASSOC);
+if($order && (int)($order['single_offer']??0)===1)redirect_to('/minha-assinatura/adicionais');
 $q=$pdo->prepare("SELECT role FROM tenant_users WHERE tenant_id=? AND user_id=?");$q->execute([$tid,(int)$user['id']]);$isAdmin=$q->fetchColumn()==='family_admin';
 $q=$pdo->prepare("SELECT COUNT(*) FROM tenant_users WHERE tenant_id=?");$q->execute([$tid]);$memberCount=(int)$q->fetchColumn();
 $plans=$pdo->query('SELECT * FROM subscription_plans WHERE active=1 AND public_sale=1 ORDER BY max_members,billing_cycle')->fetchAll(PDO::FETCH_ASSOC);
