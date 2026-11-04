@@ -66,3 +66,28 @@
   margin: 0 auto;
   object-fit: contain;
 }
+
+/* Onboarding after checkout: member details are the first step, with no family-name form. */
+.invite-card{max-width:860px;margin:0 auto}
+.invite-steps{grid-template-columns:repeat(2,minmax(0,1fr));max-width:560px;margin:25px 0 27px}
+.invite-step:only-child{grid-column:1/-1}
+.invite-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px}
+.invite-section-head .invite-section-title{margin:0}
+.invite-seats-badge{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border-radius:999px;background:#e8f6ed;color:#08775a;font-size:12px;font-weight:750;white-space:nowrap}
+.invite-seats-badge .bi{font-size:15px}
+.step[data-step="0"]>.invite-subtitle{margin:8px 0 19px}
+.invite-field small{font-size:11px;line-height:1.45;color:var(--muted)}
+.member-tabs[hidden]{display:none!important}
+.invite-steps:has(.invite-step:only-child){grid-template-columns:1fr}
+.invite-actions .invite-btn.primary{min-width:170px}
+@media(max-width:560px){
+ .invite-card{padding:22px 17px}
+ .invite-section-head{align-items:flex-start;flex-wrap:wrap}
+ .invite-section-head .invite-section-title{font-size:21px}
+ .invite-seats-badge{font-size:11px}
+ .invite-steps{margin:20px 0 23px}
+ .invite-steps .invite-step{flex-direction:row;text-align:left;justify-content:center}
+ .member-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:5px;scrollbar-width:thin}
+ .member-tab{flex:0 0 auto;padding:10px 13px}
+ .member-fields{padding:15px}
+}
