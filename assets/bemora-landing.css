@@ -143,26 +143,65 @@
 .landing-plan-card .landing-plan-features{margin:4px 0 22px;padding:0;display:grid;gap:12px}
 .landing-plan-card .landing-plan-features li{font-size:12px;line-height:1.55}
 
-/* One subscription with selectable seats and shopping bundle */
-.single-public-pricing .landing-pricing-heading{margin-bottom:28px}
-.single-public-layout{max-width:930px;margin:0 auto;display:grid;grid-template-columns:.95fr 1.05fr;gap:20px;align-items:stretch}
-.single-public-card,.single-public-builder{background:#fff;border:1px solid #dce9df;border-radius:23px;padding:clamp(24px,3vw,33px);box-shadow:0 14px 35px #06453408}
-.single-public-card{display:flex;flex-direction:column;background:linear-gradient(165deg,#eff9f2,#fff 65%)}
-.single-public-card .landing-plan-cycle{align-self:start}
-.single-public-card h3{font-size:31px;letter-spacing:-.04em;color:#064c3d;margin:21px 0 10px}
-.single-public-card>p{font-size:14px;color:#658473;line-height:1.65;max-width:310px}
-.single-public-card .landing-plan-features{margin-top:auto;padding-top:36px}
-.single-public-builder{display:grid;gap:16px}
-.single-public-builder h3{font-size:22px;color:#074c3c;margin:0 0 5px}
-.single-public-builder>label{font-size:12px;font-weight:750;color:#255c48;display:grid;gap:8px}
-.single-public-builder select{width:100%;padding:12px 13px;border:1px solid #cfe2d5;border-radius:11px;background:#fff;color:#164f3d;font-size:14px}
-.single-public-builder .single-public-option{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid #cfe2d5;border-radius:11px;background:#f8fcf9;cursor:pointer}
-.single-public-option input{width:21px;height:21px;accent-color:#087d5e;flex:none}
-.single-public-option span{display:grid;gap:4px}
-.single-public-option small{font-size:11px;font-weight:400;color:#738d7e;line-height:1.4}
-.single-public-total{padding:17px;background:#edf8f1;border:1px solid #d2eadb;border-radius:13px;display:grid;gap:6px}
-.single-public-total>span{font-size:11px;color:#537c66;font-weight:700}
-.single-public-total strong{font-size:32px;letter-spacing:-.045em;color:#075342}
-.single-public-total small{font-size:11px;color:#6a9079}
-.single-public-builder .landing-plan-cta{width:100%;cursor:pointer;border:0;min-height:51px}
-@media(max-width:720px){.single-public-layout{grid-template-columns:1fr}.single-public-card{gap:5px}.single-public-card .landing-plan-features{padding-top:10px}.single-public-builder{gap:14px}}
+
+/* Bemora | assinatura única — editorial, compact, responsive */
+.single-public-pricing{padding:clamp(42px,5.5vw,76px) 0!important;background:#f5faf6}
+.single-public-pricing .site-container{max-width:1090px}
+.single-pricing-heading{max-width:800px;margin:0 auto 28px}
+.single-pricing-heading .eyebrow{display:block;margin-bottom:10px;letter-spacing:.14em;color:#0b8467;font-size:10px;font-weight:800}
+.single-pricing-heading h2{margin:0 0 11px;color:#084b3d;font-size:clamp(30px,3.5vw,45px);font-weight:800;letter-spacing:-.045em;line-height:1.13}
+.single-pricing-heading h2 em{color:#179778;font-style:normal}
+.single-pricing-heading p{max-width:620px;margin:0;color:#668477;font-size:14px;line-height:1.65}
+.single-public-layout{display:grid;grid-template-columns:minmax(0,.93fr) minmax(0,1.07fr);gap:16px;align-items:start;max-width:800px;margin:0 auto}
+.single-public-card,.single-public-builder{min-width:0;min-height:0;background:#fff;border:1px solid #dce9e0;border-radius:17px;box-shadow:0 8px 24px rgba(14,70,49,.045);padding:24px}
+.single-public-card{background:#fafffb}
+.single-plan-identity{display:flex;align-items:center;gap:12px;min-width:0}
+.single-plan-symbol{display:grid;place-items:center;width:42px;height:42px;flex:0 0 42px;border-radius:12px;background:#e2f3e9;color:#087454;font-size:20px}
+.single-plan-identity>div{min-width:0;flex:1}
+.single-plan-eyebrow{display:block;color:#829889;font-size:9px;font-weight:800;letter-spacing:.1em}
+.single-public-card h3{font-size:21px;line-height:1.25;letter-spacing:-.03em;color:#074a3c;margin:2px 0 0;overflow-wrap:anywhere}
+.single-plan-tag{flex:none;padding:7px 9px;border-radius:999px;background:#e9f5ed;color:#176d52;font-size:10px;font-weight:750;white-space:nowrap}
+.single-plan-description{margin:17px 0;color:#698478;line-height:1.6;font-size:12px}
+.single-public-card .landing-plan-features{margin:0;padding:16px 0;border-top:1px solid #e5eee8;display:grid;gap:11px;list-style:none}
+.single-public-card .landing-plan-features li{padding-left:22px;line-height:1.45;color:#365f50;font-size:12px}
+.single-public-card .landing-plan-features li::before{color:#0b9372;top:0;left:0;font-size:13px}
+.single-plan-footnote{display:flex;align-items:flex-start;gap:8px;border-top:1px solid #e5eee8;padding-top:13px;margin-top:1px;color:#6c8979;font-size:11px;line-height:1.5}
+.single-plan-footnote i{color:#128765;font-size:13px;flex:none}
+.single-public-builder{display:block}
+.single-builder-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:19px}
+.single-builder-kicker{display:block;color:#809889;font-size:9px;letter-spacing:.09em;font-weight:800}
+.single-public-builder h3{font-size:21px;line-height:1.25;letter-spacing:-.025em;font-weight:800;margin:5px 0 0;color:#084b3d}
+.single-builder-heading>i{display:grid;place-items:center;flex:none;width:36px;height:36px;background:#eaf5ee;color:#137a5a;border-radius:10px;font-size:18px}
+.single-builder-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.single-builder-fields label{display:grid;gap:7px;min-width:0;color:#376650;font-size:11px;font-weight:800}
+.single-builder-fields select{appearance:auto;min-width:0;width:100%;height:42px;border:1px solid #d3e5d9;border-radius:9px;background:#fff;color:#134e3d;padding:0 10px;font-size:12px;font-weight:650;cursor:pointer}
+.single-public-builder select:focus-visible,.single-public-builder input:focus-visible,.single-public-builder button:focus-visible{outline:2px solid #1b9977;outline-offset:3px}
+.single-public-option{display:flex;align-items:center;gap:10px;background:#f6faf7;border:1px solid #dcebe0;border-radius:10px;padding:12px;margin:15px 0;cursor:pointer}
+.single-public-option input{flex:none;width:18px;height:18px;margin:0;accent-color:#087b60;cursor:pointer}
+.single-public-option>span:not(.single-option-extra){display:grid;gap:3px;flex:1;min-width:0}
+.single-public-option strong{color:#205e48;font-size:12px}
+.single-public-option small{font-size:10px;line-height:1.45;color:#7c9486}
+.single-option-extra{color:#258264;background:#e4f3e8;border-radius:7px;padding:5px 7px;font-size:9px;font-weight:750;white-space:nowrap}
+.single-public-bottom{border-top:1px solid #e7efe9;padding-top:16px}
+.single-public-total{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 15px}
+.single-public-total>div{display:grid;gap:3px}
+.single-public-total span{font-size:11px;color:#698879;font-weight:700}
+.single-public-total strong{font-size:clamp(24px,2.7vw,32px);line-height:1.16;color:#07543f;letter-spacing:-.045em;font-weight:850}
+.single-public-total small{font-size:10px;line-height:1.5;text-align:right;color:#668575;max-width:160px}
+.single-public-builder .landing-plan-cta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:45px;margin:0;padding:12px 13px;background:#075441;color:#fff;border:0;border-radius:9px;font-size:12px;font-weight:800;cursor:pointer;transition:background .2s}
+.single-public-builder .landing-plan-cta:hover{background:#097255}
+.single-public-pricing .landing-plan-legal{max-width:700px;text-align:center;margin:19px auto 0;color:#83998c;font-size:10px;line-height:1.65}
+@media(min-width:1100px){.single-public-layout{max-width:880px}.single-pricing-heading{max-width:880px}}
+@media(max-width:720px){
+ .single-public-pricing{padding:42px 0!important}
+ .single-public-pricing .site-container{padding:0 18px}
+ .single-pricing-heading{margin-bottom:23px}
+ .single-pricing-heading p{font-size:13px}
+ .single-public-layout{grid-template-columns:1fr;gap:12px;max-width:560px}
+ .single-public-card,.single-public-builder{padding:20px;border-radius:15px}
+ .single-plan-tag{font-size:9px;padding:6px 8px}
+ .single-public-card .landing-plan-features{grid-template-columns:1fr}
+ .single-pricing-heading h2{font-size:clamp(28px,7vw,37px)}
+}
+@media(max-width:380px){.single-builder-fields{grid-template-columns:1fr}.single-plan-tag{display:none}.single-option-extra{display:none}}
+@media(prefers-reduced-motion:reduce){.single-public-builder .landing-plan-cta{transition:none}}
