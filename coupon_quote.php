@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/includes/asaas.php';
 require_once __DIR__.'/includes/coupons.php';
+require_once __DIR__.'/includes/single_offer.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){http_response_code(405);echo json_encode(['error'=>'Método inválido']);exit;}
@@ -11,7 +12,14 @@ try{
  $pdo=db();$id=filter_var($_POST['plan_id']??0,FILTER_VALIDATE_INT);
  $q=$pdo->prepare('SELECT * FROM subscription_plans WHERE id=? AND active=1');$q->execute([$id?:0]);$plan=$q->fetch(PDO::FETCH_ASSOC);
  if(!$plan)throw new RuntimeException('Plano indisponível.');
- $base=bemora_plan_promo_active($plan)?(float)$plan['promo_price']:(float)$plan['price'];
+ $single=bemora_single_offer_enabled($pdo)?bemora_single_offer($pdo):null;
+ if($single){
+  $members=filter_var($_POST['members']??null,FILTER_VALIDATE_INT);
+  if($members===false||$members===null)throw new RuntimeException('Quantidade de integrantes inválida.');
+  $quote=bemora_single_quote($single,(string)($_POST['cycle']??''),$members,($_POST['shopping_addon']??'')==='1');
+  if($quote['plan_id']!==(int)$plan['id'])throw new RuntimeException('Oferta inválida.');
+  $base=(float)$quote['total'];
+ }else $base=bemora_plan_promo_active($plan)?(float)$plan['promo_price']:(float)$plan['price'];
  $code=trim((string)($_POST['coupon_code']??''));
  if($code===''){$data=['amount'=>$base,'discount'=>0,'label'=>'Sem cupom','supported'=>true];}
  else{
