@@ -410,3 +410,13 @@
     pointer-events:none!important;
   }
 }
+
+/* Manual fallback during shopping: no camera, same validated save form. */
+.market-manual-shortcut{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 17px;padding:12px 14px;border:1px solid #cce5d5;background:#f1f9f4;border-radius:13px}
+.market-manual-shortcut>span{font-size:11px;color:#628071;line-height:1.5}
+.market-page .market-manual-button{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:11px 16px;background:#08644d;color:#fff;border-radius:11px;font-size:12px}
+.market-page .market-manual-button i{font-size:17px}
+.market-page .market-basket-set-price{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:9px 12px;background:#e8f6ed;color:#08654c;border:1px solid #bcdec9;border-radius:10px;font-size:12px;font-weight:750}
+.market-page .market-basket-set-price:hover{background:#d6f0e0;color:#064b39}
+.market-scan-dialog .market-scan-progress[hidden],.market-scan-dialog #market-review-back[hidden]{display:none!important}
+@media(max-width:650px){.market-manual-shortcut{display:grid;gap:6px;padding:12px}.market-page .market-manual-button{width:100%}.market-manual-shortcut>span{text-align:center}}
