@@ -29,6 +29,7 @@ try{
  $annual=(float)($_POST['annual_discount']??-1);
  $requestedEnabled=($_POST['enabled']??'')==='1';
  if($base<100||!$max||$max<1||$max>30||!is_finite($semi)||!is_finite($annual)||$semi<0||$semi>80||$annual<0||$annual>80)throw new RuntimeException('Revise os preços, os limites e os descontos.');
+ if(($max>1 && $seat<1)||$shop<1)throw new RuntimeException('Configure um valor positivo para cada adicional disponível.');
  // A zero-priced optional service is allowed, but must not accidentally bypass the selection.
  $new=$current;
  foreach(['name'=>$name,'base_monthly'=>$base/100,'extra_member_monthly'=>$seat/100,'shopping_monthly'=>$shop/100,'max_members'=>$max,'semi_discount'=>$semi,'annual_discount'=>$annual] as $k=>$v)$new[$k]=$v;
