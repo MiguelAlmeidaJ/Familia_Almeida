@@ -27,6 +27,6 @@ for(const layout of layouts){
  assert.match(source,new RegExp('\\b'+layout+'\\s*:\\s*\\{'),'camera crop preset '+layout+' exists');
 }
 assert.match(source,/getBoundingClientRect\(\)/,'camera crop must use visible guide measurements');
-assert.match(source,/topBand=cropFrom/,'product name must be read separately from price area');
+assert.match(source,/nameBand=cropFrom/,'product name must be read separately from price area');
 assert.equal(context.betterName('ARROZ TIPO1 CAMIL 5KG FD6','ROZ TIPO1'), 'ARROZ TIPO1 CAMIL 5KG FD6');
 console.log('[PASS] Camera formats, guide crop and separate product-name recognition present');
