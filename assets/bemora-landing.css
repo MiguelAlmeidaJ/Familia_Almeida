@@ -142,3 +142,27 @@
 /* Benefits now come from the independent admin catalog. No section label or collapsible description. */
 .landing-plan-card .landing-plan-features{margin:4px 0 22px;padding:0;display:grid;gap:12px}
 .landing-plan-card .landing-plan-features li{font-size:12px;line-height:1.55}
+
+/* One subscription with selectable seats and shopping bundle */
+.single-public-pricing .landing-pricing-heading{margin-bottom:28px}
+.single-public-layout{max-width:930px;margin:0 auto;display:grid;grid-template-columns:.95fr 1.05fr;gap:20px;align-items:stretch}
+.single-public-card,.single-public-builder{background:#fff;border:1px solid #dce9df;border-radius:23px;padding:clamp(24px,3vw,33px);box-shadow:0 14px 35px #06453408}
+.single-public-card{display:flex;flex-direction:column;background:linear-gradient(165deg,#eff9f2,#fff 65%)}
+.single-public-card .landing-plan-cycle{align-self:start}
+.single-public-card h3{font-size:31px;letter-spacing:-.04em;color:#064c3d;margin:21px 0 10px}
+.single-public-card>p{font-size:14px;color:#658473;line-height:1.65;max-width:310px}
+.single-public-card .landing-plan-features{margin-top:auto;padding-top:36px}
+.single-public-builder{display:grid;gap:16px}
+.single-public-builder h3{font-size:22px;color:#074c3c;margin:0 0 5px}
+.single-public-builder>label{font-size:12px;font-weight:750;color:#255c48;display:grid;gap:8px}
+.single-public-builder select{width:100%;padding:12px 13px;border:1px solid #cfe2d5;border-radius:11px;background:#fff;color:#164f3d;font-size:14px}
+.single-public-builder .single-public-option{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid #cfe2d5;border-radius:11px;background:#f8fcf9;cursor:pointer}
+.single-public-option input{width:21px;height:21px;accent-color:#087d5e;flex:none}
+.single-public-option span{display:grid;gap:4px}
+.single-public-option small{font-size:11px;font-weight:400;color:#738d7e;line-height:1.4}
+.single-public-total{padding:17px;background:#edf8f1;border:1px solid #d2eadb;border-radius:13px;display:grid;gap:6px}
+.single-public-total>span{font-size:11px;color:#537c66;font-weight:700}
+.single-public-total strong{font-size:32px;letter-spacing:-.045em;color:#075342}
+.single-public-total small{font-size:11px;color:#6a9079}
+.single-public-builder .landing-plan-cta{width:100%;cursor:pointer;border:0;min-height:51px}
+@media(max-width:720px){.single-public-layout{grid-template-columns:1fr}.single-public-card{gap:5px}.single-public-card .landing-plan-features{padding-top:10px}.single-public-builder{gap:14px}}
